@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+{% comment %} <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/intltelinput.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/tagify.css' %}"> {% endcomment %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% comment %} <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/intltelinput.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/tagify.css' %}"> {% endcomment %}
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    .custom-large-btn:hover{
+        background-color: #4a3dd9 !important;
+    }
+
+    .custom-delete-btn:hover{
+        background-color: #ff0000 !important;
+    }
+
+    .success-message{
+        background-color: #10cf1057;
+        color: #096009;
+    }
+
+    .error-message{
+        background-color: #ff0d0d78 !important;
+        color: #890000;
+    }
+
+    .edit{
+        cursor: pointer;
+    }
+
+    .edit-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .edit-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .delete-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete{
+        cursor: pointer;
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .error-success-div.show {
+        /* adjust 200px to be comfortably larger than your tallest message */
+        max-height: 200px;
+        opacity: 1;
+    }
+    
+    .required-fields-mark{
+        color: red;
+    }
+
+    .tagify{
+        width: 100%;
+        height: 46px;
+        border-radius: 60px;
+        padding: 3px 20px;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h1>Add New Variants</h1>
+                </div>
+                <form id="region-product-form" class="form theme-form dark-inputs" method="POST">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 col-12">
+                                <label class="form-label d-block" for="regions">Select Regions</label>
+                                <select id="regions" class="select2" name="regions">
+                                    <option value="">Select Region</option>
+                                    {% for region in regions %}
+                                        <option value="{{ region.id }}">{{ region.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 col-12">
+                                <label class="form-label d-block" for="products">Select Product</label>
+                                <select id="products" class="select2" name="products">
+                                    <option value="">Select Product</option>
+                                    {% for product in products %}
+                                        <option value="{{ product.id }}">{{ product.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div>
+                                <button id="fetch-variants-btn" class="btn btn-pill btn-outline-warning btn-sm" type="button">Fetch Variants</button>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
+                        <div class="error-success-div p-6"></div>
+                    </div>
+
+                    <div class="card-footer text-end">
+                        <button class="btn btn-primary me-3" type="submit">Submit</button>
+                        <input class="btn btn-light" type="reset" value="Cancel">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+        $('.regions-select').select2();
+    });
+</script>
+
+<script>
+    function showMessage(type, message) {
+        const div = $(".error-success-div");
+
+        // Set the message and classes
+        div.removeClass("error-message success-message")
+           .addClass(type === "error" ? "error-message" : "success-message")
+           .html(message);
+
+        // Show the div by adding 'show' class
+        if (div.hasClass("show")) {
+            // If already visible, restart the hide timer
+            div.removeClass("show");
+            div.one("transitionend", () => div.addClass("show"));
+        } else {
+            div.addClass("show");
+        }
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+            div.removeClass("show");
+        }, 3000);
+    }
+    
+    $('#fetch-variants-btn').on('click', function () {
+        const regionId = $('#regions').val();
+        const productId = $('#products').val();
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+
+        // Basic validation
+        if (!regionId || !productId) {
+            showMessage('error', 'Both Region and Product must be selected.');
+            return;
+        }
+
+        fetch('/fetch-variants/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                region_id: regionId,
+                product_id: productId,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showMessage('error', data.error);
+            } else {
+                const saved = data.saved_variants && data.saved_variants.length > 0
+                    ? `Variants fetched and saved: ${data.saved_variants.join(', ')}.`
+                    : 'Variants fetched successfully (no new variants saved).';
+                showMessage('success', saved);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            showMessage('error', 'Something went wrong while fetching variants.');
+        });
+    });
+</script>
+
+
+{% endblock %}

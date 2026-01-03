@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+{% comment %} <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/intltelinput.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/tagify.css' %}"> {% endcomment %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    .custom-large-btn:hover{
+        background-color: #4a3dd9 !important;
+    }
+
+    .custom-delete-btn:hover{
+        background-color: #ff0000 !important;
+    }
+
+    .success-message {
+        background-color: #10e5103b;
+        color: #07b107;
+    }
+
+    .error-message {
+        background-color: #ff000036 !important;
+        color: #f50000;
+    }
+
+    .edit{
+        cursor: pointer;
+    }
+
+    .edit-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .edit-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .delete-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete{
+        cursor: pointer;
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .error-success-div.show {
+        /* adjust 200px to be comfortably larger than your tallest message */
+        max-height: 200px;
+        opacity: 1;
+    }
+    
+    .required-fields-mark{
+        color: red;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h1>Add a New User Account</h1>
+                </div>
+                <form id="productAssignForm" class="form theme-form dark-inputs" method="POST">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Region -->
+                            <div class="col-12">
+                                <label class="form-label" for="region">Select Region</label><span class="required-fields-mark">*</span>
+                                <select class="select2" id="region" name="region">
+                                    <option value="">Select a region</option>
+                                    {% for region in regions %}
+                                        <option value="{{ region.id }}">{{ region.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- User Accounts -->
+                            <div class="col-md-6 col-12">
+                                <label class="form-label" for="user_account">Select User Account</label><span class="required-fields-mark">*</span>
+                                <select class="select2" id="user_account" name="user_account">
+                                    <option value="">Select a user account</option>
+                                    <!-- Dynamically populated -->
+                                </select>
+                            </div>
+                            
+                            <!-- Quantity -->
+                            <div class="col-md-6 col-12">
+                                <label class="form-label" for="quantity">Quantity</label><span class="required-fields-mark">*</span>
+                                <input class="form-control btn-pill" id="quantity" name="quantity" type="number" placeholder="1">
+                            </div>
+
+                            <!-- Product Variants -->
+                            <div class="col-md-6 col-12">
+                                <label class="form-label" for="product_variant">Select Product Variant</label><span class="required-fields-mark">*</span>
+                                <select class="select2" id="product_variant" name="product_variant">
+                                    <option value="">Select a product variant</option>
+                                    <!-- Dynamically populated -->
+                                </select>
+                            </div>
+
+                            <!-- Product URL -->
+                            <div class="col-md-6 col-12">
+                                <label class="form-label" for="product-url">Product URL</label><span class="required-fields-mark">*</span>
+                                <input class="form-control btn-pill" id="product-url" name="product_url" type="url" placeholder="https://example.com">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
+                        <div class="error-success-div p-6"></div>
+                    </div>
+                    <div class="card-footer text-end">
+                        <button class="btn btn-primary me-3" type="submit">Submit</button>
+                        <input class="btn btn-light" type="reset" value="Cancel">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+
+{% comment %} <script src="{% static 'assets/js/select2/tagify.js' %}"></script>
+<script src="{% static 'assets/js/select2/tagify.polyfills.min.js' %}"></script>
+<script src="{% static 'assets/js/select2/intltelinput.min.js' %}"></script>
+<script src="{% static 'assets/js/select2/telephone-input.js' %}"></script>
+<script src="{% static 'assets/js/select2/custom-inputsearch.js' %}"></script>
+<script src="{% static 'assets/js/select2/select3-custom.js' %}"></script> {% endcomment %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'assets/js/height-equal.js' %}"></script>
+
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+    });
+</script>
+
+<script>
+    function showMessage(type, message) {
+        const div = $(".error-success-div");
+
+        function expand() {
+            div
+            .removeClass("error-message success-message")
+            .addClass(type + "-message")
+            .text(message);
+
+            requestAnimationFrame(() => {
+                div.addClass("show");
+            });
+
+            /*if (type === "success") {
+                setTimeout(() => location.reload(), 2000);
+            }*/
+        }
+
+        if (div.hasClass("show")) {
+            div.removeClass("show");
+            div.one("transitionend", expand);
+        } else {
+            expand();
+        }
+    }
+
+    $(document).ready(function () {
+        $('#productAssignForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            fetch('/instant-purchase-execute/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                },
+                body: formData,
+            })
+            .then(async response => {
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('success', data.message);
+                } else if (response.status === 409) {
+                    showMessage('warning', data.message || 'Your account is still logging in. Try again soon.');
+                } else {
+                    showMessage('error', data.error || 'Something went wrong');
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                showMessage('error', 'Something went wrong');
+            });
+        });
+    });
+</script>
+
+<script>
+    let variantMap = {};  // Global map to hold variant info
+
+    $(document).ready(function () {
+        $('#region').on('change', function () {
+            const regionId = $(this).val();
+            if (!regionId) {
+                $('#user_account').html('<option value="">Select a user account</option>');
+                $('#product_variant').html('<option value="">Select a product variant</option>');
+                $('#product-url').val('');
+                return;
+            }
+
+            fetch(`/get-region-data/${regionId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    // Populate User Accounts
+                    let userOptions = '<option value="">Select a user account</option>';
+                    data.user_accounts.forEach(user => {
+                        userOptions += `<option value="${user.id}">${user.email}</option>`;
+                    });
+                    $('#user_account').html(userOptions);
+
+                    // Populate Product Variants and build variantMap
+                    let variantOptions = '<option value="">Select a product variant</option>';
+                    variantMap = {};  // Reset map
+                    data.product_variants.forEach(variant => {
+                        const displayName = `${variant.product_name} - ${variant.name}`;
+                        variantOptions += `<option value="${variant.id}">${displayName}</option>`;
+                        variantMap[variant.id] = variant;  // Save entire variant object
+                    });
+                    $('#product_variant').html(variantOptions);
+                    $('#product-url').val('');
+                })
+                .catch(error => {
+                    console.error("Fetch error:", error);
+                });
+        });
+
+        // Populate product URL on variant select
+        $('#product_variant').on('change', function () {
+            const variantId = $(this).val();
+            if (variantId && variantMap[variantId]) {
+                $('#product-url').val(variantMap[variantId].product_url);
+            } else {
+                $('#product-url').val('');
+            }
+        });
+    });
+</script>
+{% endblock %}

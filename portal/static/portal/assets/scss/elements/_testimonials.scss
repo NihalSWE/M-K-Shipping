@@ -1,0 +1,371 @@
+// testimonails area
+.rts-testimonials-area{
+    .section-inner{
+        position: relative;
+        z-index: 1;
+        .swiper{
+            max-width: 1070px;
+            margin: auto;
+        }
+        .swiper-navigation{
+            .swiper-btn{
+                position: absolute;
+                width: 40px;
+                height: 40px;
+                line-height: 40px;
+                border: 1px solid var(--color-primary);
+                text-align: center;
+                display: block;
+                color: var(--color-primary);
+                transition: var(--transition);
+                top: 50%;
+                transform: translateY(-50%);
+                &:hover{
+                    background: var(--color-primary);
+                    color: var(--color-white);
+                }
+                &.swiper-btn-prev5{
+                    left: 0;
+                    right: unset;
+                }
+                &.swiper-btn-next5{
+                    right: 0;
+                    left: unset;
+                    background: var(--color-primary);
+                    color: var(--color-white);
+                }
+            }
+        }
+    }
+}
+.testimonials-wrapper{
+    background: #FFF8F3;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    .image-area{
+        flex-basis: 38%;
+    }
+    .content-area{
+        flex-basis: 60%;
+        .quote{
+            margin-bottom: 35px;
+        }
+        .text{
+            font-size: 34px;
+            line-height: 1.1;
+            font-weight: 500;
+            color: var(--color-heading-1);
+        }
+        .author{
+            h5{
+                line-height: 1;
+                margin-bottom: 5px;
+            }
+            p{
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+.testimonials-wrapper-two{
+    text-align: center;
+    max-width: 690px;
+    margin: auto;
+    .image-area{
+        margin-bottom: 30px;
+        img{
+            margin: auto;
+        }
+    }
+    .content-area{
+        .quote{
+            margin-bottom: 35px;
+        }
+        .text{
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.2;
+            font-family: var(--font-primary);
+            text-transform: capitalize;
+            color: var(--color-heading-1);
+            margin-bottom: 25px;
+        }
+        .author{
+            max-width: max-content;
+            padding: 0 30px;
+            margin: auto;
+            padding-top: 30px;
+            border-top: 1px solid #9FDEFF;
+            h5{
+                margin-bottom: 5px;
+                font-size: 20px;
+                line-height: 1;
+            }
+        }
+    }
+}
+.rts-testimonials-area.hiking{
+    .slider-dots-2{
+        .swiper-pagination-bullet{
+            background: #B4E5FF;
+            opacity: 1;
+            &.swiper-pagination-bullet-active{
+                background: var(--color-primary);
+                width: 8px;
+                height: 8px;
+            }
+        }
+    }
+}
+.rts-testimonials-area.yacht{
+    .swiper-pagination-area{
+        z-index: 1;
+        .slider-dots{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        .swiper-pagination-bullet{
+            width: 8px;
+            height: 8px;
+            border-radius: 0;
+            margin: 0;
+            opacity: 1;
+            background: transparent;
+            border: 1px solid var(--color-primary);
+            transform: rotate(45deg);
+            &.swiper-pagination-bullet-active{
+                background: var(--color-primary);
+            }
+        }
+    }
+}
+.rts-testimonials-area.kayaking{
+    .swiper-pagination-area{
+        z-index: 1;
+        .slider-dots{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        .swiper-pagination-bullet{
+            width: 8px;
+            height: 8px;
+            border-radius: 0;
+            margin: 0;
+            opacity: 1;
+            background: transparent;
+            border: 1px solid var(--color-primary);
+            transform: rotate(45deg);
+            &.swiper-pagination-bullet-active{
+                background: var(--color-primary);
+            }
+        }
+    }
+}
+
+
+.testimonials-wrapper-three{
+    position: relative;
+    z-index: 1;
+    border: 1px solid var(--color-border);
+    padding: 30px 24px 35px;
+    .quote{
+        position: absolute;
+        z-index: 1;
+        right: 40px;
+        top: 40px;
+    }
+    .author-area{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 25px;
+        .content-area{
+            h6{
+                font-size: 18px;
+                line-height: 1;
+                margin-bottom: 5px;
+            }
+            p{
+                margin-bottom: 0;
+                font-size: 14px;
+                line-height: 1;
+            }
+        }
+    }
+    .star-rating-area{
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        margin-bottom: 15px;
+        li{
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        }
+    }
+}
+.testimonials-wrapper-four{
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    .image-area{
+        flex-basis: 38%;
+    }
+    .content-area{
+        flex-basis: 63%;
+        .quote{
+            margin-bottom: 35px;
+        }
+        .text{
+            font-size: 30px;
+            line-height: 1.1;
+            font-weight: 500;
+            color: var(--color-heading-1);
+        }
+        .author{
+            h5{
+                line-height: 1;
+                margin-bottom: 5px;
+                font-weight: 500;
+            }
+            p{
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+.testimonials-img-slider{
+    .image{
+        overflow: hidden;
+        border-radius: 10px;
+    }
+}
+.testimonials-wrapper-five{
+    padding: 60px 70px 50px 50px;
+    background: var(--color-primary);
+    border-radius: 10px;
+    .quote-area{
+        margin-bottom: 50px;
+    }
+    .text{
+        font-size: 28px;
+        font-style: italic;
+        color: var(--color-white);
+        text-transform: capitalize;
+        line-height: 32px;
+        margin-bottom: 50px;
+    }
+    .author-area{
+        h6{
+            font-family: var(--font-four);
+            color: var(--color-white);
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+        p{
+            font-family: var(--font-four);
+            color: var(--color-white);
+        }
+    }
+}
+.rts-testimonials-area.summer-travel{
+    .section-inner{
+        .slider-dots-2{
+            max-width: max-content;
+            right: 25px;
+            left: unset;
+            bottom: 25px;
+            position: absolute;
+            z-index: 1;
+            .swiper-pagination-bullet{
+                background: transparent;
+                opacity: 1;
+                border: 1px solid #0D0D0D;
+                transition: var(--transition);
+                &.swiper-pagination-bullet-active{
+                    background: #0D0D0D;
+                }
+            }
+        }
+    }
+    .testimonials-slider3{
+        border-radius: 10px;
+    }
+}
+
+.testimonials-wrapper-six{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    text-align: center;
+    .content-area{
+        flex-basis: 65%;
+        .quote{
+            margin-bottom: 35px;
+        }
+        .text{
+            font-size: 34px;
+            line-height: 1.1;
+            font-weight: 400;
+            color: var(--color-heading-1);
+        }
+        .author{
+            h5{
+                line-height: 1;
+                margin-bottom: 5px;
+            }
+            p{
+                color: var(--color-white);
+                font-family: var(--font-secondary);
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+.rts-testimonials-area.travel-agency{
+    .swiper-navigation{
+            .swiper-btn{
+                position: absolute;
+                width: 40px;
+                height: 40px;
+                line-height: 40px;
+                text-align: center;
+                display: block;
+                border-color: var(--color-white);
+                background: var(--color-white);
+                color: #121212;
+                transition: var(--transition);
+                top: 50%;
+                transform: translateY(-50%);
+                &:hover{
+                    background: var(--color-primary);
+                    color: #121212;
+                    border-color: transparent;
+                }
+                &.swiper-btn-prev5{
+                    left: 0;
+                    right: unset;
+                }
+                &.swiper-btn-next5{
+                    right: 0;
+                    left: unset;
+                    background: var(--color-primary);
+                    color: #121212;
+                    border-color: transparent;
+                }
+            }
+        }
+}

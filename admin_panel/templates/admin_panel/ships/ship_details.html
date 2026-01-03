@@ -1,0 +1,445 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+
+    .custom-delete-btn:hover {
+        background-color: #ff0000 !important;
+    }
+
+    .modal-body {
+        padding-top: 34px !important;
+    }
+
+    .success-message {
+        background-color: #10cf1057;
+        color: #096009;
+    }
+
+    .error-message {
+        background-color: #ff0d0d78 !important;
+        color: #890000;
+    }
+
+    .edit {
+        cursor: pointer;
+    }
+
+    .edit-icon {
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .edit-icon:hover {
+        transform: scale(1.15);
+    }
+
+    .delete-icon {
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .delete-icon:hover {
+        transform: scale(1.15);
+    }
+
+    .delete {
+        cursor: pointer;
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .error-success-div.show {
+        max-height: 200px;
+        opacity: 1;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div class="container-fluid datatable-init">
+    <div class="row">
+
+        <!-- SHIP SETTINGS CARD -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-between align-items-center">
+                        <div class="col-md-6">
+                            <h1>Ship Settings: {{ ship.name }}</h1>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'ships' %}" class="btn btn-secondary">
+                                <i class="fa-solid fa-arrow-left me-2"></i> Back to Ships
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="shipSettingsForm" class="row g-3">
+                        {% csrf_token %}
+                        <div class="col-md-4">
+                            <label for="shipName" class="form-label">Ship Name</label>
+                            <input type="text" class="form-control btn-pill" id="shipName" value="{{ ship.name }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="shipCode" class="form-label">Code</label>
+                            <input type="text" class="form-control btn-pill" id="shipCode" value="{{ ship.code }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="shipCapacity" class="form-label">Total Capacity</label>
+                            <input type="number" class="form-control btn-pill" id="shipCapacity"
+                                value="{{ ship.total_capacity }}">
+                        </div>
+                        <div class="col-12 text-end mt-4">
+                            <button type="submit" class="btn btn-primary custom-large-btn">Save Ship Settings</button>
+                        </div>
+                        <div class="col-12">
+                            <div class="error-success-div p-6" id="shipMsg"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- DECKS MANAGEMENT CARD -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-between align-items-center">
+                        <div class="col-md-6">
+                            <h2>Associated Decks</h2>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-pill btn-primary btn-lg custom-large-btn" data-bs-toggle="modal"
+                                data-bs-target="#addDeckModal">
+                                <span class="me-2"><i class="fa-solid fa-plus"></i></span> Add New Deck
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Level Order</th>
+                                    <th>Deck Name</th>
+                                    <th>Grid (Col x Row)</th>
+                                    <th>Design</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deck in decks %}
+                                <tr data-id="{{ deck.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ deck.level_order }}</td>
+                                    <td>{{ deck.name }}</td>
+                                    <td>{{ deck.grid_cols }} x {{ deck.total_rows }}</td>
+                                    <td>
+                                        <a href="{% url 'seat_plan_editor' deck.id %}"
+                                            class="btn btn-xs btn-outline-primary">
+                                            <i class="fa-solid fa-compass-drafting me-1"></i> Design Layout
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <ul class="action">
+                                            <li class="edit">
+                                                <span class="edit-icon-span">
+                                                    <i class="fa-regular fa-pen-to-square edit-icon"
+                                                        data-bs-toggle="modal" data-bs-target="#editDeckModal"
+                                                        data-id="{{ deck.id }}" data-name="{{ deck.name }}"
+                                                        data-level="{{ deck.level_order }}"
+                                                        data-cols="{{ deck.grid_cols }}"
+                                                        data-rows="{{ deck.total_rows }}">
+                                                    </i>
+                                                </span>
+                                            </li>
+                                            <li class="delete" data-id="{{ deck.id }}">
+                                                <span class="delete-icon-span">
+                                                    <i class="fa-solid fa-trash-can delete-icon" data-id="{{ deck.id }}"
+                                                        data-bs-toggle="modal" data-bs-target="#deleteDeckModal">
+                                                    </i>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Add Deck Modal -->
+<div class="modal fade" id="addDeckModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Deck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <form class="form theme-form dark-inputs">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Deck Name</label>
+                            <input class="form-control btn-pill" id="newDeckName" type="text"
+                                placeholder="e.g. 1st Floor">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Level Order</label>
+                            <input class="form-control btn-pill" id="newDeckLevel" type="number" value="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Grid Cols</label>
+                            <input class="form-control btn-pill" id="newDeckCols" type="number" value="24">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Total Rows</label>
+                            <input class="form-control btn-pill" id="newDeckRows" type="number" value="20">
+                        </div>
+                    </div>
+                    <div class="error-success-div p-6 mt-3"></div>
+                    <div class="text-end mt-4">
+                        <button class="btn btn-primary custom-large-btn me-2" type="submit">Add Deck</button>
+                        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Deck Modal -->
+<div class="modal fade" id="editDeckModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Deck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <form class="form theme-form dark-inputs">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Deck Name</label>
+                            <input class="form-control btn-pill" id="editDeckName" type="text">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Level Order</label>
+                            <input class="form-control btn-pill" id="editDeckLevel" type="number">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Grid Cols</label>
+                            <input class="form-control btn-pill" id="editDeckCols" type="number">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Total Rows</label>
+                            <input class="form-control btn-pill" id="editDeckRows" type="number">
+                        </div>
+                    </div>
+                    <div class="error-success-div p-6 mt-3"></div>
+                    <div class="text-end mt-4">
+                        <button class="btn btn-primary custom-large-btn me-2" type="submit">Save Changes</button>
+                        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Deck Modal -->
+<div class="modal fade" id="deleteDeckModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24">
+                        <path fill="#ce2222"
+                            d="M10 5h4a2 2 0 1 0-4 0M8.5 5a3.5 3.5 0 1 1 7 0h5.75a.75.75 0 0 1 0 1.5h-1.32l-1.17 12.111A3.75 3.75 0 0 1 15.026 22H8.974a3.75 3.75 0 0 1-3.733-3.389L4.07 6.5H2.75a.75.75 0 0 1 0-1.5zm2 4.75a.75.75 0 0 0-1.5 0v7.5a.75.75 0 0 0 1.5 0zM14.25 9a.75.75 0 0 0-.75.75v7.5a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75" />
+                    </svg>
+                </div>
+                <h4>Are you sure?</h4>
+                <p class="mb-4">This will permanently delete this deck and all its seat layouts.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button id="confirmDeleteDeck" class="btn btn-danger">Yes, Delete</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="actionSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <div class="text-center">
+                <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success"
+                    style="width: 100px; height: 100px;" />
+            </div>
+            <h5 class="mt-3">Success!</h5>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+<script>
+    // --- UTILS ---
+    function showMessage(container, type, message) {
+        container
+            .removeClass("error-message success-message")
+            .addClass(type + "-message")
+            .text(message)
+            .addClass("show");
+
+        if (type === 'success') {
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    // --- SHIP SETTINGS ---
+    $("#shipSettingsForm").on("submit", function (e) {
+        e.preventDefault();
+        const btn = $(this).find("button[type=submit]");
+        const msgDiv = $("#shipMsg");
+
+        btn.prop("disabled", true);
+
+        fetch("{% url 'ship_details' ship.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                action: "update_ship",
+                name: $("#shipName").val(),
+                code: $("#shipCode").val(),
+                total_capacity: $("#shipCapacity").val()
+            })
+        })
+            .then(r => r.json())
+            .then(d => {
+                showMessage(msgDiv, d.status, d.message);
+                btn.prop("disabled", false);
+            });
+    });
+
+    // --- ADD DECK ---
+    $("#addDeckModal form").on("submit", function (e) {
+        e.preventDefault();
+
+        fetch("{% url 'ship_details' ship.id %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({
+                action: "add_deck",
+                name: $("#newDeckName").val(),
+                level_order: $("#newDeckLevel").val(),
+                grid_cols: $("#newDeckCols").val(),
+                total_rows: $("#newDeckRows").val()
+            })
+        })
+            .then(r => r.json())
+            .then(d => {
+                const div = $(this).find(".error-success-div");
+                showMessage(div, d.status, d.message);
+            });
+    });
+
+    // --- EDIT DECK ---
+    let editDeckId = null;
+    $(document).on("click", ".edit-icon", function () {
+        const ds = this.dataset;
+        editDeckId = ds.id;
+        $("#editDeckName").val(ds.name);
+        $("#editDeckLevel").val(ds.level);
+        $("#editDeckCols").val(ds.cols);
+        $("#editDeckRows").val(ds.rows);
+    });
+
+    $("#editDeckModal form").on("submit", function (e) {
+        e.preventDefault();
+        fetch("{% url 'ship_details' ship.id %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({
+                action: "edit_deck",
+                id: editDeckId,
+                name: $("#editDeckName").val(),
+                level_order: $("#editDeckLevel").val(),
+                grid_cols: $("#editDeckCols").val(),
+                total_rows: $("#editDeckRows").val()
+            })
+        })
+            .then(r => r.json())
+            .then(d => {
+                const div = $(this).find(".error-success-div");
+                showMessage(div, d.status, d.message);
+            });
+    });
+
+    // --- DELETE DECK ---
+    let deleteDeckId = null;
+    $(document).on("click", ".delete-icon", function () {
+        deleteDeckId = this.dataset.id;
+    });
+
+    $("#confirmDeleteDeck").on("click", function () {
+        fetch("{% url 'ship_details' ship.id %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({
+                action: "delete_deck",
+                id: deleteDeckId
+            })
+        })
+            .then(r => r.json())
+            .then(d => {
+                $("#deleteDeckModal").modal('hide');
+                if (d.status === 'success') {
+                    $("#actionSuccessModal").modal('show');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    alert(d.message);
+                }
+            });
+    });
+</script>
+{% endblock %}

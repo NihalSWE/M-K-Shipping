@@ -1,0 +1,433 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    .color-badge {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        display: inline-block;
+        vertical-align: middle;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .icon-preview { font-size: 20px; color: #555; }
+
+    /* Modern Toggle Switch Styling (Disabled State) */
+    .form-switch .form-check-input:disabled {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+        opacity: 1 !important; /* Force visibility */
+        background-color: #198754; /* Success Green */
+        border-color: #198754;
+        cursor: not-allowed;
+    }
+    
+    .switch-label {
+        font-weight: 600;
+        color: #198754;
+        vertical-align: sub;
+        margin-left: 8px;
+    }
+
+    /* Standard Utilities */
+    .custom-large-btn:hover{ background-color: #4a3dd9 !important; }
+    .edit-icon, .delete-icon {
+        cursor: pointer; font-size: 20px !important; transition: 0.3s; margin: 0 5px;
+    }
+    .edit-icon:hover, .delete-icon:hover { transform: scale(1.2); }
+    .edit-icon { color: #4a3dd9; }
+    .delete-icon { color: #ff3333; }
+
+    .error-success-div {
+        max-height: 0; opacity: 0; padding: 10px 20px; border-radius: 20px;
+        overflow: hidden; transition: all 0.3s ease; margin-top: 10px;
+    }
+    .error-success-div.show { max-height: 200px; opacity: 1; }
+    .success-message{ background-color: #10cf1057; color: #096009; }
+    .error-message{ background-color: #ff0d0d78 !important; color: #890000; }
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div class="container-fluid datatable-init">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h3>Ticket Categories (Bookable)</h3>
+                            <p class="text-muted mb-0">Manage cabins, seats, and rooms available for booking.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-pill btn-primary btn-lg custom-large-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+                                    <i class="fa-solid fa-plus me-2"></i> Add Category
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                    <table class="display table-striped border" id="basic-1">
+                        <thead>
+                        <tr>
+                            <th># S/L</th>
+                            <th>Preview</th>
+                            <th>Name</th>
+                            <th>Capacity</th>
+                            <th>Description</th>
+                            <th>Icon</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                                <tr data-id="{{ cat.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td class="text-center">
+                                        <span class="color-badge" style="background-color: {{ cat.color_code }};" title="{{ cat.color_code }}"></span>
+                                    </td>
+                                    
+                                    <td>{{ cat.name }}</td>
+                                    <td>
+                                        <span class="badge badge-light-primary text-dark" style="font-size: 14px;">
+                                            <i class="fa-solid fa-user-group me-1"></i> {{ cat.capacity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ cat.description|truncatechars:40 }}</td>
+                                    
+                                    <td>
+                                        {% if cat.icon %}
+                                            <iconify-icon icon="{{ cat.icon.iconify_code }}" style="font-size: 24px; vertical-align: middle;"></iconify-icon>
+                                        {% else %} - {% endif %}
+                                    </td>
+
+                                    <td> 
+                                        <div class="d-flex">
+                                            <i class="fa-regular fa-pen-to-square edit-icon"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#editModal"
+                                               data-id="{{ cat.id }}"
+                                               data-name="{{ cat.name }}"
+                                               data-capacity="{{ cat.capacity }}"
+                                               data-desc="{{ cat.description }}"
+                                               data-color="{{ cat.color_code }}"
+                                               data-icon-id="{{ cat.icon.id }}"
+                                            ></i>
+                                            <i class="fa-solid fa-trash-can delete-icon" 
+                                               data-id="{{ cat.id }}" 
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#deleteConfirmationModal"
+                                            ></i>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal Starts -->
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Add Ticket Category</h3>
+                <form class="form theme-form">
+                    {% csrf_token %}
+                    
+                    <div class="d-flex justify-content-center mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="add-bookable" checked disabled>
+                            <label class="form-check-label switch-label" for="add-bookable">Item is Bookable</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Category Name</label>
+                                <input class="form-control btn-pill" id="add-name" type="text" placeholder="e.g. VIP Cabin">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Capacity (Pax)</label>
+                                <input class="form-control btn-pill" id="add-capacity" type="number" min="1" value="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control btn-pill" id="add-desc" rows="2" placeholder="Detail info for users..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Visual Color</label>
+                                <input class="form-control form-control-color w-100" id="add-color" type="color" value="#4a3dd9" style="height: 45px;">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Category Icon</label>
+                                <select class="form-select icon-select2" id="add-icon"> <option value="">Select Icon</option>
+                                    {% for icon in all_icons %}
+                                        <option value="{{ icon.id }}" data-iconify="{{ icon.iconify_code }}">{{ icon.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div text-center fw-bold"></div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Create Category</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Add Modal Ends -->
+
+<!-- Edit Modal Starts -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Edit Ticket Category</h3>
+                <form class="form theme-form">
+                    {% csrf_token %}
+                    
+                     <div class="d-flex justify-content-center mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" checked disabled>
+                            <label class="form-check-label switch-label">Item is Bookable</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Category Name</label>
+                                <input class="form-control btn-pill" id="edit-name" type="text">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Capacity (Pax)</label>
+                                <input class="form-control btn-pill" id="edit-capacity" type="number" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control btn-pill" id="edit-desc" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Visual Color</label>
+                                <input class="form-control form-control-color w-100" id="edit-color" type="color">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Category Icon</label>
+                                <select class="form-select icon-select2" id="edit-icon">
+                                    <option value="">Select Icon</option>
+                                    {% for icon in all_icons %}
+                                        <option value="{{ icon.id }}" data-iconify="{{ icon.iconify_code }}">{{ icon.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div text-center fw-bold"></div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Edit Modal Ends -->
+
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4">
+            <div class="mb-3 text-danger">
+                <i class="fa-solid fa-circle-exclamation fa-4x"></i>
+            </div>
+            <h4>Delete Category?</h4>
+            <p class="text-muted">This will permanently delete this ticket category.</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button id="confirm-delete" class="btn btn-danger">Yes, Delete</button>
+                <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <div>
+                <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" style="width: 120px;"/>
+            </div>
+            <h5 class="mt-2">Deleted!</h5>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+<script>
+    // --- Select2 Icon Rendering ---
+    function formatIcon(state) {
+        if (!state.id) return state.text;
+        // Get the iconify code from the data attribute we added in the HTML loop
+        const iconCode = $(state.element).data('iconify');
+        return $(`<span><iconify-icon icon="${iconCode}" style="vertical-align: middle; margin-right: 10px; font-size: 20px;"></iconify-icon> ${state.text}</span>`);
+    }
+
+    $(document).ready(function() {
+        $('.icon-select2').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: null, // We'll fix this per modal below
+            templateResult: formatIcon,
+            templateSelection: formatIcon
+        });
+
+        // Fix for Select2 inside Bootstrap Modals
+        $('#addModal').on('shown.bs.modal', function () {
+            $('#add-icon').select2({ theme: 'bootstrap-5', dropdownParent: $('#addModal'), templateResult: formatIcon, templateSelection: formatIcon });
+        });
+        $('#editModal').on('shown.bs.modal', function () {
+            $('#edit-icon').select2({ theme: 'bootstrap-5', dropdownParent: $('#editModal'), templateResult: formatIcon, templateSelection: formatIcon });
+        });
+    });
+
+    function showMessage(modalContext, type, message) {
+        const div = $(modalContext).find(".error-success-div");
+        div.removeClass("error-message success-message").addClass(type + "-message").text(message).addClass("show");
+        if (type === "success") { setTimeout(() => location.reload(), 1500); }
+    }
+
+    // --- ADD ---
+    $("#addModal form").on("submit", function(e) {
+        e.preventDefault();
+        const payload = {
+            action: "add",
+            name: $("#add-name").val(),
+            capacity: $("#add-capacity").val(),
+            description: $("#add-desc").val(),
+            color_code: $("#add-color").val(),
+            icon_id: $("#add-icon").val() // CHANGED: matches view
+        };
+
+        fetch("{% url 'manage_bookable_categories' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(d => showMessage("#addModal", d.status, d.message));
+    });
+
+    // --- EDIT ---
+    let editId = null;
+    $(document).on("click", ".edit-icon", function() {
+        const ds = this.dataset;
+        editId = ds.id;
+        $("#edit-name").val(ds.name);
+        $("#edit-capacity").val(ds.capacity);
+        $("#edit-desc").val(ds.desc);
+        $("#edit-color").val(ds.color);
+        
+        // Sets the select value and tells Select2 to refresh the UI
+        if (ds.iconId) {
+            $("#edit-icon").val(ds.iconId).trigger('change');
+        } else {
+            $("#edit-icon").val("").trigger('change');
+        }
+    });
+
+    $("#editModal form").on("submit", function(e) {
+        e.preventDefault();
+        const payload = {
+            action: "edit",
+            id: editId,
+            name: $("#edit-name").val(),
+            capacity: $("#edit-capacity").val(),
+            description: $("#edit-desc").val(),
+            color_code: $("#edit-color").val(),
+            icon_id: $("#edit-icon").val() 
+        };
+
+        fetch("{% url 'manage_bookable_categories' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(d => showMessage("#editModal", d.status, d.message));
+    });
+
+    // --- DELETE ---
+    let deleteId = null;
+    $(document).on("click", ".delete-icon", function() { deleteId = this.dataset.id; });
+
+    $("#confirm-delete").on("click", function() {
+        fetch("{% url 'manage_bookable_categories' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ action: "delete", id: deleteId })
+        })
+        .then(r => r.json())
+        .then(d => {
+            bootstrap.Modal.getInstance(document.getElementById("deleteConfirmationModal")).hide();
+            if(d.status === 'success'){
+                const successModal = new bootstrap.Modal(document.getElementById("deleteSuccessModal"));
+                successModal.show();
+                setTimeout(() => { successModal.hide(); location.reload(); }, 1500);
+            }
+        });
+    });
+</script>
+{% endblock %}

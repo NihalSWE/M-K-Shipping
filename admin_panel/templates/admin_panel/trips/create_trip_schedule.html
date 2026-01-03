@@ -1,0 +1,344 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    :root {
+        --brand-blue: #3065f3; 
+        --brand-blue-light: #eef2ff;
+        --text-main: #334155;
+        --border-color: #e2e8f0;
+    }
+
+    /* 1. BUTTON & INPUTS */
+    .form-label, .form-control, .form-select, .btn-save-fixed {
+        font-weight: 400 !important;
+        color: var(--text-main);
+    }
+
+    .btn-save-fixed {
+        background-color: var(--brand-blue) !important;
+        color: #ffffff !important;
+        padding: 12px 35px;
+        border-radius: 10px;
+        border: none;
+    }
+
+    /* 2. CALENDAR MODERNIZATION */
+    .flatpickr-calendar {
+        background: #fff !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12) !important;
+        border: none !important;
+        border-radius: 16px !important;
+        overflow: hidden;
+    }
+
+    .flatpickr-months {
+        background: var(--brand-blue-light) !important;
+        padding: 12px 0 !important;
+    }
+
+    .flatpickr-current-month {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        height: 30px !important;
+        color: var(--brand-blue) !important;
+    }
+
+    .flatpickr-monthDropdown-months {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background: transparent !important;
+        border: none !important;
+        color: var(--brand-blue) !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        cursor: pointer;
+        padding: 2px 25px 2px 10px !important;
+        margin-right: 0 !important;
+        outline: none !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233065f3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 5px center !important;
+        background-size: 12px !important;
+    }
+
+    .flatpickr-monthDropdown-months option {
+        background-color: #ffffff !important;
+        color: var(--text-main) !important;
+        padding: 10px !important;
+    }
+
+    .numInputWrapper {
+        width: 65px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    .numInputWrapper input {
+        background: transparent !important;
+        color: var(--brand-blue) !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        padding: 0 !important;
+    }
+    .numInputWrapper span { display: none !important; }
+
+    .flatpickr-prev-month, .flatpickr-next-month {
+        padding: 15px !important;
+        fill: var(--brand-blue) !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .flatpickr-innerContainer { padding: 10px !important; }
+
+    .flatpickr-day {
+        border-radius: 8px !important;
+        border: none !important;
+    }
+
+    .flatpickr-day.selected, 
+    .flatpickr-day.startRange, 
+    .flatpickr-day.endRange {
+        background: var(--brand-blue) !important;
+        box-shadow: none !important;
+    }
+
+    .flatpickr-day.inRange {
+        background: var(--brand-blue-light) !important;
+        box-shadow: -5px 0 0 var(--brand-blue-light), 5px 0 0 var(--brand-blue-light) !important;
+        color: var(--brand-blue) !important;
+    }
+
+    span.flatpickr-weekday {
+        font-weight: 600 !important;
+        color: #94a3b8 !important;
+        background: transparent !important;
+    }
+
+    /* --- TIME PICKER FIXES --- */
+    .flatpickr-time {
+        border-top: 1px solid var(--border-color) !important;
+        padding: 10px 0 !important;
+    }
+
+    /* Removes the messy blue background when clicking/focusing time units */
+    .flatpickr-time input:hover, 
+    .flatpickr-time input:focus,
+    .flatpickr-time .flatpickr-am-pm:hover,
+    .flatpickr-time .flatpickr-am-pm:focus {
+        background: #f1f5f9 !important; /* Soft gray instead of blue highlight */
+    }
+
+    .flatpickr-time .numInputWrapper {
+        width: 40% !important;
+    }
+
+    .select2-container--default .select2-selection--single {
+        background-color: #f8fafc !important;
+        border: 1px solid #efefef !important;
+        border-radius: 10px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Styling for the Day Picker buttons to match your design */
+    .day-checkbox {
+        display: none;
+    }
+    .day-label {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        min-width: 70px;
+    }
+    .day-checkbox:checked + .day-label {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-12">
+            <div class="card p-4 p-lg-5 shadow-sm border-0" style="border-radius: 20px;">
+                
+                <div class="mb-3">
+                    <h4 class="fw-bold text-dark mb-1">Create Trip Schedule</h4>
+                    <p class="text-muted small">Define a new blueprint to automatically generate future trips.</p>
+                </div>
+
+                <form id="scheduleForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-5 pb-4 border-bottom">
+                        <label class="form-label d-block text-muted small mb-3">Schedule Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" checked>
+                            <label class="ms-3 text-muted align-middle" for="isActive">Currently Active</label>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Assign Ship</label>
+                            <select name="ship_id" class="form-select select2" required>
+                                {% for ship in ships %}
+                                    <option value="{{ ship.id }}">{{ ship.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Route Path</label>
+                            <select name="route_id" class="form-select select2" required>
+                                {% for route in routes %}
+                                    <option value="{{ route.id }}">{{ route.source.name }} &rarr; {{ route.destination.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Pick Specific Trip Dates</label>
+                            <input type="text" id="dateRange" name="date_range" class="form-control" 
+                                placeholder="Click to select multiple dates" required 
+                                style="background-color: #f8fafc; border-radius: 10px; height: 45px;">
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Departure Time</label>
+                            <input type="text" id="timePicker" name="departure_time" class="form-control" 
+                                placeholder="Pick time" required style="background-color: #f8fafc; border-radius: 10px;">
+                        </div>
+
+                        {% comment %} <div class="col-md-6">
+                            <label class="form-label text-muted small">Arrival Time</label>
+                            <input type="text" id="arrivalTimePicker" name="arrival_time" class="form-control" 
+                                placeholder="Pick time" required style="background-color: #f8fafc; border-radius: 10px;">
+                        </div> {% endcomment %}
+
+                        <div class="row g-4">
+                            <div class="col-12 mt-4">
+                                <div id="responseMessage" class="mb-0" style="display: none; border-radius: 12px; border: none; font-weight: 500;"></div>
+                            </div>
+
+                            <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
+                                <a href="{% url 'trip_schedule_list' %}" class="back-link-custom">
+                                    <i class="fa-solid fa-arrow-left-long me-2"></i>Back
+                                </a>
+                                <button type="submit" id="submitBtn" class="btn-save-fixed">
+                                    <span class="btn-text">Save Schedule & Generate Trips</span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#dateRange", {
+            mode: "multiple", // CHANGE: changed from 'range' to 'multiple'
+            conjunction: ", ", // This separates dates with a comma in the input field
+            showMonths: 1,
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            prevArrow: '<i class="fa fa-chevron-left"></i>',
+            nextArrow: '<i class="fa fa-chevron-right"></i>'
+        });
+
+        // Standard Time Picker for Departure
+        flatpickr("#timePicker", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "h:i K",
+            time_24hr: false
+        });
+
+        // REMOVED: #arrivalTimePicker initialization (as requested)
+
+        const form = document.getElementById('scheduleForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const responseDiv = document.getElementById('responseMessage');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.querySelector('.spinner-border').classList.remove('d-none');
+
+            fetch("{% url 'save_trip_schedule' %}", {
+                method: "POST",
+                body: new FormData(this),
+                headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                responseDiv.style.display = 'block';
+                // 2. PINPOINT CHANGE: MODERN STYLING (Opacity reduced via rgba)
+                if (data.success) {
+                    responseDiv.style.backgroundColor = "rgba(40, 167, 69, 0.15)"; // Green with opacity
+                    responseDiv.style.color = "#1e7e34";
+                    responseDiv.style.padding = "15px";
+                    responseDiv.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i> ${data.message}`;
+                    setTimeout(() => window.location.href = "{% url 'trip_schedule_list' %}", 2000);
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                responseDiv.style.display = 'block';
+                responseDiv.style.backgroundColor = "rgba(220, 53, 69, 0.15)"; // Red with opacity
+                responseDiv.style.color = "#a71d2a";
+                responseDiv.style.padding = "15px";
+                responseDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle me-2"></i> ${error.message}`;
+                submitBtn.disabled = false;
+                submitBtn.querySelector('.spinner-border').classList.add('d-none');
+            });
+        });
+    });
+</script>
+{% endblock %}

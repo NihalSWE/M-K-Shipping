@@ -1,0 +1,39 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Manage Blog Page Banner</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Page Title (e.g. "Our Latest News")</label>
+                            {{ form.title }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Banner Background Image(1920*500)</label>
+                            {{ form.background_image }}
+                            
+                            {% if current_banner.background_image %}
+                                <div class="mt-3">
+                                    <small class="text-muted">Current Active Banner:</small><br>
+                                    <img src="{{ current_banner.background_image.url }}" class="img-fluid rounded mt-2" style="max-height: 150px; width: 100%; object-fit: cover;">
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Update Banner</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

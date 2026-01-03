@@ -1,0 +1,45 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3>Our Story Section</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Subtitle (Small Top Text)</label>
+                        <input type="text" name="subtitle" class="form-control" value="{{ story.subtitle }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Main Title</label>
+                        <input type="text" name="title" class="form-control" value="{{ story.title }}" required>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" rows="5" required>{{ story.description }}</textarea>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label>Side Image(420*423)</label>
+                        <input type="file" name="story_image" class="form-control">
+                        {% if story.story_image %}
+                            <img src="{{ story.story_image.url }}" width="150" class="mt-2 rounded">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" {% if story.is_active or not story %}checked{% endif %}>
+                            <label>Show This Section?</label>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Story</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

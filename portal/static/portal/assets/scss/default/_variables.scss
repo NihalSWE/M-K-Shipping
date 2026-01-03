@@ -1,0 +1,111 @@
+:root {
+
+    // themes color
+    --color-primary: #BA6827;
+    --color-primary-btn: #614CE1;
+    --color-primary-2: #4C4FF8;
+    --color-secondary: #1F1F25;
+    --color-secondary-2: #FF6354;
+    // bg color
+    --color-bg-1: #FFF1E6;
+    --color-bg-2: #FFD7B7;
+    --color-bg-3: #DAF2FF;
+    --color-bg-4: #89D6FF;
+    --color-bg-5: #FFF5EE;
+    --color-home-bg: #FFF8F3;
+    --color-hiking-bg: #F5FCFF;
+    --color-yacht-bg: #F5FCFF;
+    // border color
+    --color-border: #FFDBBF;
+    // title color
+    --color-heading-1: #5B3516;
+    --color-body-1: #797979;
+    --color-title: #26262C;
+    --color-title-dark: #0D0D0D;
+    --color-title-nav: #26262C;
+    --color-white:#fff;
+    --color-service-heading: rgba(0, 0, 0, 0.8);
+    --counter-title: #717383;
+    // notify Colors
+    --color-success: #26CF4B;
+    --color-danger: #FF0003;
+    --color-warning: #FF8F3C;
+    --color-info: #1BA2DB;
+    //Social icon colors
+    --color-facebook: #3B5997;
+    --color-twitter: #1BA1F2;
+    --color-youtube: #ED4141;
+    --color-linkedin: #0077B5;
+    --color-pinterest: #E60022;
+    --color-instagram: #C231A1;
+    --color-vimeo: #00ADEF;
+    --color-twitch: #6441A3;
+    --color-discord: #7289da;
+
+    // subscribe form background
+    --subscribe-form: linear-gradient(0deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.80) 100%), #BCBFDB;
+    
+    // footer background
+    --footer-bg: linear-gradient(257deg, #DEFFE6 1.73%, rgba(201, 192, 255, 0.08) 98.79%);
+
+    // Font weight
+    --p-light: 300;
+    --p-regular: 400;
+    --p-medium: 500;
+    --p-semi-bold: 600;
+    --p-bold: 700;
+    --p-extra-bold: 800;
+    --p-black: 900;
+
+    // Font weight
+    --s-light: 300;
+    --s-regular: 400;
+    --s-medium: 500;
+    --s-semi-bold: 600;
+    --s-bold: 700;
+    --s-extra-bold: 800;
+    --s-black: 900;
+
+    //transition easing
+    --transition: all 0.4s;
+
+    // Font Family
+    --font-primary: "Sunsive";
+    --font-secondary: "Sunsive";
+    --font-three: "Font Awesome 6 Pro";
+    --font-four: "Roboto", sans-serif;
+
+    //Fonts Size
+    --font-size-b1: 16px;
+
+    --font-size-b2: 16px;
+    --font-size-b3: 22px;
+
+
+    //Line Height
+    --line-height-b1: 26px;
+
+    --line-height-b2: 26px;
+    --line-height-b3: 1.7;
+
+
+    // Heading Font
+    --h1: 60px;
+    --h2: 48px;
+    --h3: 40px;
+    --h4: 32px;
+    --h5: 24px;
+    --h6: 20px;
+}
+
+// Layouts Variation
+$smlg-device: 'only screen and (max-width: 1199px)';
+$extra-device: 'only screen and (min-width: 1600px) and (max-width: 1919px)';
+$laptop-device: 'only screen and (min-width: 1200px) and (max-width: 1599px)';
+$lg-layout: 'only screen and (min-width: 992px) and (max-width: 1199px)';
+$md-layout:'only screen and (min-width: 768px) and (max-width: 991px)';
+$sm-layout:'only screen and (max-width: 767px)';
+$large-mobile: 'only screen and (max-width: 575px)';
+$small-mobile: 'only screen and (max-width: 479px)';
+
+

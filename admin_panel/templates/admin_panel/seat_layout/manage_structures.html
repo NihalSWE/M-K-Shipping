@@ -1,0 +1,419 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    /* Custom Styling for Visuals */
+    .color-badge {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        display: inline-block;
+        vertical-align: middle;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .icon-preview {
+        font-size: 20px;
+        color: #555;
+    }
+
+    /* Reuse your existing styles */
+    .custom-large-btn:hover{ background-color: #4a3dd9 !important; }
+    .custom-delete-btn:hover{ background-color: #ff0000 !important; }
+    .modal-body{ padding-top: 34px !important; }
+    .success-message{ background-color: #10cf1057; color: #096009; }
+    .error-message{ background-color: #ff0d0d78 !important; color: #890000; }
+    
+    .edit-icon, .delete-icon {
+        cursor: pointer;
+        font-size: 20px !important;
+        transition: 0.3s ease-in-out;
+        margin: 0 5px;
+    }
+    .edit-icon:hover, .delete-icon:hover { transform: scale(1.2); }
+    .edit-icon { color: #4a3dd9; }
+    .delete-icon { color: #ff3333; }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+    .error-success-div.show { max-height: 200px; opacity: 1; }
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div class="container-fluid datatable-init">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h3>Layout Structures & Labels</h3>
+                            <p class="text-muted mb-0">Manage non-bookable items (Corridors, Walls, Labels)</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-pill btn-primary btn-lg custom-large-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+                                    <i class="fa-solid fa-plus me-2"></i> Add Structure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                    <table class="display table-striped border" id="basic-1">
+                        <thead>
+                        <tr>
+                            <th># S/L</th>
+                            <th>Preview</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Icon Tag</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {% for struct in structures %}
+                                <tr data-id="{{ struct.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td class="text-center">
+                                        <span class="color-badge" style="background-color: {{ struct.color_code }};" title="{{ struct.color_code }}"></span>
+                                    </td>
+                                    
+                                    <td>{{ struct.name }}</td>
+                                    <td>{{ struct.description|truncatechars:50 }}</td>
+                                    
+                                    <td>
+                                        {% if struct.icon %}
+                                            <iconify-icon icon="{{ struct.icon.iconify_code }}" style="font-size: 24px; color: {{ struct.color_code }}"></iconify-icon>
+                                            <br><small class="text-muted">{{ struct.icon.name }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td> 
+                                        <div class="d-flex">
+                                            <i class="fa-regular fa-pen-to-square edit-icon"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#editModal"
+                                               data-id="{{ struct.id }}"
+                                               data-name="{{ struct.name }}"
+                                               data-desc="{{ struct.description }}"
+                                               data-color="{{ struct.color_code }}"
+                                               data-icon-id="{{ struct.icon.id }}"
+                                            ></i>
+                                            <i class="fa-solid fa-trash-can delete-icon" 
+                                               data-id="{{ struct.id }}" 
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#deleteConfirmationModal"
+                                            ></i>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal Starts -->
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Add Structure</h3>
+                <form class="form theme-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Structure Name</label>
+                        <input class="form-control btn-pill" id="add-name" type="text" placeholder="e.g. Corridor, Stairs, Label">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea class="form-control btn-pill" id="add-desc" rows="2" placeholder="Describe the usage..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Visual Color</label>
+                                <input class="form-control form-control-color w-100" id="add-color" type="color" value="#cccccc" style="height: 45px;">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Structure Icon</label>
+                                <select class="form-select icon-select2" id="add-icon"> <option value="">No Icon</option>
+                                    {% for icon in all_icons %}
+                                        <option value="{{ icon.id }}" data-iconify="{{ icon.iconify_code }}">{{ icon.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div text-center fw-bold"></div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Create Structure</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Add Modal Ends -->
+
+<!-- Edit Modal Starts -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Edit Structure</h3>
+                <form class="form theme-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Structure Name</label>
+                        <input class="form-control btn-pill" id="edit-name" type="text">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control btn-pill" id="edit-desc" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Visual Color</label>
+                                <input class="form-control form-control-color w-100" id="edit-color" type="color">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Structure Icon</label>
+                                <select class="form-select icon-select2" id="edit-icon"> 
+                                    <option value="">No Icon</option>
+                                    {% for icon in all_icons %}
+                                        <option value="{{ icon.id }}" data-iconify="{{ icon.iconify_code }}">{{ icon.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div text-center fw-bold"></div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Edit Modal Ends -->
+
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4">
+            <div class="mb-3 text-danger">
+                <i class="fa-solid fa-circle-exclamation fa-4x"></i>
+            </div>
+            <h4>Are you sure?</h4>
+            <p class="text-muted">This will permanently delete this structure category.</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button id="confirm-delete" class="btn btn-danger">Yes, Delete</button>
+                <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <div>
+                <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" style="width: 120px;"/>
+            </div>
+            <h5 class="mt-2">Done!</h5>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // --- Select2 Icon Preview Helper ---
+        function formatIcon(opt) {
+            if (!opt.id) return opt.text;
+            // Get the iconify code from the data-iconify attribute on the <option>
+            const iconCode = $(opt.element).data('iconify');
+            return $(`<span><iconify-icon icon="${iconCode}" style="vertical-align: middle; margin-right: 10px; font-size: 20px;"></iconify-icon> ${opt.text}</span>`);
+        }
+
+        // Initialize Select2 for Add Modal
+        $('#add-icon').select2({
+            dropdownParent: $('#addModal'),
+            templateResult: formatIcon,
+            templateSelection: formatIcon,
+            width: '100%'
+        });
+
+        // Initialize Select2 for Edit Modal
+        $('#edit-icon').select2({
+            dropdownParent: $('#editModal'),
+            templateResult: formatIcon,
+            templateSelection: formatIcon,
+            width: '100%'
+        });
+
+        // --- Helpers ---
+        function showMessage(modalContext, type, message) {
+            const div = $(modalContext).find(".error-success-div");
+            div.removeClass("error-message success-message")
+               .addClass(type + "-message")
+               .text(message)
+               .addClass("show");
+
+            if (type === "success") {
+                setTimeout(() => location.reload(), 1500);
+            }
+        }
+
+        // --- ADD Logic ---
+        $("#addModal form").on("submit", function(e) {
+            e.preventDefault();
+            const payload = {
+                action: "add",
+                name: $("#add-name").val(),
+                description: $("#add-desc").val(),
+                color_code: $("#add-color").val(),
+                icon_id: $("#add-icon").val() // Changed to icon_id
+            };
+
+            fetch("{% url 'manage_structures' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(d => showMessage("#addModal", d.status, d.message));
+        });
+
+        // --- EDIT Logic ---
+        let editId = null;
+
+        // Populate Edit Modal
+        $(document).on("click", ".edit-icon", function() {
+            const ds = this.dataset;
+            editId = ds.id;
+            $("#edit-name").val(ds.name);
+            $("#edit-desc").val(ds.desc);
+            $("#edit-color").val(ds.color);
+            
+            // Set the Icon ID and trigger Select2 to update the visual UI
+            if (ds.iconId && ds.iconId !== "None" && ds.iconId !== "") {
+                $("#edit-icon").val(ds.iconId).trigger('change');
+            } else {
+                $("#edit-icon").val("").trigger('change');
+            }
+        });
+
+        // Submit Edit
+        $("#editModal form").on("submit", function(e) {
+            e.preventDefault();
+            const payload = {
+                action: "edit",
+                id: editId,
+                name: $("#edit-name").val(),
+                description: $("#edit-desc").val(),
+                color_code: $("#edit-color").val(),
+                icon_id: $("#edit-icon").val() // Changed to icon_id
+            };
+
+            fetch("{% url 'manage_structures' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(d => showMessage("#editModal", d.status, d.message));
+        });
+
+        // --- DELETE Logic ---
+        let deleteId = null;
+
+        $(document).on("click", ".delete-icon", function() {
+            deleteId = this.dataset.id;
+        });
+
+        $("#confirm-delete").on("click", function() {
+            fetch("{% url 'manage_structures' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ action: "delete", id: deleteId })
+            })
+            .then(r => r.json())
+            .then(d => {
+                // Hide confirm modal
+                bootstrap.Modal.getInstance(document.getElementById("deleteConfirmationModal")).hide();
+                
+                if(d.status === 'success'){
+                    const successModal = new bootstrap.Modal(document.getElementById("deleteSuccessModal"));
+                    successModal.show();
+                    setTimeout(() => {
+                        successModal.hide();
+                        location.reload();
+                    }, 1500);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="sign-in-area">
+        <div class="image radius-10 overflow-hidden">
+            <img src="{% static 'portal/assets/images/contact/02.webp'%}" width="1245" alt="">
+        </div>
+        <div class="sign-in-form radius-10 overflow-hidden body-bg-one">
+            <div class="logo-area">
+                <a href="{% url 'home' %}"><img src="{% static 'portal/assets/images/logo/02.svg'%}" alt=""></a>
+            </div>
+            <h4 class="title">Sign Up</h4>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-3">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form action="{% url 'signup' %}" method="POST">
+                {% csrf_token %}
+                
+                <div class="single-input-wrapper">
+                    <label for="fname">First Name*</label>
+                    <input type="text" name="first_name" id="fname" placeholder="Your first name" required>
+                </div>
+                
+                <div class="single-input-wrapper">
+                    <label for="lname">Last Name*</label>
+                    <input type="text" name="last_name" id="lname" placeholder="Your last name" required>
+                </div>
+                
+                <div class="single-input-wrapper">
+                    <label for="fmail">Email*</label>
+                    <input type="email" name="email" id="fmail" placeholder="Your email address" required>
+                </div>
+                
+                <div class="single-input-wrapper">
+                    <label for="fpass">Password</label>
+                    <input type="password" name="password" id="fpass" placeholder="Enter your password" required>
+                </div>
+
+                <div class="single-input-wrapper">
+                    <label for="fcpass">Confirm Password*</label>
+                    <input type="password" name="confirm_password" id="fcpass" placeholder="Confirm your password" required>
+                </div>
+                
+                <button type="submit" class="rts-btn btn-primary m-w-100 text-center justify-content-center with-arrow">
+                    Sign Up <i class="fa-regular fa-arrow-up up-right"></i>
+                </button>
+
+                <p class="mt-3 text-center">Already have an account? <a href="{% url 'signin' %}">Sign In</a></p>
+            </form>
+            </div>
+    </div>
+    {% endblock content %}

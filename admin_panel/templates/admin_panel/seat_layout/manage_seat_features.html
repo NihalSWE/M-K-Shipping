@@ -1,0 +1,238 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+
+<style>
+    .custom-large-btn:hover{ background-color: #4a3dd9 !important; }
+    .modal-body{ padding-top: 34px !important; }
+    .success-message{ background-color: #10cf1057; color: #096009; }
+    .error-message{ background-color: #ff0d0d78 !important; color: #890000; }
+    
+    .edit-icon, .delete-icon {
+        cursor: pointer;
+        font-size: 20px !important;
+        transition: 0.3s ease-in-out;
+        margin: 0 5px;
+    }
+    .edit-icon:hover, .delete-icon:hover { transform: scale(1.2); }
+    .edit-icon { color: #4a3dd9; }
+    .delete-icon { color: #ff3333; }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+    .error-success-div.show { max-height: 200px; opacity: 1; }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h3>Seat Features</h3>
+                            <p class="text-muted mb-0">Manage searchable tags like 'AC', 'Quiet Zone', 'Window Side'</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-pill btn-primary btn-lg custom-large-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+                                <i class="fa-solid fa-plus me-2"></i> Add Feature
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th># S/L</th>
+                                    <th>Feature Name</th>
+                                    <th>Description</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feat in features %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ feat.name }}</td>
+                                    <td>{{ feat.description|default:"No description" }}</td>
+                                    <td>
+                                        <div class="d-flex">
+                                            <i class="fa-regular fa-pen-to-square edit-icon" 
+                                               data-bs-toggle="modal" data-bs-target="#editModal"
+                                               data-id="{{ feat.id }}" data-name="{{ feat.name }}" data-desc="{{ feat.description }}"></i>
+                                            <i class="fa-solid fa-trash-can delete-icon" 
+                                               data-id="{{ feat.id }}" data-bs-toggle="modal" data-bs-target="#deleteConfirmationModal"></i>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Add Seat Feature</h3>
+                <form class="theme-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Feature Name</label>
+                        <input class="form-control btn-pill" id="add-name" type="text" placeholder="e.g. Extra Legroom">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control btn-pill" id="add-desc" rows="2"></textarea>
+                    </div>
+                    <div class="error-success-div text-center fw-bold"></div>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Save Feature</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h3 class="text-center mb-4">Edit Feature</h3>
+                <form class="theme-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Feature Name</label>
+                        <input class="form-control btn-pill" id="edit-name" type="text">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control btn-pill" id="edit-desc" rows="2"></textarea>
+                    </div>
+                    <div class="error-success-div text-center fw-bold"></div>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-secondary me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary custom-large-btn" type="submit">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4">
+            <div class="mb-3 text-danger"><i class="fa-solid fa-circle-exclamation fa-4x"></i></div>
+            <h4>Are you sure?</h4>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button id="confirm-delete" class="btn btn-danger">Yes, Delete</button>
+                <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" style="width: 120px; margin: 0 auto;"/>
+            <h5 class="mt-2">Deleted!</h5>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    function showMsg(modal, type, msg) {
+        const div = $(modal).find(".error-success-div");
+        div.removeClass("error-message success-message").addClass(type + "-message").text(msg).addClass("show");
+        if (type === "success") setTimeout(() => location.reload(), 1200);
+    }
+
+    // ADD
+    $("#addModal form").on("submit", function(e) {
+        e.preventDefault();
+        fetch("{% url 'manage_seat_features' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
+            body: JSON.stringify({
+                action: "add",
+                name: $("#add-name").val(),
+                description: $("#add-desc").val()
+            })
+        }).then(r => r.json()).then(d => showMsg("#addModal", d.status, d.message));
+    });
+
+    // EDIT POPULATE
+    let editId = null;
+    $(document).on("click", ".edit-icon", function() {
+        const ds = this.dataset;
+        editId = ds.id;
+        $("#edit-name").val(ds.name);
+        $("#edit-desc").val(ds.desc);
+    });
+
+    // EDIT SUBMIT
+    $("#editModal form").on("submit", function(e) {
+        e.preventDefault();
+        fetch("{% url 'manage_seat_features' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
+            body: JSON.stringify({
+                action: "edit",
+                id: editId,
+                name: $("#edit-name").val(),
+                description: $("#edit-desc").val()
+            })
+        }).then(r => r.json()).then(d => showMsg("#editModal", d.status, d.message));
+    });
+
+    // DELETE
+    let deleteId = null;
+    $(document).on("click", ".delete-icon", function() { deleteId = this.dataset.id; });
+    $("#confirm-delete").on("click", function() {
+        fetch("{% url 'manage_seat_features' %}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}"},
+            body: JSON.stringify({ action: "delete", id: deleteId })
+        }).then(r => r.json()).then(d => {
+            bootstrap.Modal.getInstance(document.getElementById("deleteConfirmationModal")).hide();
+            if(d.status === 'success'){
+                new bootstrap.Modal(document.getElementById("deleteSuccessModal")).show();
+                setTimeout(() => location.reload(), 1200);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

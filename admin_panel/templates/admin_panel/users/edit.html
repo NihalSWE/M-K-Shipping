@@ -1,0 +1,113 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+
+{% endblock custom_css %}
+{% block content %}
+
+<div class="container-fluid">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-12">
+            <h3 class="mb-1 text-dark" style="font-weight: 700;">Edit User</h3>
+            <p class="text-muted">Updating profile for: <strong>{{ user_obj.email }}</strong></p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <h6 class="text-primary mb-3 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Personal Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" value="{{ form.email.value|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number.value|default:'' }}">
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <h6 class="text-primary mb-3 mt-4 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Role & Status</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">User Type</label>
+                                {{ form.user_type }} 
+                                </div>
+                            <div class="col-md-4">
+                                <label class="form-label">User Status</label>
+                                {{ form.user_status }}
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center pt-4">
+                                <div class="form-check form-switch">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active Account?</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <h6 class="text-primary mb-3 mt-4 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Financial Settings</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Wallet Balance ($)</label>
+                                <input type="number" step="0.01" name="balance" class="form-control" value="{{ form.balance.value|default:'0.00' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Credit Limit ($)</label>
+                                <input type="number" step="0.01" name="credit_limit" class="form-control" value="{{ form.credit_limit.value|default:'0.00' }}">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-5">
+                            <a href="{% url 'admin_user_list' %}" class="btn btn-light me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    select {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        appearance: none;
+    }
+</style>
+
+{% endblock content %}

@@ -1,0 +1,33 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3>About Page Banner</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label>Banner Title</label>
+                    <input type="text" name="title" class="form-control" value="{{ banner.title }}" required>
+                </div>
+                <div class="mb-3">
+                    <label>Background Image</label>
+                    <input type="file" name="background_image" class="form-control">
+                    {% if banner.background_image %}
+                        <img src="{{ banner.background_image.url }}" width="200" class="mt-2 rounded">
+                    {% endif %}
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="is_active" {% if banner.is_active or not banner %}checked{% endif %}>
+                    <label>Show Banner?</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Banner</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

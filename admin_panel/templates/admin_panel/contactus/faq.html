@@ -1,0 +1,233 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        
+        <div class="col-sm-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>FAQ Section Layout</h4>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm" class="theme-form" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_settings">
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">Section Title</label>
+                                <input class="form-control" name="title" value="{{ settings.title }}" required>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">Side Image(410 × 413 )</label>
+                                <input class="form-control" type="file" name="side_image">
+                                {% if settings.side_image %}
+                                    <div class="mt-2">
+                                        <img src="{{ settings.side_image.url }}" width="80" class="rounded">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2 mb-3 d-flex align-items-center">
+                                <div class="form-check form-switch mt-4">
+                                    <input class="form-check-input" type="checkbox" name="is_active" {% if settings.is_active %}checked{% endif %}>
+                                    <label class="form-check-label">Show Section</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-primary" type="submit">Update Layout</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Questions List</h4>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                        <i class="fa fa-plus me-2"></i> Add Question
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th>Question</th>
+                                    <th>Answer (Preview)</th>
+                                    <th>Order</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in faq_items %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td class="fw-bold">{{ item.question }}</td>
+                                    <td>{{ item.answer|truncatechars:50 }}</td>
+                                    <td>{{ item.order }}</td>
+                                    <td>
+                                        {% if item.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Hidden</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <i class="fa fa-edit text-primary cursor-pointer me-2 edit-btn" 
+                                           data-bs-toggle="modal" data-bs-target="#editModal"
+                                           data-id="{{ item.id }}"
+                                           data-q="{{ item.question }}"
+                                           data-a="{{ item.answer }}"
+                                           data-o="{{ item.order }}"
+                                           data-active="{{ item.is_active }}"></i>
+                                        
+                                        <i class="fa fa-trash text-danger cursor-pointer delete-btn" 
+                                           data-id="{{ item.id }}"></i>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Question</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_item">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Question</label>
+                        <input type="text" name="question" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Answer</label>
+                        <textarea name="answer" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Order</label>
+                            <input type="number" name="order" class="form-control" value="0">
+                        </div>
+                        <div class="col-6 mb-3 pt-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" checked>
+                                <label>Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Question</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit_item">
+                <input type="hidden" name="id" id="edit-id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Question</label>
+                        <input type="text" name="question" id="edit-q" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Answer</label>
+                        <textarea name="answer" id="edit-a" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Order</label>
+                            <input type="number" name="order" id="edit-o" class="form-control">
+                        </div>
+                        <div class="col-6 mb-3 pt-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="edit-active">
+                                <label>Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. UPDATE SETTINGS
+    document.getElementById("settingsForm").addEventListener("submit", function(e){
+        e.preventDefault();
+        fetch("", { method: "POST", body: new FormData(this) })
+        .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+    });
+
+    // 2. ADD ITEM
+    document.getElementById("addForm").addEventListener("submit", function(e){
+        e.preventDefault();
+        fetch("", { method: "POST", body: new FormData(this) })
+        .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+    });
+
+    // 3. OPEN EDIT MODAL
+    document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", function(){
+            document.getElementById("edit-id").value = this.dataset.id;
+            document.getElementById("edit-q").value = this.dataset.q;
+            document.getElementById("edit-a").value = this.dataset.a;
+            document.getElementById("edit-o").value = this.dataset.o;
+            document.getElementById("edit-active").checked = this.dataset.active === "True";
+        });
+    });
+
+    // 4. SUBMIT EDIT
+    document.getElementById("editForm").addEventListener("submit", function(e){
+        e.preventDefault();
+        fetch("", { method: "POST", body: new FormData(this) })
+        .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+    });
+
+    // 5. DELETE ITEM
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", function(){
+            if(confirm("Delete this question?")) {
+                let fd = new FormData();
+                fd.append("action", "delete_item");
+                fd.append("id", this.dataset.id);
+                fd.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+                fetch("", { method: "POST", body: fd })
+                .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+            }
+        });
+    });
+</script>
+{% endblock %}

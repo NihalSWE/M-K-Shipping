@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+{% comment %} <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/intltelinput.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/tagify.css' %}"> {% endcomment %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% comment %} <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/intltelinput.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/tagify.css' %}"> {% endcomment %}
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    .custom-large-btn:hover{
+        background-color: #4a3dd9 !important;
+    }
+
+    .custom-delete-btn:hover{
+        background-color: #ff0000 !important;
+    }
+
+    .success-message{
+        background-color: #10cf1057;
+        color: #096009;
+    }
+
+    .error-message{
+        background-color: #ff0d0d78 !important;
+        color: #890000;
+    }
+
+    .edit{
+        cursor: pointer;
+    }
+
+    .edit-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .edit-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete-icon{
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+
+    .delete-icon:hover{
+        transform: scale(1.15);
+    }
+
+    .delete{
+        cursor: pointer;
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .error-success-div.show {
+        /* adjust 200px to be comfortably larger than your tallest message */
+        max-height: 200px;
+        opacity: 1;
+    }
+    
+    .required-fields-mark{
+        color: red;
+    }
+
+    .tagify{
+        width: 100%;
+        height: 46px;
+        border-radius: 60px;
+        padding: 3px 20px;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-12">
+            <div class="card">
+                <!-- everything goes here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+        $('.regions-select').select2();
+    });
+</script>
+
+<script>
+    function showMessage(type, message) {
+        const div = $(".error-success-div");
+        function expand() {
+            div.removeClass("error-message success-message")
+               .addClass(type + "-message")
+               .text(message);
+            requestAnimationFrame(() => div.addClass("show"));
+            if (type === "success") setTimeout(() => location.reload(), 2000);
+        }
+        if (div.hasClass("show")) {
+            div.removeClass("show").one("transitionend", expand);
+        } else {
+            expand();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        $('form').on('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Clear existing region fields
+            formData.delete('regions');
+
+            // Append selected regions
+            /*$('.regions-select').val().forEach(val => {
+                formData.append('regions[]', val);
+            });*/
+
+            fetch("{% url 'add_product' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.status, data.message);
+                    $('form')[0].reset();
+                    $('.regions-select').val(null).trigger('change'); // reset select2
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(() => alert('Unexpected error'));
+        });
+    });     
+</script>
+
+{% endblock %}

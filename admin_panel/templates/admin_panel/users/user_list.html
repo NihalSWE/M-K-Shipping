@@ -1,0 +1,112 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="container-fluid">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-12">
+            <h3 class="mb-1 text-dark" style="font-weight: 700;">User Management</h3>
+            <p class="text-muted" style="font-size: 14px;">View and manage all registered users.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'user_add' %}" class="btn btn-primary text-white px-4 py-2" style="border-radius: 8px; font-weight: 600;">
+                <i class="fa-solid fa-plus me-2"></i> Add New User
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-uppercase text-muted" style="font-size: 12px; letter-spacing: 0.5px;">
+                                    <th style="padding: 15px 25px;">User Info</th>
+                                    <th style="padding: 15px 25px;">Role</th>
+                                    <th style="padding: 15px 25px;">Status</th>
+                                    <th style="padding: 15px 25px;">Joined Date</th>
+                                    <th style="padding: 15px 25px; text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td style="padding: 15px 25px;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3" 
+                                                 style="width: 40px; height: 40px; font-weight: bold;">
+                                                {{ user.email|slice:":1"|upper }}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 text-dark fw-bold">
+                                                    {{ user.first_name }} {{ user.last_name }}
+                                                </h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td style="padding: 15px 25px;">
+                                        {% if user.user_type == 0 %}
+                                            <span class="badge bg-danger text-white px-3 py-2 rounded-pill">Admin</span>
+                                        {% elif user.user_type == 1 %}
+                                            <span class="badge bg-success text-white px-3 py-2 rounded-pill">Customer</span>
+                                        {% elif user.user_type == 2 %}
+                                            <span class="badge bg-info text-white px-3 py-2 rounded-pill">Staff</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td style="padding: 15px 25px;">
+                                        {% if user.is_active %}
+                                            <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> Active</span>
+                                        {% else %}
+                                            <span class="text-muted"><i class="fa-solid fa-circle-xmark me-1"></i> Inactive</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td style="padding: 15px 25px; color: #666;">
+                                        {{ user.created_at|date:"d M, Y" }}
+                                    </td>
+
+                                    
+
+                                    <td style="padding: 15px 25px; text-align: right;">
+                                        <a href="{% url 'admin_user_edit' user.id %}" 
+                                           class="btn btn-sm btn-outline-primary me-1" 
+                                           title="Edit User">
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                        </a>
+                                    
+                                        {% if user != request.user %}
+                                            <a href="{% url 'admin_user_delete' user.id %}" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               onclick="return confirm('Are you sure?')"
+                                               title="Delete User">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+{% block scriptcontent %} 
+
+{% endblock %}

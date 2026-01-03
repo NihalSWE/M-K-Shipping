@@ -1,0 +1,204 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+<style>
+    :root {
+        --brand-blue: #3065f3; 
+        --brand-blue-light: #eef2ff;
+        --text-main: #334155;
+        --border-color: #e2e8f0;
+    }
+
+    /* BUTTON & INPUTS */
+    .form-label, .form-control, .form-select, .btn-save-fixed {
+        font-weight: 400 !important;
+        color: var(--text-main);
+    }
+
+    .btn-save-fixed {
+        background-color: var(--brand-blue) !important;
+        color: #ffffff !important;
+        padding: 12px 35px;
+        border-radius: 10px;
+        border: none;
+    }
+
+    /* CALENDAR MODERNIZATION */
+    .flatpickr-calendar {
+        background: #fff !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12) !important;
+        border: none !important;
+        border-radius: 16px !important;
+    }
+
+    .flatpickr-months {
+        background: var(--brand-blue-light) !important;
+        padding: 12px 0 !important;
+    }
+
+    .flatpickr-day.selected {
+        background: var(--brand-blue) !important;
+        border-color: var(--brand-blue) !important;
+    }
+
+    .select2-container--default .select2-selection--single {
+        background-color: #f8fafc !important;
+        border: 1px solid #efefef !important;
+        border-radius: 10px !important;
+        height: 45px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-12">
+            <div class="card p-4 p-lg-5 shadow-sm border-0" style="border-radius: 20px;">
+                
+                <div class="mb-3">
+                    <h4 class="fw-bold text-dark mb-1">Update Trip Schedule</h4>
+                    <p class="text-muted small">Modifying blueprint: <strong>{{ schedule.id }}</strong></p>
+                </div>
+
+                <form id="scheduleForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-5 pb-4 border-bottom">
+                        <label class="form-label d-block text-muted small mb-3">Schedule Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if schedule.is_active %}checked{% endif %}>
+                            <label class="ms-3 text-muted align-middle" for="isActive">Currently Active</label>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Assign Ship</label>
+                            <select name="ship_id" class="form-select select2" required>
+                                {% for ship in ships %}
+                                    <option value="{{ ship.id }}" {% if ship.id == schedule.ship_id %}selected{% endif %}>{{ ship.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Route Path</label>
+                            <select name="route_id" class="form-select select2" required>
+                                {% for route in routes %}
+                                    <option value="{{ route.id }}" {% if route.id == schedule.route_id %}selected{% endif %}>{{ route.source.name }} &rarr; {{ route.destination.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Pick Specific Trip Dates</label>
+                            <input type="text" id="dateRange" name="date_range" class="form-control" 
+                                value="{{ formatted_dates }}"
+                                placeholder="Click to select dates" required 
+                                style="background-color: #f8fafc; border-radius: 10px; height: 45px;">
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Departure Time</label>
+                            <input type="text" id="timePicker" name="departure_time" class="form-control" 
+                                value="{{ schedule.departure_time|time:'h:i A' }}"
+                                placeholder="Pick time" required style="background-color: #f8fafc; border-radius: 10px; height: 45px;">
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div id="responseMessage" class="mb-0" style="display: none; border-radius: 12px; border: none; font-weight: 500;"></div>
+                        </div>
+
+                        <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
+                            <a href="{% url 'trip_schedule_list' %}" class="back-link-custom">
+                                <i class="fa-solid fa-arrow-left-long me-2"></i>Back
+                            </a>
+                            <button type="submit" id="submitBtn" class="btn-save-fixed">
+                                <span class="btn-text">Update Schedule & Trips</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+
+        flatpickr("#dateRange", {
+            mode: "multiple",
+            conjunction: ", ",
+            dateFormat: "Y-m-d",
+            prevArrow: '<i class="fa fa-chevron-left"></i>',
+            nextArrow: '<i class="fa fa-chevron-right"></i>'
+        });
+
+        flatpickr("#timePicker", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "h:i K",
+            time_24hr: false
+        });
+
+        const form = document.getElementById('scheduleForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const responseDiv = document.getElementById('responseMessage');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.querySelector('.spinner-border').classList.remove('d-none');
+
+            fetch("{% url 'update_trip_schedule' schedule.id %}", {
+                method: "POST",
+                body: new FormData(this),
+                headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                responseDiv.style.display = 'block';
+                if (data.success) {
+                    responseDiv.style.backgroundColor = "rgba(40, 167, 69, 0.15)";
+                    responseDiv.style.color = "#1e7e34";
+                    responseDiv.style.padding = "15px";
+                    responseDiv.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i> ${data.message}`;
+                    setTimeout(() => window.location.href = "{% url 'trip_schedule_list' %}", 2000);
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                responseDiv.style.display = 'block';
+                responseDiv.style.backgroundColor = "rgba(220, 53, 69, 0.15)";
+                responseDiv.style.color = "#a71d2a";
+                responseDiv.style.padding = "15px";
+                responseDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle me-2"></i> ${error.message}`;
+                submitBtn.disabled = false;
+                submitBtn.querySelector('.spinner-border').classList.add('d-none');
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,585 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* --- 1. CORE VARIABLES --- */
+    :root {
+        --grid-cols: {{ deck.grid_cols }};
+        --cell-size: 44px;
+        --gap: 5px;
+        --primary: #2563eb;
+        --success: #10b981;
+        --bg-canvas: #f1f5f9;
+        --bg-panel: #ffffff;
+    }
+
+    /* --- 2. LAYOUT & RESPONSIVENESS --- */
+    .spe-wrapper {
+        display: flex;
+        height: 75vh; 
+        background: var(--bg-canvas);
+        font-family: 'Inter', sans-serif;
+        border: 1px solid #e2e8f0;
+        border-radius: 0 0 8px 8px;
+        overflow: hidden; /* Container doesn't scroll, children do */
+    }
+
+    .spe-no-select { user-select: none; -webkit-user-select: none; }
+
+    /* --- SIDEBAR (Fixed Left) --- */
+    .spe-sidebar {
+        width: 300px;
+        min-width: 300px; /* Force fixed width, never shrink */
+        background: var(--bg-panel);
+        border-right: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow-y: auto; /* Sidebar scrolls independently */
+        z-index: 20;
+    }
+
+    .spe-sidebar h2 { font-size: 20px; font-weight: 700; margin: 0 0 20px 0; color: #1e293b; }
+
+    .spe-tool-group { margin-bottom: 25px; }
+    .spe-group-title {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: #94a3b8; font-weight: 700; margin-bottom: 10px;
+    }
+
+    /* --- NEW: SIDEBAR ROW CONTROLS --- */
+    .spe-row-controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .spe-ctrl-btn {
+        flex: 1;
+        padding: 8px;
+        font-size: 11px; font-weight: 700;
+        background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;
+        cursor: pointer; color: #475569; text-align: center;
+        transition: all 0.1s;
+    }
+    .spe-ctrl-btn:hover { background: #e2e8f0; color: #1e293b; border-color: #94a3b8; }
+    .spe-info { font-size: 12px; color: #64748b; margin-bottom: 5px; display: block; }
+
+    /* --- CANVAS (Right Side - Scrollable) --- */
+    .spe-canvas {
+        flex: 1; 
+        padding: 40px; 
+        overflow: auto;         /* Scrollbars appear if grid is too big */
+        display: flex; 
+        flex-direction: column; 
+        align-items: flex-start; /* FIX: Align left so it doesn't hide behind sidebar */
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 24px 24px;
+        position: relative;
+    }
+
+    /* --- THE GRID --- */
+    .spe-grid {
+        display: grid;
+        grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
+        gap: var(--gap);
+        background: white; padding: 16px; border-radius: 16px;
+        box-shadow: 0 20px 50px -12px rgba(0,0,0,0.1);
+        position: relative;
+        /* Ensure grid doesn't collapse */
+        flex-shrink: 0; 
+    }
+
+    .spe-cell {
+        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+        font-size: 10px; color: #cbd5e1; display: flex; align-items: center; justify-content: center;
+        cursor: crosshair;
+    }
+    .spe-cell.is-highlighted {
+        background: #dbeafe; border-color: #3b82f6; box-shadow: inset 0 0 0 1px #3b82f6;
+    }
+
+    /* Placed Object */
+    .spe-obj {
+        z-index: 10; border-radius: 6px;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        color: white; font-size: 11px; font-weight: 600; text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        cursor: context-menu; position: relative;
+        padding: 4px; overflow: hidden; line-height: 1.2;
+        transition: transform 0.1s;
+    }
+    .spe-obj:hover { transform: scale(1.05); z-index: 20; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
+
+    /* Tool Buttons */
+    .spe-brush-card {
+        display: flex; align-items: center;
+        padding: 10px 12px; margin-bottom: 6px;
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .spe-brush-card:hover { transform: translateX(3px); border-color: #cbd5e1; }
+    .spe-brush-card.active {
+        background: #eff6ff; border-color: var(--primary); color: var(--primary);
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+    }
+    .spe-color-dot { width: 12px; height: 12px; border-radius: 4px; margin-right: 10px; border: 1px solid rgba(0,0,0,0.1); }
+
+    /* Save Fab */
+    .spe-save-fab {
+        position: absolute; bottom: 30px; right: 30px;
+        background: var(--success); color: white;
+        padding: 14px 28px; border-radius: 50px; border: none; cursor: pointer;
+        font-weight: 700; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: transform 0.2s; z-index: 50;
+        position: fixed; /* Fixed to screen corner */
+    }
+    .spe-save-fab:hover { transform: translateY(-3px); }
+
+    /* --- MODAL --- */
+    .spe-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+        display: none; justify-content: center; align-items: center;
+        z-index: 9999; opacity: 0; transition: opacity 0.2s ease;
+    }
+    .spe-modal-overlay.is-visible { opacity: 1; }
+
+    .spe-modal-card {
+        background: #ffffff; width: 400px; border-radius: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        transform: scale(0.95); transition: transform 0.2s; overflow: hidden;
+    }
+    .spe-modal-overlay.is-visible .spe-modal-card { transform: scale(1); }
+
+    .spe-modal-header { background: #f8fafc; padding: 15px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+    .spe-modal-title { font-size: 16px; font-weight: 700; color: #0f172a; margin: 0; }
+    .spe-modal-body { padding: 24px; }
+    .spe-form-group { margin-bottom: 20px; }
+    .spe-label { display: block; font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase; }
+    .spe-input { width: 100%; padding: 10px; font-size: 14px; background: #fff; border: 2px solid #e2e8f0; border-radius: 8px; outline: none; box-sizing: border-box; }
+    .spe-input:focus { border-color: var(--primary); }
+    .spe-tags-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .spe-tag { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; color: #64748b; background: #f1f5f9; border: 1px solid transparent; cursor: pointer; user-select: none; }
+    .spe-tag:hover { background: #e2e8f0; }
+    .spe-tag.is-selected { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+    .spe-modal-footer { padding: 15px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
+    .spe-btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .spe-btn-secondary { background: white; border: 1px solid #cbd5e1; color: #475569; }
+    .spe-btn-primary { background: var(--primary); color: white; }
+
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div class="container-fluid datatable-init">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="spe-wrapper spe-no-select">
+    
+                    <div class="spe-sidebar">
+                        <h3 style="margin-top:0; margin-bottom:20px;">{{ deck.name }}</h3>
+                        
+                        <div class="spe-tool-group">
+                            <div class="spe-group-title">Grid Dimensions</div>
+                            
+                            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                <div style="display:flex; gap:5px; align-items:center; border-right:1px solid #ddd; padding-right:10px;">
+                                    <span style="font-size:11px; font-weight:bold; color:#666;">ROWS:</span>
+                                    <button class="spe-btn spe-btn-secondary" onclick="modifyGrid('remove')">-</button>
+                                    <button class="spe-btn spe-btn-primary" onclick="modifyGrid('add')">+</button>
+                                </div>
+
+                                <div style="display:flex; gap:5px; align-items:center;">
+                                    <span style="font-size:11px; font-weight:bold; color:#666;">COLS:</span>
+                                    <button class="spe-btn spe-btn-secondary" onclick="modifyGrid('remove_col')">-</button>
+                                    <button class="spe-btn spe-btn-primary" onclick="modifyGrid('add_col')">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="spe-tool-group">
+                            <div class="spe-group-title">Structure & Labels</div>
+                            <div id="struct-tools"></div>
+                        </div>
+
+                        <div class="spe-tool-group">
+                            <div class="spe-group-title">Cabins & Seats</div>
+                            <div id="seat-tools"></div>
+                        </div>
+                    </div>
+
+                    <div class="spe-canvas">
+                        <div class="spe-grid" id="grid">
+                            </div>
+                    </div>
+
+                    <button class="spe-save-fab" onclick="saveLayout()">
+                        <span>💾 Save Configuration</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="spe-modal-overlay" id="speModal">
+    <div class="spe-modal-card">
+        <div class="spe-modal-header">
+            <h3 class="spe-modal-title" id="modalTitle">Configure Block</h3>
+            <button onclick="closeModal()" style="background:none; border:none; font-size:24px; color:#94a3b8; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div class="spe-modal-body">
+            <div class="spe-form-group">
+                <label class="spe-label" id="labelTitle">Label Text</label>
+                <input type="text" id="inputLabel" class="spe-input" placeholder="Enter text..." autocomplete="off">
+                <span class="spe-hint" id="labelHint" style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">This text will appear on the grid.</span>
+            </div>
+
+            <div class="spe-form-group" id="featureSection">
+                <label class="spe-label">Attributes</label>
+                <div class="spe-tags-grid" id="tagsContainer"></div>
+                <span class="spe-hint" style="font-size:11px; color:#94a3b8; margin-top:4px; display:block;">Select tags for filtering</span>
+            </div>
+        </div>
+
+        <div class="spe-modal-footer">
+            <button class="spe-btn spe-btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="spe-btn spe-btn-primary" onclick="confirmPlacement()">Confirm & Add</button>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scriptcontent %} 
+
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+
+
+<script>
+    /* --- 1. DATA INJECTION --- */
+    const DECK_ID = {{ deck.id }};
+    let ROWS = parseInt("{{ deck.total_rows }}"); // Let for updates
+    let COLS = parseInt("{{ deck.grid_cols }}");  // Let for updates
+    
+    const CATEGORIES = JSON.parse('{{ categories_json|escapejs }}');
+    const FEATURES = JSON.parse('{{ features_json|escapejs }}');
+    const EXISTING = JSON.parse('{{ layout_json|escapejs }}');
+
+    /* --- 2. STATE --- */
+    let state = {
+        brushId: null,
+        isDragging: false,
+        dragStart: { r: 0, c: 0 },
+        dragCurrent: { r: 0, c: 0 },
+        placedItems: []
+    };
+
+    /* --- 3. INITIALIZATION --- */
+    function init() {
+        // Dynamic CSS to handle interactions
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .spe-cell { user-select: none; }
+            /* When dragging, ignore items so we can select cells underneath */
+            body.is-drawing .spe-obj { pointer-events: none !important; opacity: 0.5; }
+            body.is-drawing { cursor: crosshair; }
+        `;
+        document.head.appendChild(style);
+
+        renderSidebar();
+        renderGrid();
+        renderTags();
+        loadExistingLayout();
+        
+        // Global safety
+        document.addEventListener('mouseup', () => {
+            if(state.isDragging) endDrag();
+        });
+    }
+
+    /* --- 4. RENDER GRID (UPDATED FOR COLS) --- */
+    function renderGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        
+        // Dynamic Grid CSS
+        grid.style.gridTemplateRows = `repeat(${ROWS}, var(--cell-size))`;
+        grid.style.gridTemplateColumns = `repeat(${COLS}, var(--cell-size))`; // UPDATED
+
+        for (let r = 1; r <= ROWS; r++) {
+            for (let c = 1; c <= COLS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'spe-cell';
+                
+                // 1. Store Data
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+                
+                // 2. Explicit Position
+                cell.style.gridRowStart = r;
+                cell.style.gridColumnStart = c;
+                
+                // 3. Attach Events
+                cell.onmousedown = function(e) { startDrag(r, c, e); };
+                cell.onmouseenter = function(e) { updateDrag(r, c); };
+                
+                grid.appendChild(cell);
+            }
+        }
+        
+        // Redraw items
+        state.placedItems.forEach(item => {
+            // Only render items that fit within new bounds
+            if (item.r <= ROWS && item.c <= COLS) {
+                renderItemOnGrid(item);
+            }
+        });
+    }
+
+    /* --- 5. GRID MODIFICATION (UPDATED) --- */
+    function modifyGrid(action) {
+        fetch(`/dashboard/deck/${DECK_ID}/update-rows/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update both dimensions from server response
+                ROWS = data.new_rows;
+                COLS = data.new_cols; 
+                renderGrid();
+            } else {
+                alert("Error updating grid");
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    /* --- 6. RENDERERS --- */
+    function renderSidebar() {
+        const structBox = document.getElementById('struct-tools');
+        const seatBox = document.getElementById('seat-tools');
+
+        CATEGORIES.forEach(cat => {
+            const div = document.createElement('div');
+            div.className = 'spe-brush-card';
+            div.innerHTML = `<div class="spe-color-dot" style="background:${cat.color_code}"></div> ${cat.name}`;
+            div.onclick = () => selectBrush(cat.id, div);
+            
+            if (cat.is_bookable) seatBox.appendChild(div);
+            else structBox.appendChild(div);
+        });
+    }
+
+    function selectBrush(id, element) {
+        state.brushId = id;
+        document.querySelectorAll('.spe-brush-card').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    /* --- 7. DRAG LOGIC --- */
+    function startDrag(r, c, e) {
+        e.preventDefault(); 
+        
+        if (!state.brushId) { alert("Select a tool first!"); return; }
+        if (e.target.closest('.spe-obj')) return;
+
+        state.isDragging = true;
+        document.body.classList.add('is-drawing');
+
+        state.dragStart = { r: parseInt(r), c: parseInt(c) };
+        state.dragCurrent = { r: parseInt(r), c: parseInt(c) };
+        
+        drawHighlight();
+    }
+
+    function updateDrag(r, c) {
+        if (!state.isDragging) return;
+        state.dragCurrent = { r: parseInt(r), c: parseInt(c) };
+        drawHighlight();
+    }
+
+    function endDrag() {
+        state.isDragging = false;
+        document.body.classList.remove('is-drawing');
+        openModal();
+    }
+
+    function drawHighlight() {
+        document.querySelectorAll('.spe-cell.is-highlighted').forEach(el => el.classList.remove('is-highlighted'));
+        
+        const rMin = Math.min(state.dragStart.r, state.dragCurrent.r);
+        const rMax = Math.max(state.dragStart.r, state.dragCurrent.r);
+        const cMin = Math.min(state.dragStart.c, state.dragCurrent.c);
+        const cMax = Math.max(state.dragStart.c, state.dragCurrent.c);
+
+        for (let r = rMin; r <= rMax; r++) {
+            for (let c = cMin; c <= cMax; c++) {
+                const cell = document.querySelector(`.spe-cell[data-r="${r}"][data-c="${c}"]`);
+                if (cell) cell.classList.add('is-highlighted');
+            }
+        }
+    }
+
+    /* --- 8. MODAL & LOGIC --- */
+    function renderTags() {
+        const cont = document.getElementById('tagsContainer');
+        FEATURES.forEach(f => {
+            const tag = document.createElement('div');
+            tag.className = 'spe-tag';
+            tag.innerText = f.name;
+            tag.dataset.id = f.id;
+            tag.onclick = () => tag.classList.toggle('is-selected');
+            cont.appendChild(tag);
+        });
+    }
+
+    function openModal() {
+        const modal = document.getElementById('speModal');
+        const brush = CATEGORIES.find(c => c.id == state.brushId);
+        
+        document.getElementById('inputLabel').value = '';
+        document.querySelectorAll('.spe-tag').forEach(t => t.classList.remove('is-selected'));
+
+        const title = document.getElementById('modalTitle');
+        const hint = document.getElementById('labelHint');
+        const featSec = document.getElementById('featureSection');
+        const input = document.getElementById('inputLabel');
+
+        title.innerText = `Add ${brush.name}`;
+
+        if (brush.name === 'Section Label') {
+            featSec.style.display = 'none';
+            hint.innerText = "Example: 'River Side'";
+            input.placeholder = "Header Text";
+        } 
+        else if (!brush.is_bookable) {
+             featSec.style.display = 'none';
+             hint.innerText = "Optional label";
+             input.placeholder = "Label...";
+        }
+        else {
+            featSec.style.display = 'block';
+            hint.innerText = "Seat No.";
+            input.placeholder = "301";
+        }
+
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('is-visible'), 10);
+        input.focus();
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('speModal');
+        modal.classList.remove('is-visible');
+        setTimeout(() => modal.style.display = 'none', 200);
+        
+        document.querySelectorAll('.spe-cell.is-highlighted').forEach(el => el.classList.remove('is-highlighted'));
+        state.isDragging = false;
+    }
+
+    /* --- 9. SAVE & LOAD --- */
+    function confirmPlacement() {
+        const rMin = Math.min(state.dragStart.r, state.dragCurrent.r);
+        const rMax = Math.max(state.dragStart.r, state.dragCurrent.r);
+        const cMin = Math.min(state.dragStart.c, state.dragCurrent.c);
+        const cMax = Math.max(state.dragStart.c, state.dragCurrent.c);
+        
+        const label = document.getElementById('inputLabel').value;
+        const tags = Array.from(document.querySelectorAll('.spe-tag.is-selected')).map(t => parseInt(t.dataset.id));
+
+        const item = {
+            id: Date.now(),
+            r: rMin, c: cMin, rs: rMax - rMin + 1, cs: cMax - cMin + 1,
+            catId: state.brushId, label: label, feats: tags
+        };
+
+        state.placedItems.push(item);
+        renderItemOnGrid(item);
+        closeModal();
+    }
+
+    function renderItemOnGrid(item) {
+        const cat = CATEGORIES.find(c => c.id == item.catId);
+        const grid = document.getElementById('grid');
+
+        const div = document.createElement('div');
+        div.className = 'spe-obj';
+        div.style.gridArea = `${item.r} / ${item.c} / span ${item.rs} / span ${item.cs}`;
+        div.style.backgroundColor = cat.color_code;
+        div.innerText = item.label;
+        
+        try {
+            const isLight = isLightColor(cat.color_code);
+            div.style.color = isLight ? '#000' : '#fff';
+            if(isLight) div.style.border = "1px solid rgba(0,0,0,0.1)";
+        } catch(e) { div.style.color = '#fff'; }
+
+        div.oncontextmenu = (e) => {
+            e.preventDefault();
+            if(confirm("Delete this block?")) {
+                div.remove();
+                state.placedItems = state.placedItems.filter(i => i.id !== item.id);
+            }
+        };
+
+        grid.appendChild(div);
+    }
+
+    function saveLayout() {
+        const payload = state.placedItems.map(i => ({
+            row: i.r, col: i.c, row_span: i.rs, col_span: i.cs,
+            category_id: i.catId, label: i.label, feature_ids: i.feats
+        }));
+
+        fetch(`/dashboard/deck/${DECK_ID}/save/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layout: payload })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'success') alert("Saved Successfully!");
+            else alert("Error: " + d.message);
+        });
+    }
+
+    function loadExistingLayout() {
+        EXISTING.forEach(ex => {
+            const item = {
+                id: Math.random(),
+                r: ex.row, c: ex.col, rs: ex.row_span, cs: ex.col_span,
+                catId: ex.category_id, label: ex.label, feats: ex.features
+            };
+            state.placedItems.push(item);
+            renderItemOnGrid(item);
+        });
+    }
+
+    function isLightColor(hex) {
+        if(!hex || hex.length < 7) return false;
+        const r = parseInt(hex.substr(1, 2), 16);
+        const g = parseInt(hex.substr(3, 2), 16);
+        const b = parseInt(hex.substr(5, 2), 16);
+        return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 180;
+    }
+
+    init();
+</script>
+
+{% endblock scriptcontent %}

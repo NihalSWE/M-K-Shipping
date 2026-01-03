@@ -1,0 +1,56 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <h3>Google Map Settings</h3>
+                    <p class="text-muted">Go to Google Maps -> Share -> Embed a map -> Copy HTML. Paste it below.</p>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" class="theme-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Map Embed Code (iframe)</label>
+                            <textarea class="form-control" name="map_embed_code" rows="6" placeholder='<iframe src="https://www.google.com/maps/embed...">' required>{{ map_obj.map_embed_code }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" {% if map_obj and map_obj.is_active %}checked{% elif not map_obj %}checked{% endif %}>
+                                <label class="form-check-label">Show Map on Frontend?</label>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button class="btn btn-primary btn-lg" type="submit">Save Changes</button>
+                        </div>
+                    </form>
+
+                    {% if map_obj and map_obj.map_embed_code %}
+                    <div class="mt-5">
+                        <h5>Current Map Preview:</h5>
+                        <div class="ratio ratio-21x9 border rounded overflow-hidden">
+                            {{ map_obj.map_embed_code|safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

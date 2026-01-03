@@ -1,0 +1,122 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    :root {
+        --cell-size: 40px; /* Adjust size for viewing comfort */
+        --gap: 4px;
+    }
+
+    .view-wrapper {
+        padding: 20px;
+        background: #f1f5f9;
+        overflow: auto; /* Allows scrolling for wide ships */
+        display: flex;
+        justify-content: center;
+    }
+
+    .ship-grid {
+        display: grid;
+        /* DYNAMIC: Uses the columns/rows from your database */
+        grid-template-columns: repeat({{ deck.grid_cols }}, var(--cell-size));
+        grid-template-rows: repeat({{ deck.total_rows }}, var(--cell-size));
+        gap: var(--gap);
+        
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        width: fit-content; /* Shrink to fit content */
+        position: relative;
+    }
+
+    .grid-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        color: white; /* Default text color */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .grid-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        z-index: 10;
+    }
+
+    /* Helper for Header */
+    .page-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 20px; padding: 0 15px;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    
+                    <div class="page-header-div">
+                        <h3 style="margin:0;">
+                            {{ deck.name }} <span style="font-size:14px; color:#64748b;">(View Mode)</span>
+                        </h3>
+                        
+                        <a href="{% url 'seat_plan_editor' deck.id %}" class="btn btn-primary btn-sm">
+                            ✏️ Edit Layout
+                        </a>
+                    </div>
+
+                    <div class="view-wrapper">
+                        <div class="ship-grid">
+                            
+                            {% for obj in layout_objects %}
+                                <div class="grid-item"
+                                     title="{{ obj.category.name }}: {{ obj.label }}"
+                                     style="
+                                        grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
+                                        grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
+                                        background-color: {{ obj.category.color_code }};
+                                        /* Simple logic for text contrast */
+                                        {% if obj.category.color_code == '#FFFFFF' or obj.category.color_code == '#FFFF00' %}
+                                            color: #333; border: 1px solid #e2e8f0;
+                                        {% endif %}
+                                     ">
+                                    
+                                    {% if obj.category.name != 'Void' %}
+                                        {{ obj.label }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scriptcontent %} 
+
+
+{% endblock scriptcontent %}
