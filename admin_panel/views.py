@@ -1637,7 +1637,58 @@ def admin_user_delete(request, id):
 
 
 def tcktbook(request):
-    return render (request,'admin_panel/book/book.html')
+    search_results = []
+    form = TripSearchForm(request.GET or None) # Bind data if it exists in URL
+    
+    # These will be useful for the template to know what we searched for
+    searched_from = None
+    searched_to = None
 
+    if form.is_valid():
+        source = form.cleaned_data['from_location']
+        destination = form.cleaned_data['to_location']
+        date = form.cleaned_data['journey_date']
+        
+        searched_from = source
+        searched_to = destination
+
+        # --- LOGIC START ---
+        
+        # 1. Find Routes that have BOTH the source and destination
+        # We find RouteStops matching source, and RouteStops matching destination
+        # Then we check which Routes appear in BOTH lists.
+        
+        routes_with_source = RouteStop.objects.filter(location=source).values_list('route_id', 'stop_order')
+        routes_with_dest = RouteStop.objects.filter(location=destination).values_list('route_id', 'stop_order')
+        
+        # Convert to dictionaries for easier lookup: {route_id: stop_order}
+        source_map = {r_id: order for r_id, order in routes_with_source}
+        dest_map = {r_id: order for r_id, order in routes_with_dest}
+        
+        valid_route_ids = []
+        
+        # 2. Compare Orders: Source must be BEFORE Destination
+        for route_id, source_order in source_map.items():
+            if route_id in dest_map:
+                dest_order = dest_map[route_id]
+                if source_order < dest_order:
+                    valid_route_ids.append(route_id)
+        
+        # 3. Find TRIPS for these valid routes on the specific date
+        if valid_route_ids:
+            search_results = Trip.objects.filter(
+                route_id__in=valid_route_ids,
+                departure_datetime__date=date
+            ).select_related('ship', 'route')
+            
+        # --- LOGIC END ---
+
+    context = {
+        'form': form,
+        'trips': search_results,
+        'searched_from': searched_from,
+        'searched_to': searched_to,
+    }
+    return render(request, 'admin_panel/book/book.html', context)
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

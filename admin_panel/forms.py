@@ -87,3 +87,29 @@ class AdminUserAddForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    
+    
+    
+class TripSearchForm(forms.Form):
+    from_location = forms.ModelChoiceField(
+        queryset=Location.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select Destination'}),
+        label="From"
+    )
+    to_location = forms.ModelChoiceField(
+        queryset=Location.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select', 'placeholder': 'Select Destination'}),
+        label="To"
+    )
+    journey_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Journey Date"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        loc_from = cleaned_data.get("from_location")
+        loc_to = cleaned_data.get("to_location")
+
+        if loc_from and loc_to and loc_from == loc_to:
+            raise forms.ValidationError("Source and Destination cannot be the same.")

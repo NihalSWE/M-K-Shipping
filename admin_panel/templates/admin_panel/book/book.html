@@ -1,5 +1,297 @@
 {% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<style>
+    /* --- Search Bar Styling --- */
+    .search-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.02);
+    }
+    
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        background-color: #f8f9fa;
+        height: 3.5rem;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-floating > .form-control:focus,
+    .form-floating > .form-select:focus {
+        box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.1); /* Soft Green Glow */
+        border-color: #198754;
+        background-color: #fff;
+    }
+
+    .form-floating label {
+        color: #888;
+        font-size: 0.85rem;
+        padding-top: 0.6rem;
+    }
+
+    /* --- Trip Card Styling --- */
+    .trip-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #edf2f7;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .trip-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.06);
+        border-color: #d1e7dd;
+    }
+
+    .trip-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background: #198754;
+        border-radius: 4px 0 0 4px;
+    }
+
+    .route-line {
+        position: relative;
+        height: 2px;
+        background: #e2e8f0;
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .route-line::after {
+        content: '✈';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        background: #fff;
+        padding: 0 10px;
+        color: #cbd5e0;
+        font-size: 12px;
+    }
+
+    .ship-icon-box {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        color: #1976d2;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .btn-book {
+        border-radius: 10px;
+        padding: 10px 25px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.2s;
+    }
+    
+    .btn-book:hover {
+        transform: scale(1.05);
+    }
+
+    /* --- 2. Custom Flatpickr Theme (Matches Your Site Green) --- */
+    .flatpickr-calendar {
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: none;
+    }
+    .flatpickr-day.selected, 
+    .flatpickr-day.startRange, 
+    .flatpickr-day.endRange, 
+    .flatpickr-day.selected.inRange, 
+    .flatpickr-day.startRange.inRange, 
+    .flatpickr-day.endRange.inRange, 
+    .flatpickr-day.selected:focus, 
+    .flatpickr-day.startRange:focus, 
+    .flatpickr-day.endRange:focus, 
+    .flatpickr-day.selected:hover, 
+    .flatpickr-day.startRange:hover, 
+    .flatpickr-day.endRange:hover, 
+    .flatpickr-day.selected.prevMonthDay, 
+    .flatpickr-day.startRange.prevMonthDay, 
+    .flatpickr-day.endRange.prevMonthDay, 
+    .flatpickr-day.selected.nextMonthDay, 
+    .flatpickr-day.startRange.nextMonthDay, 
+    .flatpickr-day.endRange.nextMonthDay {
+        background: #198754 !important; /* Your Success Color */
+        border-color: #198754 !important;
+    }
+    .flatpickr-day.today {
+        border-color: #198754 !important;
+    }
+    .flatpickr-day:hover {
+        background: #e9ecef !important;
+    }
+</style>
+{% endblock css %}
+
 {% block content %}
 
+<div class="container-fluid py-2">
 
-{% endblock content %}
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1 text-dark fw-bolder" style="letter-spacing: -0.5px;">Book a Ticket</h3>
+            <p class="text-muted mb-0">Search available schedules and reserve seats instantly.</p>
+        </div>
+        <div class="col-md-4 text-end d-none d-md-block">
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                <i class="fa-regular fa-clock me-1"></i> {{ request.now|date:"l, d F Y" }}
+            </span>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="search-card p-4">
+                <form method="GET" action="" class="row g-3 align-items-center">
+                    
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            {{ form.from_location }}
+                            <label class="text-uppercase fw-bold">From Location</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-1 text-center d-none d-md-block">
+                        <div class="rounded-circle bg-light d-inline-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                            <i class="fa-solid fa-arrow-right-arrow-left text-muted"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            {{ form.to_location }}
+                            <label class="text-uppercase fw-bold">To Location</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            {{ form.journey_date }}
+                            <label class="text-uppercase fw-bold">Journey Date</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-success btn-lg text-uppercase fw-bold shadow-sm" style="height: 3.5rem; border-radius: 12px;">
+                            <i class="fa-solid fa-magnifying-glass me-2"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if request.GET.from_location %} 
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold text-dark m-0">
+                    <i class="fa-solid fa-list-ul me-2 text-primary"></i> Available Trips
+                </h5>
+                <span class="text-muted small">Found {{ trips|length }} results</span>
+            </div>
+            
+            {% if trips %}
+                <div class="row g-4">
+                    {% for trip in trips %}
+                    <div class="col-12">
+                        <div class="trip-card p-4">
+                            <div class="row align-items-center">
+                                
+                                <div class="col-md-3 mb-3 mb-md-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="ship-icon-box shadow-sm me-3">
+                                            <i class="fa-solid fa-ship"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0 fw-bold text-dark">{{ trip.ship.name }}</h5>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 mt-1" style="font-size: 11px;">
+                                                {{ trip.ship.ship_type }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 text-center mb-3 mb-md-0">
+                                    <div class="d-flex justify-content-between text-muted small fw-bold px-2">
+                                        <span>{{ searched_from.name }}</span>
+                                        <span>{{ searched_to.name }}</span>
+                                    </div>
+                                    <div class="route-line d-flex align-items-center justify-content-center">
+                                        <i class="fa-solid fa-ship text-muted bg-white px-2" style="font-size: 10px;"></i>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Route: {{ trip.route.name }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 text-center mb-3 mb-md-0 border-start border-end">
+                                    <div class="text-muted small text-uppercase fw-bold">Departure</div>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ trip.departure_datetime|date:"h:i A" }}</h4>
+                                    <div class="text-muted small">{{ trip.departure_datetime|date:"d M, Y" }}</div>
+                                </div>
+
+                                <div class="col-md-3 text-end">
+                                    <a href="#" class="btn btn-outline-primary btn-book w-100 mb-2">
+                                        Select Seats
+                                    </a>
+                                    <div class="text-center">
+                                        <small class="text-success fw-bold"><i class="fa-solid fa-check-circle"></i> Available</small>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="No Data" style="width: 100px; opacity: 0.5;" class="mb-3">
+                    <h5 class="text-muted fw-bold">No trips found</h5>
+                    <p class="text-muted small">We couldn't find any trips for this route on this date.<br>Try searching for a different date.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %} 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Target the ID that Django automatically gives to the form field (id_journey_date)
+        flatpickr("#id_journey_date", {
+            dateFormat: "Y-m-d", // Format matching Django
+            altInput: true,      // Show a readable format to user
+            altFormat: "F j, Y", // e.g., "January 1, 2026"
+            minDate: "today",    // Disable past dates
+            disableMobile: "true" // Force the beautiful calendar even on mobile
+        });
+    });
+</script>
+{% endblock %}
