@@ -378,6 +378,17 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
+    
+    @property
+    def passenger_name(self):
+        """Returns the user's full name, or username if name is missing."""
+        if self.user:
+            full_name = f"{self.user.first_name} {self.user.last_name}".strip()
+            if full_name:
+                return full_name
+            return self.user.username  # Fallback to username if name is blank
+        return "Unknown Guest"
+    
 
 class Ticket(models.Model):
     STATUS_CHOICES = (

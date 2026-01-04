@@ -1579,14 +1579,14 @@ def user_add(request):
     
     # 3. SAFETY CHECK: Even if you are logged in, we make sure you have the 'user_type' attribute
     # This prevents the crash if something goes wrong with the user object
-    # if not hasattr(request.user, 'user_type'):
-    #     messages.error(request, "Error: Your account information is incomplete.")
-    #     return redirect('home')
+    if not hasattr(request.user, 'user_type'):
+         messages.error(request, "Error: Your account information is incomplete.")
+         return redirect('home')
 
     # 4. ADMIN CHECK: specific logic to ensure only admins enter
-    # if not request.user.is_superuser and request.user.user_type != 0:
-    #     messages.error(request, "Access denied. Admins only.")
-    #     return redirect('home')
+    if not request.user.is_superuser and request.user.user_type != 0:
+         messages.error(request, "Access denied. Admins only.")
+         return redirect('home')
 
     if request.method == 'POST':
         form = AdminUserAddForm(request.POST)
@@ -1690,5 +1690,202 @@ def tcktbook(request):
         'searched_to': searched_to,
     }
     return render(request, 'admin_panel/book/book.html', context)
+
+
+
+
+def select_seats(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    # 1. Get Route Segment Info from GET params
+    from_loc_id = request.GET.get('from_loc')
+    to_loc_id = request.GET.get('to_loc')
+    
+    if not from_loc_id or not to_loc_id:
+        messages.error(request, "Please select source and destination first.")
+        return redirect('admin_search_trips') # Replace with your search url name
+
+    # 2. Get the RouteStop objects to determine order (Stop 1 -> Stop 5)
+    try:
+        from_stop = RouteStop.objects.get(route=trip.route, location_id=from_loc_id)
+        to_stop = RouteStop.objects.get(route=trip.route, location_id=to_loc_id)
+    except RouteStop.DoesNotExist:
+        messages.error(request, "Invalid route stops.")
+        return redirect('admin_home')
+
+    # 3. Calculate Pricing for each Category (Map ID -> Price)
+    # We'll create a dictionary to pass to JS: { 'AC Cabin': 1500, 'Deck': 300 }
+    category_prices = {}
+    
+    # We fetch all unique categories used in this ship's layout
+    # This avoids calculating prices for categories that don't exist on this ship
+    layout_categories = LayoutObject.objects.filter(deck__ship=trip.ship).values_list('category', flat=True).distinct()
+    
+    for cat_id in layout_categories:
+        # We need the actual category object to pass to get_price if your logic expects objects
+        # Or if get_price expects ID, pass ID. Assuming it takes the object:
+        from .models import SeatCategory
+        category = SeatCategory.objects.get(id=cat_id)
+        price = trip.get_price(category, from_stop, to_stop)
+        category_prices[cat_id] = float(price) # Convert Decimal to float for JSON
+
+    # 4. Determine Availability (The Overlap Logic)
+    # Find all tickets for this trip that OVERLAP with our requested segment.
+    # Logic: Ticket Start < Our End AND Ticket End > Our Start
+    booked_tickets = Ticket.objects.filter(
+        trip=trip,
+        status__in=['BOOKED', 'LOCKED']
+    ).filter(
+        Q(from_stop__stop_order__lt=to_stop.stop_order) & 
+        Q(to_stop__stop_order__gt=from_stop.stop_order)
+    )
+    
+    booked_seat_ids = list(booked_tickets.values_list('seat_object_id', flat=True))
+
+    # 5. Fetch Layout grouped by Deck
+    decks = trip.ship.decks.all().order_by('level_order')
+    
+    context = {
+        'trip': trip,
+        'from_stop': from_stop,
+        'to_stop': to_stop,
+        'decks': decks,
+        'booked_seat_ids': booked_seat_ids,
+        'category_prices': category_prices,
+    }
+    return render(request, 'admin_panel/book/select_seats.html', context)
+
+
+
+from django.db import transaction, DatabaseError  # <--- NEW
+from django.utils import timezone                 # <--- NEW
+import uuid  
+
+def admin_book_confirm(request):
+    if request.method != 'POST':
+        return redirect('admin_home')
+
+    # --- 1. GET DATA ---
+    trip_id = request.POST.get('trip_id')
+    seat_ids_str = request.POST.get('selected_seats')
+    c_phone = request.POST.get('customer_phone')
+    c_email = request.POST.get('customer_email')
+    c_name = request.POST.get('customer_name')
+    from_stop_id = request.POST.get('from_stop_id')
+    to_stop_id = request.POST.get('to_stop_id')
+
+    if not seat_ids_str:
+        messages.error(request, "No seats selected.")
+        return redirect(request.META.get('HTTP_REFERER'))
+
+    trip = get_object_or_404(Trip, id=trip_id)
+    seat_ids = seat_ids_str.split(',')
+    from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+    to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+
+    # --- 2. START TRANSACTION (All or Nothing) ---
+    try:
+        with transaction.atomic():
+            
+            # A. Handle User (Find or Create)
+            booking_user = request.user 
+            if c_name and c_phone:
+                # Prioritize searching by Phone
+                user = User.objects.filter(phone_number=c_phone).first()
+                if not user and c_email:
+                    user = User.objects.filter(email=c_email).first()
+
+                if not user:
+                    # Create new user
+                    # Use phone as username to ensure uniqueness
+                    final_email = c_email if c_email else f"{c_phone}@guest.com"
+                    # Generate a random secure password
+                    random_pass = User.objects.make_random_password()
+                    
+                    user = User.objects.create_user(
+                        email=final_email,
+                        username=c_phone, # Unique username
+                        phone_number=c_phone,
+                        first_name=c_name,
+                        password=random_pass,
+                        user_type=1
+                    )
+                booking_user = user
+
+            # B. Create Booking
+            booking = Booking.objects.create(
+                user=booking_user,
+                trip=trip,
+                booking_ref=str(uuid.uuid4())[:12].upper(),
+                status='CONFIRMED', 
+                sales_channel='COUNTER', 
+                total_amount=0 
+            )
+
+            # C. Create Tickets (With Availability Check)
+            total_amount = 0
+            
+            for seat_id in seat_ids:
+                layout_obj = get_object_or_404(LayoutObject, id=seat_id)
+                
+                # CRITICAL: Re-check availability before saving!
+                if not trip.is_seat_available(layout_obj, from_stop, to_stop):
+                    raise Exception(f"Seat {layout_obj.label} was just booked by someone else!")
+
+                price = trip.get_price(layout_obj.category, from_stop, to_stop)
+
+                Ticket.objects.create(
+                    booking=booking,
+                    trip=trip,
+                    seat_object=layout_obj,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    passenger_name=c_name if c_name else "Walk-in Guest",
+                    fare_amount=price,
+                    status='BOOKED',
+                    lock_expires_at=timezone.now(),
+                )
+                total_amount += price
+
+            # D. Update Total
+            booking.total_amount = total_amount
+            booking.save()
+
+            messages.success(request, f"Booking Successful! Ref: {booking.booking_ref}")
+            return redirect('admin_booking_list')
+
+    except Exception as e:
+        # If ANY step above fails, the transaction rolls back (no half-bookings)
+        print(f"Booking Failed: {e}")
+        messages.error(request, f"Booking Failed: {e}")
+        return redirect(request.META.get('HTTP_REFERER'))
+
+
+def booking_list(request):
+    # Get all bookings, newest first
+    bookings = Booking.objects.select_related('trip', 'user').all().order_by('-created_at')
+    
+    context = {
+        'bookings': bookings
+    }
+    return render(request, 'admin_panel/book/booking_list.html', context)
+
+def ticket_detail(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    
+    # 👇 THIS IS THE FIX
+    # We try 'tickets' (the custom name) first. 
+    # If that doesn't work, we fall back to 'ticket_set' (the default).
+    if hasattr(booking, 'tickets'):
+        tickets = booking.tickets.all()
+    else:
+        tickets = booking.ticket_set.all()
+
+    context = {
+        'booking': booking,
+        'tickets': tickets,
+        'seat_count': tickets.count(),
+    }
+    return render(request, 'admin_panel/book/ticket_detail.html', context)
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

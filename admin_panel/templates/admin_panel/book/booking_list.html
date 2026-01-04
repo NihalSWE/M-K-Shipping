@@ -1,0 +1,86 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-6">
+                <h3>Booking List</h3>
+            </div>
+            <div class="col-6 text-end">
+                <a href="{% url 'tcktbook' %}" class="btn btn-primary"><i class="fa fa-plus"></i> New Booking</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Passenger</th>
+                                    <th>Trip Info</th>
+                                    <th>Date</th>
+                                    <th>Total (৳)</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>#{{ booking.id }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ booking.passenger_name }}</div>
+                                        
+                                        <small class="text-muted">
+                                            {% if booking.user.email %}
+                                                {{ booking.user.email }}<br>
+                                            {% endif %}
+                                            {{ booking.customer_phone }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {{ booking.trip.ship.name }}<br>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ booking.trip.route.source.name }} &rarr; {{ booking.trip.route.destination.name }}
+                                        </span>
+                                    </td>
+                                    <td>{{ booking.created_at|date:"d M Y, h:i A" }}</td>
+                                    <td class="fw-bold text-success">{{ booking.total_amount }}</td>
+                                    <td>
+                                        {% if booking.status == 'CONFIRMED' %}
+                                            <span class="badge bg-success">Confirmed</span>
+                                        {% elif booking.status == 'PENDING' %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info" title="View Ticket" target="_blank">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <p class="text-muted mb-0">No bookings found yet.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load custom_filters %} {# Ensure you created the templatetags/custom_filters.py file! #}
+
+{% block content %}
+<style>
+    /* Main Container */
+    .seat-map-wrapper {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        padding: 20px;
+        overflow-x: auto; /* Allow scroll if ship is wide */
+    }
+
+    /* Deck Header */
+    .deck-section {
+        margin-bottom: 40px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 15px;
+        background: #f8f9fa;
+    }
+    .deck-title {
+        text-align: center;
+        margin-bottom: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #555;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+    }
+
+    /* Grid Setup */
+    .deck-grid {
+        display: grid;
+        gap: 6px; 
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    /* --- THE SEAT OBJECTS --- */
+    .layout-obj {
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        min-height: 40px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        user-select: none;
+    }
+
+    /* 1. SEAT (Clickable) */
+    .layout-obj.seat {
+        cursor: pointer;
+        background-color: #ffffff;
+        border: 2px solid #28a745; /* Green Border */
+        color: #333;
+    }
+    .layout-obj.seat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        background-color: #f1f8e9;
+    }
+
+    /* 2. SELECTED (Green Fill) */
+    .layout-obj.seat.selected {
+        background-color: #28a745 !important;
+        color: white !important;
+        border-color: #1e7e34 !important;
+        box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    }
+
+    /* 3. BOOKED (Gray/Locked) */
+    .layout-obj.booked {
+        background-color: #e9ecef !important;
+        border: 1px solid #dee2e6 !important;
+        color: #adb5bd !important;
+        cursor: not-allowed;
+        pointer-events: none; /* Prevent clicking */
+        background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #f1f1f1 5px, #f1f1f1 10px);
+    }
+
+    /* 4. NON-SEATS (Space, Walls, Washroom) */
+    .layout-obj.non-seat {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        color: #999;
+        font-size: 11px;
+        font-weight: normal;
+        pointer-events: none;
+    }
+    .layout-obj.non-seat.Space { opacity: 0; } /* Hide empty space labels if you want */
+    .layout-obj.non-seat.Washroom { background: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; }
+
+    /* Summary Panel */
+    .summary-card {
+        position: sticky;
+        top: 20px;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border-radius: 12px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold m-0 text-dark">
+                    <i class="fa fa-ship me-2"></i> {{ trip.ship.name }}
+                </h5>
+                <span class="badge bg-primary p-2">
+                    {{ from_stop.location.name }} <i class="fa fa-arrow-right mx-1"></i> {{ to_stop.location.name }}
+                </span>
+            </div>
+
+            <div class="seat-map-wrapper">
+                {% for deck in decks %}
+                <div class="deck-section">
+                    <div class="deck-title">{{ deck.name }}</div>
+                    
+                    <div class="deck-grid" style="
+                        grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
+                        grid-template-rows: repeat({{ deck.total_rows }}, 45px);
+                    ">
+                        {% for obj in deck.layout_objects.all %}
+                            {% with cat_name=obj.category.name %}
+                            <div 
+                                class="layout-obj 
+                                    {% if cat_name == 'Space' or cat_name == 'Stairs' or cat_name == 'Washroom' or cat_name == 'Engine' %}
+                                        non-seat {{ cat_name }}
+                                    {% else %}
+                                        seat available
+                                    {% endif %}
+                                    {% if obj.id in booked_seat_ids %}booked{% endif %}"
+                                style="
+                                    grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
+                                    grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
+                                "
+                                data-id="{{ obj.id }}"
+                                data-label="{{ obj.label }}"
+                                data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
+                                data-category="{{ obj.category.name }}"
+                            >
+                                {{ obj.label }}
+                                {% if obj.id in booked_seat_ids %}
+                                    <i class="fa fa-lock ms-1" style="font-size:9px"></i>
+                                {% endif %}
+                            </div>
+                            {% endwith %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <form method="POST" action="{% url 'admin_book_confirm' %}">
+                {% csrf_token %}
+                <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                <input type="hidden" name="from_stop_id" value="{{ from_stop.id }}">
+                <input type="hidden" name="to_stop_id" value="{{ to_stop.id }}">
+                <input type="hidden" name="selected_seats" id="selected_seats_input">
+
+                <div class="summary-card p-4">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">Booking Summary</h5>
+                    
+                    <div id="selected-list" class="mb-3 small text-muted">
+                        <i class="fa fa-info-circle me-1"></i> Click on seats to select them.
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold text-dark h5 mb-0">Total:</span>
+                        <span class="text-success fw-bold h4 mb-0">৳ <span id="total-amount">0</span></span>
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-3 border">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggleUserForm">
+                            <label class="form-check-label fw-bold small" for="toggleUserForm">Add Passenger Info</label>
+                        </div>
+                        <div id="user-form" class="mt-3" style="display:none;">
+                            <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Full Name">
+                            <input type="text" name="customer_phone" class="form-control form-control-sm mb-2" placeholder="Phone Number">
+                            <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email (Optional)">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-book" class="btn btn-secondary w-100 py-2 fw-bold text-uppercase" disabled>
+                        Confirm Booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Seat Map Script Loaded.");
+
+        // SELECTORS
+        const seats = document.querySelectorAll('.layout-obj.seat.available');
+        const selectedInput = document.getElementById('selected_seats_input');
+        const totalAmountEl = document.getElementById('total-amount');
+        const selectedListEl = document.getElementById('selected-list');
+        const btnBook = document.getElementById('btn-book');
+        const userFormToggle = document.getElementById('toggleUserForm');
+        const userForm = document.getElementById('user-form');
+
+        let selectedSeatIds = [];
+        let total = 0;
+
+        console.log("Found clickable seats:", seats.length);
+
+        // 1. Toggle User Form
+        if(userFormToggle){
+            userFormToggle.addEventListener('change', function() {
+                userForm.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+
+        // 2. Seat Click Logic
+        seats.forEach(seat => {
+            seat.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const price = parseFloat(this.dataset.price) || 0;
+                const label = this.dataset.label;
+
+                if (this.classList.contains('selected')) {
+                    // DESELECT
+                    this.classList.remove('selected');
+                    selectedSeatIds = selectedSeatIds.filter(itemId => itemId !== id);
+                    total -= price;
+                } else {
+                    // SELECT
+                    this.classList.add('selected');
+                    selectedSeatIds.push(id);
+                    total += price;
+                }
+                updateUI();
+            });
+        });
+
+        function updateUI() {
+            // Update Hidden Input
+            selectedInput.value = selectedSeatIds.join(',');
+
+            // Update Total Price
+            totalAmountEl.textContent = total.toFixed(2);
+
+            // Update Button & List
+            if (selectedSeatIds.length > 0) {
+                selectedListEl.innerHTML = `<span class="text-success fw-bold">Selected ${selectedSeatIds.length} seat(s)</span>`;
+                btnBook.disabled = false;
+                btnBook.classList.remove('btn-secondary');
+                btnBook.classList.add('btn-success');
+            } else {
+                selectedListEl.textContent = "No seats selected.";
+                btnBook.disabled = true;
+                btnBook.classList.add('btn-secondary');
+                btnBook.classList.remove('btn-success');
+            }
+        }
+    });
+</script>
+{% endblock %}
