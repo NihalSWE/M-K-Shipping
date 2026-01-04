@@ -21,6 +21,7 @@ def home (request):
     banner = HomeBanner.objects.filter(is_active=True).first()
     locations = Location.objects.all().order_by('name')
     
+    
     context={
         'banner': banner,
         'locations': locations,
