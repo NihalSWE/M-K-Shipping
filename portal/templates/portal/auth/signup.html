@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% load static %}
+
+{% block custom_css %}
+
+
+{% endblock custom_css %}
+
+{% block content %}
+    <div class="sign-in-area">
+        <div class="image radius-10 overflow-hidden"><img src="{% static 'portal/assets/images/contact/02.webp'%}" width="1245" alt=""></div>
+        <div class="sign-in-form radius-10 overflow-hidden body-bg-one">
+            <div class="logo-area">
+                <a href="index.html"><img src="{% static 'portal/assets/images/logo/02.svg'%}" alt=""></a>
+            </div>
+            <h4 class="title">Sign Up</h4>
+            <form action="#">
+                <div class="single-input-wrapper">
+                    <label for="fname">First Name*</label>
+                    <input type="text" name="name" placeholder="Your first name" required>
+                </div>
+                <div class="single-input-wrapper">
+                    <label for="fname">Last Name*</label>
+                    <input type="text" name="name" placeholder="Your last name" required>
+                </div>
+                <div class="single-input-wrapper">
+                    <label for="fmail">Email*</label>
+                    <input type="email" name="email" placeholder="Your email address" required>
+                </div>
+                <div class="single-input-wrapper">
+                    <label for="fname">Password</label>
+                    <input type="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <div class="single-input-area d-flex align-items-center justify-content-between">
+                    <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="forgot-btn">Forgot your password?</a>
+                </div>
+                <button type="submit" class="rts-btn btn-primary m-w-100 text-center justify-content-center with-arrow">Sign In <i class="fa-regular fa-arrow-up up-right"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <div id="anywhere-home" class="">
+    </div>
+
+    <div class="slider-drag-cursor"><i class="fas fa-angle-left me-2"></i> DRAG <i class="fas fa-angle-right ms-2"></i>
+    </div>
+
+    <!-- progress area start -->
+    <div class="progress-wrap">
+        <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102">
+            <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" style="transition: stroke-dashoffset 10ms linear 0s; stroke-dasharray: 307.919, 307.919; stroke-dashoffset: 307.919;"></path>
+        </svg>
+    </div>
+    <!-- progress area end -->
+
+    <div class="rtl-ltr-switcher-btn ">
+        <span class="rtl">View RTL</span>
+        <span class="ltr show">View LTR</span>
+    </div>
+
+    {% endblock content %}
+
+    {% block custom_js %}
+    
+    {% endblock custom_js %}

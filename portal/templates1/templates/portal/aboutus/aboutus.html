@@ -1,0 +1,146 @@
+{% extends "portal/base.html" %}
+
+{% load static %}
+
+{% block custom_css %}
+
+
+{% endblock custom_css %}
+
+{% block content %}
+    <!-- breadcrumb area start -->
+    <!-- rts breadcrumb area start -->
+    <div class="rts-breadcrumb-area one" 
+     style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
+    <div class="container h-100">
+        <div class="breadcrumb-area-wrapper">
+            <div class="nav-bread-crumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span><i class="fa-regular fa-chevron-right"></i></span>
+                <a href="#" class="current">About</a>
+            </div>
+            <h1 class="title">{{ banner.title|default:"ABOUT US" }}</h1>
+        </div>
+    </div>
+</div>
+    <!-- rts breadcrumb area end -->
+    <!-- breadcrumb area end -->
+
+
+    <!-- rts story area start -->
+    {% if story %}
+    <section class="rts-story-area rts-section-gap">
+        <div class="container">
+            <div class="section-inner">
+                <div class="row">
+                    <div class="col-lg-2">
+                        <div class="section-title-area sticky-top top-100px">
+                            <p class="sub-title">{{ story.subtitle }}</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="rts-story-mid-content">
+                            <div class="section-title-area">
+                                <h2 class="section-title mb-0">{{ story.title }}</h2>
+                                <p class="desc">{{ story.description|linebreaksbr }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="right-image-area">
+                            <div class="floating-image overflow-hidden radius-10 wow zoomIn" data-wow-delay="0.4s">
+                                {% if story.story_image %}
+                                    <img class="wow scaleIn" data-wow-delay="0.4s" src="{{ story.story_image.url }}" alt="Story Image">
+                                {% else %}
+                                    <img class="wow scaleIn" data-wow-delay="0.4s" src="{% static 'portal/assets/images/about/03.webp'%}" alt="">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    <!-- rts story area end -->
+
+    <!-- rts service area start -->
+    <div class="rts-service-area inner body-bg-one">
+        <div class="section-inner">
+            <div class="service-wrapper">
+                <div class="icon"><img src="{% static 'portal/assets/images/service/icon-01.svg'%}" alt=""></div>
+                <h5 class="title">24/7 Emergency Support</h5>
+                <p class="desc">We’re here for you anytime, anywhere. Reach out to us day or night.</p>
+            </div>
+            <div class="service-wrapper">
+                <div class="icon"><img src="{% static 'portal/assets/images/service/icon-02.svg'%}" alt=""></div>
+                <h5 class="title">Safety-First Expeditions</h5>
+                <p class="desc">We’re equipped with emergency kits, trained staff, and real-time monitoring</p>
+            </div>
+            <div class="service-wrapper">
+                <div class="icon"><img src="{% static 'portal/assets/images/service/icon-03.svg'%}" alt=""></div>
+                <h5 class="title">Certified Local Guides</h5>
+                <p class="desc">Our tours are led by certified local guides who know the waters</p>
+            </div>
+            <div class="service-wrapper">
+                <div class="icon"><img src="{% static 'portal/assets/images/service/icon-04.svg'%}" alt=""></div>
+                <h5 class="title">All-Inclusive Adventures</h5>
+                <p class="desc">No hidden fees or last-minute surprises. Just paddle, explore</p>
+            </div>
+        </div>
+    </div>
+    <!-- rts service area end -->
+
+
+    <!-- rts Counter area start -->
+    <div class="rts-counter-area rts-section-gapBottom ;" style="
+    padding-top: 50px;"  >
+        <div class="container">
+            <div class="section-inner">
+                <div class="counter-wrapper radius-10 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="icon">
+                        <img src="{% static 'portal/assets/images/counter/01.svg'%}" alt="">
+                    </div>
+                    <div class="counter-area">
+                        <h2 class="title"><span class="odometer" data-count="71"></span>K+</h2>
+                        <span class="done">Happy Travelers</span>
+                    </div>
+                </div>
+                <div class="counter-wrapper radius-10 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="icon">
+                        <img src="{% static 'portal/assets/images/counter/02.svg'%}" alt="">
+                    </div>
+                    <div class="counter-area">
+                        <h2 class="title"><span class="odometer" data-count="250"></span>+</h2>
+                        <span class="done">Tour Packages</span>
+                    </div>
+                </div>
+                <div class="counter-wrapper radius-10 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="icon">
+                        <img src="{% static 'portal/assets/images/counter/03.svg'%}" alt="">
+                    </div>
+                    <div class="counter-area">
+                        <h2 class="title"><span class="odometer" data-count="50"></span>+</h2>
+                        <span class="done">Destinations Covered</span>
+                    </div>
+                </div>
+                <div class="counter-wrapper radius-10 wow fadeInUp" data-wow-delay="0.7s">
+                    <div class="icon">
+                        <img src="{% static 'portal/assets/images/counter/04.svg'%}" alt="">
+                    </div>
+                    <div class="counter-area">
+                        <h2 class="title"><span class="odometer" data-count="10"></span>+</h2>
+                        <span class="done">Years of Experience</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- rts Counter area end -->
+
+
+    {% endblock content %}
+
+    {% block custom_js %}
+    
+    {% endblock custom_js %}

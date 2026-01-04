@@ -378,7 +378,6 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
-    
     @property
     def passenger_name(self):
         """Returns the user's full name, or username if name is missing."""

@@ -110,6 +110,29 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         border-radius: 12px;
     }
+
+    /* Modern Alert Styles */
+    .custom-alert {
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Success: Emerald Theme */
+    .alert-success-modern {
+        background-color: #ecfdf5;
+        color: #065f46;
+        border-left: 5px solid #10b981 !important;
+    }
+    .alert-success-modern .btn-close { filter: invert(29%) sepia(91%) saturate(464%) hue-rotate(119deg) brightness(91%) contrast(92%); }
+
+    /* Error: Rose/Red Theme */
+    .alert-danger-modern {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border-left: 5px solid #ef4444 !important;
+    }
+    .alert-danger-modern .btn-close { filter: invert(15%) sepia(85%) saturate(3015%) hue-rotate(352deg) brightness(89%) contrast(98%); }
 </style>
 
 <div class="container-fluid py-4">
@@ -123,6 +146,27 @@
                     {{ from_stop.location.name }} <i class="fa fa-arrow-right mx-1"></i> {{ to_stop.location.name }}
                 </span>
             </div>
+
+            {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for message in messages %}
+                        <div class="alert custom-alert alert-dismissible fade show shadow-sm border-0 
+                                    {% if message.tags == 'success' %}alert-success-modern{% else %}alert-danger-modern{% endif %}" 
+                            role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-3 fs-5"></i>
+                                <div>
+                                    <strong>{% if message.tags == 'success' %}Success!{% else %}Error!{% endif %}</strong> 
+                                    <div class="small opacity-75">{{ message }}</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
 
             <div class="seat-map-wrapper">
                 {% for deck in decks %}
