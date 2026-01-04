@@ -1,0 +1,872 @@
+:root {
+    --primary-green: #2ECC71;
+    --dark-navy: #1A2B3C;
+    --light-bg: #F8FAFC;
+    --border-color: #E2E8F0;
+    --text-main: #334155;
+    --text-muted: #64748B;
+    --white: #ffffff;
+}
+
+/* 1. Main Container Logic */
+.search-results-wrapper {
+    background-color: var(--light-bg);
+    padding: 40px 0;
+    font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+/* 2. Professional Search Bar */
+.form-area-v2 {
+    display: flex;
+    align-items: center;
+    background: var(--white);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    gap: 12px;
+}
+
+.search-input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 15px;
+    flex: 1;
+    min-height: 65px;
+    background: var(--white);
+}
+
+.label-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #FF8C66; /* Your brand orange */
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+/* 3. The Trip Card (Grid-Based Stability) */
+.trip-card {
+    display: grid;
+    /* Changed to percentages to ensure it fills 100% of the container width */
+    grid-template-columns: 25% 50% 25%; 
+    width: 100% !important; 
+    background: #ffffff;
+    border: 2px solid #e2e8f0; /* Thicker border for better visibility */
+    border-radius: 20px; /* Large rounded corners */
+    margin-bottom: 30px;
+    overflow: hidden; /* CRITICAL: This clips the children so corners don't look broken */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.trip-card:hover {
+    border-color: #2ECC71;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(46, 204, 113, 0.15);
+}
+
+/* Left: Ship Identity */
+.ship-media {
+    padding: 25px;
+    background: #fcfdfe; /* Subtle off-white */
+    border-right: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.ship-img-v2 {
+    width: 100%;
+    height: 140px; /* Increased height */
+    border-radius: 12px;
+    object-fit: cover;
+    margin-bottom: 15px;
+}
+
+.ship-name-v2 {
+    font-size: 26px !important; /* LARGE FONT */
+    font-weight: 900;
+    color: #1A2B3C;
+    margin: 0;
+}
+
+.ship-type-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-green);
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Center: Journey Timeline */
+.journey-details {
+    padding: 30px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #fff;
+}
+
+.timeline-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.time-val {
+    font-size: 40px !important; /* HUGE FONT FOR TIMES */
+    font-weight: 900;
+    color: #1A2B3C;
+    line-height: 1;
+}
+
+.loc-val {
+    font-size: 18px !important; /* LARGE FONT FOR LOCATIONS */
+    font-weight: 700;
+    color: #64748B;
+}
+
+/* Simple, Unbreakable Route Visual */
+.route-visual {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.duration-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.visual-line-container {
+    width: 100%;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.visual-line {
+    height: 3px !important; /* Thicker line */
+    background: #e2e8f0;
+}
+
+.ship-icon-mid {
+    font-size: 22px !important;
+    background: #fff;
+    padding: 0 15px;
+}
+
+/* Amenities Pills */
+.amenities-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.amenity {
+    font-size: 12px;
+    color: var(--text-main);
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* Right: Pricing & CTA */
+.price-action-side {
+    padding: 30px;
+    background: #f8fafc; /* Subtle gray contrast */
+    border-left: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.price-amount-v2 {
+    font-size: 48px !important; /* MASSIVE PRICE */
+    font-weight: 900;
+    color: #2ECC71;
+    margin-bottom: 15px;
+    letter-spacing: -1px;
+}
+
+.book-btn-v2 {
+    width: 100%;
+    background: #2ECC71;
+    color: white !important;
+    font-size: 20px !important; /* LARGE BUTTON TEXT */
+    font-weight: 800;
+    padding: 18px !important;
+    border-radius: 12px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.book-btn-v2:hover {
+    background: #27ae60;
+    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+}
+
+
+    /* Remove default Select2 box styling to match your group look */
+    /* 1. Main Form Layout */
+    .form-area-v2 {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        padding: 15px 25px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        gap: 10px;
+        margin-bottom: 40px;
+    }
+
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid #EAEAEA;
+        border-radius: 12px;
+        padding: 10px 15px;
+        flex: 1;
+        min-height: 70px;
+        background: #fff;
+    }
+
+    .icon-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+    }
+
+    .input-content {
+        display: flex;
+        flex-direction: column;
+        margin-left: 10px;
+        width: 100%;
+    }
+
+    .label-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: #FF8C66 !important; /* Brand Orange */
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .search-field {
+        border: none;
+        outline: none;
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+        width: 100%;
+        background: transparent;
+    }
+
+    .exchange-icon {
+        padding: 0 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .search-submit-btn {
+        background-color: #2ECC71;
+        color: white;
+        border: none;
+        padding: 0 40px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+        height: 70px;
+        white-space: nowrap;
+    }
+
+    /* 2. Select2 Modern Styling */
+    .select2-container--default .select2-selection--single {
+        border: none !important;
+        background: transparent !important;
+        height: 25px !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        color: #333 !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none;
+    }
+
+    /* 3. Flatpickr Custom Theme */
+    .flatpickr-calendar {
+        border-radius: 12px !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+        border: 1px solid #eee !important;
+    }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-current-month input.cur-year {
+        color: #079D49 !important;
+        font-weight: 800 !important;
+    }
+
+    .flatpickr-day.selected {
+        background: #fff !important;
+        border: 2px solid #079D49 !important;
+        color: #079D49 !important;
+    }
+
+    /* 4. Mobile Responsiveness */
+    @media (max-width: 991px) {
+        .form-area-v2 {
+            flex-direction: column;
+            padding: 20px;
+        }
+        .search-input-group, .search-submit-btn {
+            width: 100%;
+        }
+        .exchange-icon {
+            transform: rotate(90deg);
+        }
+    }
+    /*datepicker styles ends */
+
+    @media (max-width: 1200px) {
+    .trip-card {
+        grid-template-columns: 1fr; /* Stack on mobile/tablets */
+    }
+    .ship-media, .price-action-side {
+        border: none;
+        width: 100%;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- Seat Selection Panel Styles Start --- */
+/* Drawer Container */
+.seat-selection-drawer {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Start hidden */
+    width: 100%;
+    height: 100%;
+    background: #f8fafc;
+    z-index: 1050;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+#drawerContent {
+    flex: 1; /* Takes up all remaining space between header and footer */
+    overflow-y: auto !important; /* Forces vertical scrollbar when content is long */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile */
+}
+
+.seat-selection-drawer.open {
+    transform: translateX(-100%);
+}
+
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 43, 60, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    z-index: 1040;
+}
+
+/* Deck Plan Grid */
+.deck-container {
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.grid-canvas {
+    background-color: #f8f9fa !important;
+    border-radius: 16px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+}
+
+/* Modern Seat Styling */
+.seat-unit {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.seat-unit.available {
+    background: #fff;
+    border-color: #e2e8f0;
+    color: #1A2B3C;
+}
+
+.seat-unit.available:hover {
+    border-color: #2ECC71;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.2);
+}
+
+.seat-unit.occupied {
+    background: #f1f5f9;
+    color: #cbd5e1;
+    cursor: not_allowed;
+}
+
+.seat-unit.selected {
+    background: #2ECC71;
+    color: #fff;
+    border-color: #27ae60;
+}
+
+/* Footer Summary Area */
+.drawer-footer {
+    background: #fff;
+    padding: 20px 40px;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+/* --- Seat Selection Panel Styles End --- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* seat layout page styles start */
+/* --- Header & Wrapper --- */
+.deck-selection-container {
+    height: auto;
+    min-height: 100%;
+}
+
+.deck-scroll-container {
+    display: flex;
+    justify-content: center;
+    /* RESPONSIVE START */
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+    /* RESPONSIVE END */
+}
+
+.deck-header {
+    /* font-size: 1.5rem; */
+    font-weight: 500; /* Reduced weight as requested */
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    /* letter-spacing: -0.01em; */
+}
+
+/* --- Centered Modern Tabs --- */
+.deck-selection-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.modern-tabs {
+    background: #f8fafc;
+    padding: 8px;
+    border-radius: 50px; /* Pill shape */
+    display: inline-flex;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.modern-tabs .nav-link {
+    border-radius: 40px;
+    padding: 10px 24px;
+    color: #64748b;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none !important;
+}
+
+.modern-tabs .nav-link.active {
+    background: #ffffff !important;
+    color: #10b981 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* --- Layout Items (Improved Readability) --- */
+.layout-item {
+    position: relative;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+}
+
+.obj-label {
+    /* COMPACT START */
+    font-size: 16px; /* Slightly reduced from 18px to fit 50px cells */
+    /* COMPACT END */
+    font-weight: 700;
+    color: #334155;
+    line-height: 1.2;
+    padding: 0 2px;
+    word-break: break-word;
+    text-align: center;
+}
+
+/* --- Seat States --- */
+.layout-item.available {
+    cursor: pointer;
+    border-bottom: 4px solid var(--category-color);
+}
+
+.layout-item.available:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
+    border-color: var(--category-color);
+}
+
+.layout-item.selected {
+    background: rgba(16, 185, 129, 0.1) !important; 
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    z-index: 5;
+}
+
+.layout-item.selected .obj-icon, 
+.layout-item.selected .obj-label-modern {
+    color: #059669 !important; /* Saturated green text/icon */
+}
+
+/* ON-HOLD: Modern translucent amber glow */
+.layout-item.on-hold {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border: 2px solid #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+    cursor: not-allowed;
+}
+
+.layout-item.on-hold .obj-icon,
+.layout-item.on-hold .obj-label-modern {
+    color: #d97706 !important; /* Saturated orange text/icon */
+}
+
+.layout-item.occupied {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.layout-item.occupied .obj-icon {
+    color: #adb5bd !important; /* Muted icon color */
+}
+.layout-item.occupied .obj-label-modern {
+    color: #6c757d;
+}
+/* Add a "Sold" diagonal line effect to occupied seats */
+.layout-item.occupied::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 1px; 
+    background: rgba(0,0,0,0.1); transform: rotate(-45deg);
+}
+
+/* NON-BOOKABLE: Structural elements (Stairs, Corridors, Toilets) */
+.layout-item.non-bookable {
+    background-color: #fcfcfc;
+    border: 1px dashed #dee2e6; /* Dashed border looks like a floor plan */
+    cursor: default;
+    box-shadow: none;
+}
+.layout-item.non-bookable .obj-icon {
+    color: #d1d5db !important; /* Very subtle icon */
+    opacity: 0.6;
+}
+.layout-item.non-bookable .obj-label-modern {
+    color: #9ca3af;
+    font-weight: 400;
+}
+/* Remove hover effects for non-bookables */
+.layout-item.non-bookable:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* --- Modern Floating Footer --- */
+.modern-booking-footer {
+    position: absolute; /* Changed from fixed */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%; /* Slightly wider for drawer fit */
+    max-width: 1000px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.05);
+    z-index: 1100; /* Ensure it stays above drawer content */
+}
+
+.footer-info-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+}
+
+.footer-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.total-price-display {
+    font-size: 24px;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.btn-modern-checkout {
+    background: #10b981;
+    color: white;
+    padding: 12px 32px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-modern-checkout:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-modern-checkout:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Icon & Label Styling */
+.item-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.obj-icon {
+    font-size: 20px; /* Adjust size based on your 50px grid */
+}
+
+.obj-label-modern {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #444;
+}
+
+/* Modern Tooltip/Hover */
+.hover-details {
+    visibility: hidden;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 100;
+    min-width: 120px;
+    border: 1px solid rgba(0,0,0,0.05);
+    pointer-events: none;
+}
+
+.layout-item:hover .hover-details {
+    visibility: visible;
+}
+
+/* --- New Modern Legend Styles --- */
+.legend-container {
+    width: 100%;
+    margin-top: -1rem;
+    margin-bottom: 2rem;
+}
+
+.legend-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.legend-section {
+    display: flex;
+    align-items:
+    center; padding:
+    12px 20px;
+    gap:20px;
+    flex-wrap: wrap;
+}
+
+.legend-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #94a3b8;
+    min-width: 70px;
+}
+
+.legend-items { 
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.l-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+}
+
+.l-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+
+.l-item span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+}
+
+/* Legend Specific Box Colors */
+.l-box.available {
+    background: white;
+    border: 1px solid #cbd5e1;
+}
+
+.l-box.selected {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+}
+
+.l-box.on-hold {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+}
+
+.l-box.occupied {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.l-box.occupied::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: #94a3b8;
+    transform: rotate(-45deg);
+    top: 6px;
+}
+
+.l-box.non-bookable {
+    background: #fcfcfc;
+    border: 1px dashed #dee2e6;
+}
+
+/* Responsive Adjustment */
+@media (max-width: 768px) {
+    .legend-section { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+/* seat layout page styles end */

@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import F
 from datetime import timedelta, datetime
+from django.utils.crypto import get_random_string
+import uuid 
 import json
 from .models import *
 from django.db.models import Max
@@ -15,9 +17,10 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from .services import sync_route_prices
 from .services import generate_smart_trips
-from .forms import BlogPostForm, BlogBannerForm
+from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm
+from accounts.forms import AdminUserEditForm
 
-User = get_user_model()
+
 
 
 
@@ -1561,9 +1564,6 @@ def get_search_locations(request):
     return JsonResponse({'status': 'success', 'data': locations})
 
 
-
-from .forms import *
-from accounts.forms import *
 def admin_user_list(request):
     # Fetch all users, newest first
     users = User.objects.all().order_by('-created_at')
@@ -1634,6 +1634,7 @@ def admin_user_delete(request, id):
     user_to_delete.delete()
     messages.success(request, "User deleted successfully.")
     return redirect('admin_user_list')
+
 
 
 def tcktbook(request):
@@ -1756,11 +1757,6 @@ def select_seats(request, trip_id):
     return render(request, 'admin_panel/book/select_seats.html', context)
 
 
-
-from django.db import transaction, DatabaseError  # <--- NEW
-from django.utils import timezone                 # <--- NEW
-import uuid  
-
 def admin_book_confirm(request):
     if request.method != 'POST':
         return redirect('admin_home')
@@ -1797,10 +1793,10 @@ def admin_book_confirm(request):
 
                 if not user:
                     # Create new user
-                    # Use phone as username to ensure uniqueness
                     final_email = c_email if c_email else f"{c_phone}@guest.com"
-                    # Generate a random secure password
-                    random_pass = User.objects.make_random_password()
+                    
+                    # 👇 FIX: Use get_random_string instead of make_random_password
+                    random_pass = get_random_string(length=12)
                     
                     user = User.objects.create_user(
                         email=final_email,
@@ -1887,5 +1883,40 @@ def ticket_detail(request, pk):
         'seat_count': tickets.count(),
     }
     return render(request, 'admin_panel/book/ticket_detail.html', context)
+
+
+
+def cancel_booking(request, booking_id):
+    if not request.user.is_staff: # Security check
+        messages.error(request, "Access Denied.")
+        return redirect('admin_home')
+        
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Prevent cancelling already cancelled bookings
+    if booking.status == 'CANCELLED':
+        messages.warning(request, "This booking is already cancelled.")
+        return redirect('admin_booking_list')
+
+    try:
+        with transaction.atomic():
+            # 1. Update Booking Status
+            booking.status = 'CANCELLED'
+            booking.save()
+
+            # 2. Update All Associated Tickets
+            # This effectively "Releases" the seats because your availability logic 
+            # only looks for 'BOOKED' or 'LOCKED' tickets.
+            tickets = Ticket.objects.filter(booking=booking)
+            count = tickets.count()
+            tickets.update(status='CANCELLED')
+
+            messages.success(request, f"Booking Cancelled. {count} seats have been released back to the pool.")
+            
+    except Exception as e:
+        messages.error(request, f"Error cancelling booking: {e}")
+
+    return redirect('admin_booking_list')
+
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

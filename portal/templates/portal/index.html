@@ -3,199 +3,218 @@
 {% load static %}
 
 {% block custom_css %}
+<link rel="stylesheet preload" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% comment %} <link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}"> {% endcomment %}
 
 <style>
-     /* Container styling to match img1 */
-.form-area-v2 {
- display: flex;
- align-items: center;
- background: #fff;
- padding: 15px 25px;
- border-radius: 20px; /* High rounding as seen in img1 */
- box-shadow: 0 10px 30px rgba(0,0,0,0.05);
- gap: 10px;
-}
+    /* Container styling to match img1 */
+    .form-area-v2 {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        padding: 15px 25px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        gap: 10px;
+    }
 
-/* Individual input boxes */
-.search-input-group {
- display: flex;
- align-items: center;
- border: 1px solid #EAEAEA;
- border-radius: 12px;
- padding: 10px 15px;
- flex: 1;
- min-height: 70px;
-}
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid #EAEAEA;
+        border-radius: 12px;
+        padding: 10px 15px;
+        flex: 1;
+        min-height: 70px;
+        background: #fff;
+    }
 
-.input-content {
- display: flex;
- flex-direction: column;
- margin-left: 10px;
-}
+    .input-content {
+        display: flex;
+        flex-direction: column;
+        margin-left: 10px;
+        width: 100%; /* Ensures Select2 takes full width */
+    }
 
-.label-tag {
- font-size: 11px;
- font-weight: 700;
- color: #FF8C66; /* Orange color from img1 */
- margin-bottom: 0;
- text-transform: uppercase;
-}
+    .label-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: #FF8C66; /* Orange color */
+        margin-bottom: 0;
+        text-transform: uppercase;
+    }
 
-.label-tag.orange {
- color: #FF8C66;
-}
+    .search-field {
+        border: none;
+        outline: none;
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+        width: 100%;
+        padding: 0;
+        background: transparent;
+    }
 
-.search-field {
- border: none;
- outline: none;
- font-weight: 600;
- font-size: 16px;
- color: #333;
- width: 100%;
- padding: 0;
-}
+    .search-field::placeholder {
+        color: #2C3E50;
+        opacity: 1;
+    }
 
-.search-field::placeholder {
- color: #2C3E50;
- opacity: 1;
-}
+    .exchange-icon {
+        padding: 0 5px;
+        cursor: pointer;
+    }
 
-/* Exchange Arrows icon */
-.exchange-icon {
- padding: 0 5px;
-}
+    .search-submit-btn {
+        background-color: #2ECC71;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+        height: 70px;
+        width: 100%;
+    }
 
-/* The Green Search Button */
-.search-submit-btn {
- background-color: #2ECC71;
- color: white;
- border: none;
- padding: 15px 40px;
- border-radius: 12px;
- font-weight: 700;
- font-size: 16px;
- cursor: pointer;
- transition: 0.3s;
- height: 70px;
- width: 100%;
-}
+    .search-submit-btn:hover {
+        background-color: #27ae60;
+    }
 
-.search-submit-btn:hover {
- background-color: #27ae60;
-}
+    /* --- 2. SELECT2 CUSTOM MODERN STYLING --- */
 
-/* Mobile Responsive */
-@media (max-width: 991px) {
- .form-area-v2 {
-     flex-direction: column;
-     padding: 20px;
- }
- .search-input-group, .button-area {
-     width: 100%;
- }
- .exchange-icon {
-     transform: rotate(90deg);
-     margin: 5px 0;
- }
-}
-/* --- CALENDAR OVERRIDES TO MATCH IMAGE --- */
-.flatpickr-calendar {
-    border-radius: 12px !important;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
-    width: 320px !important;
-    border: 1px solid #eee !important;
-    padding: 10px 5px !important;
-}
+    /* Remove default Select2 box styling to match your group look */
+    .select2-container--default .select2-selection--single {
+        border: none !important;
+        background: transparent !important;
+        height: 25px !important; /* Fixed height for alignment */
+        display: flex;
+        align-items: center;
+    }
 
-/* Header Month/Year Text - Bold Green */
-.flatpickr-current-month {
-    padding: 10px 0 !important;
-}
-.flatpickr-current-month .flatpickr-monthDropdown-months,
-.flatpickr-current-month input.cur-year {
-    color: #079D49 !important; /* Your Brand Green */
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    font-size: 16px !important;
-}
+    /* Align Select2 text with your search-field style */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        line-height: 25px !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        color: #333 !important;
+    }
 
-/* Navigation Arrows - Circular Styles */
-.flatpickr-prev-month, .flatpickr-next-month {
-    top: 15px !important;
-    width: 35px !important;
-    height: 35px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    transition: 0.3s;
-}
+    /* Hide the default small arrow for a cleaner look */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none;
+    }
 
-/* Left Arrow: Light Grey Circle */
-.flatpickr-prev-month {
-    background: #E0E0E0 !important;
-    left: 15px !important;
-}
-/* Right Arrow: Green Circle */
-.flatpickr-next-month {
-    background: #079D49 !important;
-    right: 15px !important;
-}
+    /* Dropdown Menu Styling */
+    .select2-dropdown {
+        border: 1px solid #eee !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+        border-radius: 12px !important;
+        overflow: hidden;
+        margin-top: 5px;
+        z-index: 9999;
+    }
 
-.flatpickr-prev-month svg, .flatpickr-next-month svg {
-    fill: #fff !important; /* White icons */
-    width: 12px !important;
-}
-.flatpickr-prev-month svg { fill: #888 !important; } /* Grey icon for the left one */
+    /* Dropdown items hover/selection color */
+    .select2-results__option--highlighted[aria-selected] {
+        background-color: #2ECC71 !important; /* Theme Green */
+    }
 
-/* Weekday Labels */
-span.flatpickr-weekday {
-    color: #2C3E50 !important; /* Darker blue-grey */
-    font-weight: 700 !important;
-}
+    .select2-container--default .select2-results__option--selectable {
+        padding: 10px 15px;
+    }
 
-/* Day Styling */
-.flatpickr-day {
-    color: #444;
-    font-weight: 500;
-    border-radius: 6px !important; /* Slightly rounded squares */
-}
+    /* --- 3. FLATPICKR OVERRIDES (Your Original Style) --- */
+    .flatpickr-calendar {
+        border-radius: 12px !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+        width: 320px !important;
+        border: 1px solid #eee !important;
+        padding: 10px 5px !important;
+    }
 
-/* The Selected Day (The Green Box Outline) */
-.flatpickr-day.selected, 
-.flatpickr-day.selected:hover {
-    background: #fff !important;
-    border: 2px solid #079D49 !important; /* Green Border */
-    color: #079D49 !important; /* Green Text */
-    font-weight: 700;
-    position: relative;
-}
+    .flatpickr-current-month {
+        padding: 10px 0 !important;
+    }
 
-/* Small Green Triangle/Check indicator in the corner of selected day */
-.flatpickr-day.selected::after {
-    content: "✓";
-    position: absolute;
-    bottom: -2px;
-    right: 1px;
-    font-size: 8px;
-    background: #079D49;
-    color: white;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    line-height: 10px;
-}
+    .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-current-month input.cur-year {
+        color: #079D49 !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        font-size: 16px !important;
+    }
 
-/* Hover effect for other days */
-.flatpickr-day:hover {
-    background: #F0F9F4 !important;
-}
+    .flatpickr-prev-month, .flatpickr-next-month {
+        top: 15px !important;
+        width: 35px !important;
+        height: 35px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
+    }
+
+    .flatpickr-prev-month { background: #E0E0E0 !important; left: 15px !important; }
+    .flatpickr-next-month { background: #079D49 !important; right: 15px !important; }
+
+    .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #fff !important; width: 12px !important; }
+    .flatpickr-prev-month svg { fill: #888 !important; }
+
+    span.flatpickr-weekday { color: #2C3E50 !important; font-weight: 700 !important; }
+
+    .flatpickr-day { color: #444; font-weight: 500; border-radius: 6px !important; }
+
+    .flatpickr-day.selected, .flatpickr-day.selected:hover {
+        background: #fff !important;
+        border: 2px solid #079D49 !important;
+        color: #079D49 !important;
+        font-weight: 700;
+        position: relative;
+    }
+
+    .flatpickr-day.selected::after {
+        content: "✓";
+        position: absolute;
+        bottom: -2px;
+        right: 1px;
+        font-size: 8px;
+        background: #079D49;
+        color: white;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        line-height: 10px;
+    }
+
+    .flatpickr-day:hover { background: #F0F9F4 !important; }
+
+
+
+    /* --- 4. MOBILE RESPONSIVE (Your Original Style) --- */
+    @media (max-width: 991px) {
+        .form-area-v2 {
+            flex-direction: column;
+            padding: 20px;
+        }
+        .search-input-group, .button-area {
+            width: 100%;
+        }
+        .exchange-icon {
+            transform: rotate(90deg);
+            margin: 5px 0;
+        }
+    }
  </style>
 {% endblock custom_css %}
+
+
 {% block content %}
-
-
     <!-- rts banner area start -->
     <div class="rts-banner-area-six overflow-hidden radius-10" 
      style="{% if banner.background_image %}background-image: url('{{ banner.background_image.url }}');{% else %}background-image: url('{% static 'portal/assets/images/banner/bg-11.webp' %}');{% endif %}">
@@ -231,53 +250,65 @@ span.flatpickr-weekday {
 
     <div id="advance_search" class="rts__section advance__search__section is__home__one tour-marketplace">
         <div class="container">
-            <div class="form-area-v2 bg-white">
-                <div class="search-input-group">
-                    <div class="icon-box">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#2ECC71"/>
+            <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
+                <div class="form-area-v2 bg-white">
+                    <div class="search-input-group">
+                        <div class="icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#2ECC71"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="input-content">
+                            <p class="label-tag">FROM</p>
+                            <select id="search-from" class="search-field select2" name="from">
+                                <option value="" selected disabled>Select Origin</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.id }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="exchange-icon" id="switch-location" style="cursor: pointer;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
                         </svg>
                     </div>
-                    <div class="input-content">
-                        <p class="label-tag">FROM</p>
-                        <input type="text" id="search-from" list="location-list" placeholder="Select Destination" class="search-field">
+
+                    <div class="search-input-group">
+                        <div class="icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#2ECC71"/>
+                            </svg>
+                        </div>
+                        <div class="input-content">
+                            <p class="label-tag">TO</p>
+                            <select id="search-to" class="search-field select2" name="to" disabled>
+                                <option value="" selected disabled>Select Destination</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-    
-                <div class="exchange-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
-                    </svg>
-                </div>
-    
-                <div class="search-input-group">
-                    <div class="icon-box">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#2ECC71"/>
-                        </svg>
+
+                    <div class="search-input-group calendar-trigger">
+                        <div class="input-content ps-3">
+                            <p class="label-tag">JOURNEY DATE</p>
+                            <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" name="date" readonly>
+                        </div>
                     </div>
-                    <div class="input-content">
-                        <p class="label-tag">TO</p>
-                        <input type="text" id="search-to" list="location-list" placeholder="Select Destination" class="search-field">
+
+                    <div class="button-area">
+                        <button type="submit" class="search-submit-btn">SEARCH</button>
                     </div>
-                </div>
-                <datalist id="location-list">
-                </datalist>
-    
-                <div class="search-input-group calendar-trigger">
-                    <div class="input-content ps-3">
-                        <p class="label-tag">JOURNEY DATE</p>
-                        <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" readonly>
-                    </div>
-                </div>
-    
-                <div class="button-area">
-                    <button type="submit" class="search-submit-btn">SEARCH</button>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 
+ 
+
+
+    
 
 
     <!-- rts Offer area start -->
@@ -342,80 +373,102 @@ span.flatpickr-weekday {
     </div>
     <!-- rts Offer area end -->
 
-    <!-- rts faq area start -->
-    {% if faq_settings %}
-    <section class="rts-faq-area kayaking rts-section-gapTop">
+    <!-- rts Destination area start -->
+    <section class="rts-destination-area rts-section-gapBottom">
         <div class="container">
-            <div class="section-inner">
-                <div class="row g-5">
-                    
-                    <div class="col-lg-4">
-                        <div class="image-area overflow-hidden radius-10 wow zoomIn" data-wow-delay="0.4s">
-                            {% if faq_settings.side_image %}
-                                <img class="wow scaleIn" data-wow-delay="0.4s" src="{{ faq_settings.side_image.url }}" alt="FAQ Image">
-                            {% endif %}
+            <div class="section-title-area center-style">
+                <h2 class="section-title text-uppercase wow fadeInUp" data-wow-delay="0.4s">Top Destination</h2>
+            </div>
+            <div class="section-inner mt--60">
+                <div class="destination-area-3">
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.2s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/27.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">New York </a></h6>
                         </div>
                     </div>
-    
-                    <div class="col-lg-8">
-                        <div class="faq-content">
-                            <div class="section-title-area">
-                                <h2 class="section-title mb-0">{{ faq_settings.title }}</h2>
-                            </div>
-    
-                            <div class="accordion-faq-one mt--60">
-                                <div class="accordion" id="accordionExample">
-                                    
-                                    {% for item in faq_items %}
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
-                                                    data-bs-toggle="collapse" 
-                                                    data-bs-target="#collapse{{ forloop.counter }}" 
-                                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
-                                                    aria-controls="collapse{{ forloop.counter }}">
-                                                {{ item.question }}
-                                            </button>
-                                        </h2>
-                                        
-                                        <div id="collapse{{ forloop.counter }}" 
-                                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
-                                             data-bs-parent="#accordionExample">
-                                            <div class="accordion-body">
-                                                {{ item.answer }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-    
-                                </div>
-                            </div>
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.4s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/28.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">Maldives</a></h6>
                         </div>
                     </div>
-    
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.6s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/29.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">Greek Islands</a></h6>
+                        </div>
+                    </div>
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.8s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/30.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">Dubai Coastline</a></h6>
+                        </div>
+                    </div>
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="1s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/31.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">Bali, Indonesia</a></h6>
+                        </div>
+                    </div>
+                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="1.2s">
+                        <div class="image-area wow zoomIn">
+                            <a href="destination-details.html">
+                                <img class="hover-image" src="{% static 'portal/assets/images/destination/32.webp'%}" width="150" alt="">
+                            </a>
+                        </div>
+                        <div class="content">
+                            <h6 class="title f-medium"><a href="destination-details.html">Croatia</a></h6>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-    {% endif %}
-    <!-- rts faq area end -->
-
-
-
-
+    <!-- rts Destination area end -->
 
 {% endblock content %}
 
 {% block custom_js %}
+{% comment %} <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> {% endcomment %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('.select2').select2();
+    });
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         flatpickr("#journey-date", {
-            dateFormat: "d M Y",
+            altInput: true,       // Shows the "pretty" date to user
+            altFormat: "d M Y",   // Format shown: 04 Jan 2026
+            dateFormat: "Y-m-d",  // Format sent to Django: 2026-01-04
             minDate: "today",
             disableMobile: "true",
             animate: true,
-            // Custom Arrow SVGs to look cleaner
             nextArrow: '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"></path></svg>',
             prevArrow: '<svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"></path></svg>'
         });
@@ -444,6 +497,48 @@ span.flatpickr-weekday {
                 }
             })
             .catch(error => console.error('Error fetching locations:', error));
+    });
+</script>
+
+<script>
+    $(document).ready(function() {
+        // Initialize "from" Select2
+        $('#search-from').select2({
+            width: '100%',
+            placeholder: 'Select Origin'
+        });
+
+        // Initialize "to" Select2 with AJAX (will be populated dynamically)
+        $('#search-to').select2({
+            width: '100%',
+            placeholder: 'Select Destination',
+            ajax: {
+                url: '{% url "get_available_destinations" %}',  // Django URL name for the view
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        from_id: $('#search-from').val()  // Send selected "from" ID
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
+            }
+        });
+
+        // Enable "to" select when "from" is selected
+        $('#search-from').on('change', function() {
+            const fromValue = $(this).val();
+            if (fromValue) {
+                $('#search-to').prop('disabled', false).val(null).trigger('change');
+            } else {
+                $('#search-to').prop('disabled', true).val(null).trigger('change');
+            }
+        });
     });
 </script>
 {% endblock custom_js %}

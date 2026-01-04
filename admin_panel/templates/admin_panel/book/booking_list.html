@@ -1,32 +1,40 @@
 {% extends 'admin_panel/base.html' %}
 {% load static %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="page-title">
-        <div class="row">
-            <div class="col-6">
-                <h3>Booking List</h3>
-            </div>
-            <div class="col-6 text-end">
-                <a href="{% url 'tcktbook' %}" class="btn btn-primary"><i class="fa fa-plus"></i> New Booking</a>
-            </div>
-        </div>
-    </div>
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+{% endblock css %}
 
+{% block content %}
+<div class="container-fluid datatable-init">
     <div class="row">
         <div class="col-sm-12">
             <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>Booking List</h1>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <a href="{% url 'tcktbook' %}" class="btn btn-pill btn-primary btn-lg">
+                                    <span class="me-2"><i class="fa fa-plus"></i></span> New Booking
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
                             <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>Passenger</th>
                                     <th>Trip Info</th>
-                                    <th>Date</th>
-                                    <th>Total (৳)</th>
+                                    <th>Journey Date</th>
+                                    <th>Booked On</th> <th>Total (৳)</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -37,7 +45,6 @@
                                     <td>#{{ booking.id }}</td>
                                     <td>
                                         <div class="fw-bold">{{ booking.passenger_name }}</div>
-                                        
                                         <small class="text-muted">
                                             {% if booking.user.email %}
                                                 {{ booking.user.email }}<br>
@@ -51,7 +58,17 @@
                                             {{ booking.trip.route.source.name }} &rarr; {{ booking.trip.route.destination.name }}
                                         </span>
                                     </td>
-                                    <td>{{ booking.created_at|date:"d M Y, h:i A" }}</td>
+                                    
+                                    <td>
+                                        <div class="fw-bold text-primary">
+                                            {{ booking.trip.departure_datetime|date:"d M Y" }}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ booking.trip.departure_datetime|date:"h:i A" }}
+                                        </small>
+                                    </td>
+
+                                    <td>{{ booking.created_at|date:"d M, h:i A" }}</td>
                                     <td class="fw-bold text-success">{{ booking.total_amount }}</td>
                                     <td>
                                         {% if booking.status == 'CONFIRMED' %}
@@ -63,15 +80,26 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info" title="View Ticket" target="_blank">
-                                            <i class="fa fa-eye"></i>
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                            
+                                            {% if booking.status != 'CANCELLED' %}
+                                            <button type="button" 
+                                                    class="btn btn-xs btn-danger px-2" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#cancelModal"
+                                                    data-href="{% url 'cancel_booking' booking.id %}">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <p class="text-muted mb-0">No bookings found yet.</p>
+                                    <td colspan="8" class="text-center py-4"> <p class="text-muted mb-0">No bookings found yet.</p>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -83,4 +111,42 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="cancelModalLabel">⚠️ Cancel Booking</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to cancel this booking?</p>
+                <p class="text-muted small mt-2">This action will immediately release the seats back to the pool. This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+                <a href="#" id="confirmCancelBtn" class="btn btn-danger">Yes, Cancel Booking</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var cancelModal = document.getElementById('cancelModal');
+        cancelModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var cancelUrl = button.getAttribute('data-href');
+            var confirmBtn = cancelModal.querySelector('#confirmCancelBtn');
+            confirmBtn.setAttribute('href', cancelUrl);
+        });
+    });
+</script>
 {% endblock %}

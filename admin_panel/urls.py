@@ -7,23 +7,6 @@ from .import views
 
 urlpatterns = [
     path('', views.dashboard, name='admin_dashboard'),
-    
-    #tckt booking
-    path('tcktbook/', views.tcktbook, name='tcktbook'),
-    path('book/seats/<int:trip_id>/', views.select_seats, name='select_seats'),
-    path('book/confirm/', views.admin_book_confirm, name='admin_book_confirm'),
-    path('bookings/list/', views.booking_list, name='admin_booking_list'),
-    path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
-    #tckt booking
-    
-    
-    #user accounts---
-    path('admin_user_list/', views.admin_user_list, name='admin_user_list'),
-    path('admin_user_list/delete/<int:id>/', views.admin_user_delete, name='admin_user_delete'),
-    path('users/edit/<int:id>/', views.admin_user_edit, name='admin_user_edit'),
-    path('user_add/', views.user_add, name='user_add'),
-    #user accounts---
-    
 
     # Ships
     path('ships/', views.ships, name='ships'),
@@ -83,4 +66,20 @@ urlpatterns = [
     path('blog/delete/<slug:slug>/', views.blog_delete, name='admin_blog_delete'),
     path('blog/comments/', views.admin_comment_list, name='admin_comment_list'),
     path('blog/comments/delete/<int:id>/', views.admin_comment_delete, name='admin_comment_delete'),
+    
+    #user accounts---
+    path('admin_user_list/', views.admin_user_list, name='admin_user_list'),
+    path('admin_user_list/delete/<int:id>/', views.admin_user_delete, name='admin_user_delete'),
+    path('users/edit/<int:id>/', views.admin_user_edit, name='admin_user_edit'),
+    path('user_add/', views.user_add, name='user_add'),
+    #user accounts---
+    
+    #tckt booking
+    path('tcktbook/', views.tcktbook, name='tcktbook'),
+    path('book/seats/<int:trip_id>/', views.select_seats, name='select_seats'),
+    path('book/confirm/', views.admin_book_confirm, name='admin_book_confirm'),
+    path('bookings/list/', views.booking_list, name='admin_booking_list'),
+    path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
+    path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
+    #tckt booking
 ]

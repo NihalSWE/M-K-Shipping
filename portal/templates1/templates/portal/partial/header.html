@@ -1,0 +1,94 @@
+{% load static %}
+
+<header class="header-style-one header--sticky header-six p-0">
+    <div class="container">
+        <div class="header-inner">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="header-style-one-wrapper">
+                        <div class="left-area">
+                            <div class="logo-area">
+                                <a href="{% url 'home' %}" class="logo">
+                                    {% if site_identity.logo %}
+                                        <img src="{{ site_identity.logo.url }}" alt="logo" style="height: 80px;">
+                                    {% else %}
+                                        <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+                                    {% endif %}
+                                </a>
+                            </div>
+                        </div>
+
+                        <nav class="main-nav-area">
+                            <ul class="list-unstyled rts-desktop-menu">
+                                <li class="menu-item rts-has-dropdown">
+                                    <a class="main-element rts-dropdown-main-element" href="{% url 'home' %}">Home</a>
+                                </li>
+                                <li class="menu-item rts-has-dropdown">
+                                    <a href="#" class="rts-dropdown-main-element">Tours</a>
+                                    <ul class="rts-submenu list-unstyled menu-home">
+                                        <li class="nav-item"><a class="nav-link page" href="{% url 'tour' %}">Tour</a></li>
+                                        <li class="nav-item"><a class="nav-link page" href="{% url 'tourDetails' %}">Tour Details</a></li>
+                                    </ul>
+                                </li>
+                                <li class="menu-item rts-has-dropdown">
+                                    <a href="{% url 'destinations' %}" class="rts-dropdown-main-element">Destinations</a>
+                                </li>
+                                <li class="menu-item rts-has-dropdown">
+                                    <a href="#" class="rts-dropdown-main-element">Pages</a>
+                                    <ul class="rts-submenu list-unstyled menu-home">
+                                        <li class="nav-item"><a class="nav-link page" href="{% url 'aboutUs' %}">About</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="{% url 'team' %}">Teams</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="{% url 'blog' %}">Blog</a></li>
+                                        
+                                        {% if not user.is_authenticated %}
+                                            <li class="nav-item"><a class="nav-link" href="{% url 'signin' %}">Log In</a></li>
+                                            <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Sign Up</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </li>
+                                <li class="menu-item"><a class="main-element rts-dropdown-main-element" href="{% url 'contact' %}">Contact</a></li>
+                            </ul>
+                        </nav>
+
+                        <div class="button-area-start">
+                            <div class="shop-btn-area">
+
+                                {% if user.is_authenticated %}
+                                <div class="d-flex flex-column align-items-center justify-content-center me-3" style="line-height: 1;">
+                                    <a href="#" class="user-btn round-btn">
+                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 0.25C11.3198 0.252614 13.5442 1.17509 15.1846 2.81543C16.8249 4.45581 17.7474 6.68016 17.75 9C17.75 10.7306 17.2369 12.4224 16.2754 13.8613C15.3139 15.3002 13.9474 16.4217 12.3486 17.084C10.7498 17.7463 8.9903 17.9197 7.29297 17.582C5.59567 17.2444 4.03619 16.4112 2.8125 15.1875C1.58883 13.9638 0.755583 12.4043 0.417969 10.707C0.0803652 9.00972 0.253757 7.2502 0.916016 5.65137C1.57827 4.05259 2.69983 2.68605 4.13867 1.72461C5.57757 0.763171 7.26946 0.250026 9 0.25ZM7.125 12.75C6.62793 12.7506 6.15129 12.9483 5.7998 13.2998C5.44833 13.6513 5.25055 14.1279 5.25 14.625V15.4854C6.38798 16.1498 7.68222 16.5 9 16.5C10.3178 16.5 11.612 16.1498 12.75 15.4854V14.625C12.7495 14.1279 12.5517 13.6513 12.2002 13.2998C11.8487 12.9483 11.3721 12.7505 10.875 12.75H7.125ZM9 1.48438C7.48071 1.4844 5.99733 1.94585 4.74609 2.80762C3.49475 3.66956 2.53475 4.89185 1.99316 6.31152C1.45167 7.73113 1.3536 9.28153 1.71289 10.7578C2.0722 12.2342 2.87149 13.5671 4.00488 14.5791C4.01731 13.7593 4.35091 12.9763 4.93457 12.4004C5.51821 11.8245 6.30511 11.5014 7.125 11.5H10.875C11.6949 11.5014 12.4818 11.8246 13.0654 12.4004C13.6491 12.9763 13.9827 13.7593 13.9951 14.5791C15.1285 13.5671 15.9278 12.2342 16.2871 10.7578C16.6464 9.28161 16.5492 7.73106 16.0078 6.31152C15.4662 4.8919 14.5062 3.66955 13.2549 2.80762C12.0035 1.94568 10.5195 1.48438 9 1.48438ZM9 4C9.82877 4 10.6239 4.32903 11.21 4.91504C11.796 5.50109 12.125 6.2962 12.125 7.125C12.125 7.74307 11.942 8.34742 11.5986 8.86133C11.2553 9.3751 10.7671 9.77518 10.1963 10.0117C9.62534 10.2482 8.99674 10.3109 8.39062 10.1904C7.78443 10.0699 7.22708 9.772 6.79004 9.33496C6.35304 8.89793 6.05612 8.34054 5.93555 7.73438C5.81502 7.12825 5.87678 6.49967 6.11328 5.92871C6.34982 5.35791 6.74994 4.86966 7.26367 4.52637C7.77754 4.18301 8.38198 4.00003 9 4ZM9.71777 5.39258C9.37529 5.25072 8.99836 5.21389 8.63477 5.28613C8.27105 5.35848 7.93605 5.5366 7.67383 5.79883C7.41173 6.06095 7.23353 6.39526 7.16113 6.75879C7.08879 7.1225 7.12566 7.50016 7.26758 7.84277C7.40942 8.18516 7.64993 8.47761 7.95801 8.68359C8.26631 8.8896 8.6292 8.99997 9 9C9.49708 8.99944 9.97369 8.80166 10.3252 8.4502C10.6767 8.09869 10.8744 7.62211 10.875 7.125C10.875 6.75416 10.7656 6.39135 10.5596 6.08301C10.3536 5.77468 10.0604 5.53449 9.71777 5.39258Z" fill="#0D0D0D" />
+                                        </svg>
+                                    </a>
+                                    <span style="font-size: 11px; font-weight: 700; color: #0D0D0D; margin-top: 5px;">
+                                        {{ user.first_name|default:user.username }}
+                                    </span>
+                                </div>
+                            
+                                <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="rts-btn btn-primary border me-3" style="padding: 10px 20px; min-width: auto; height: auto;">
+                                        Log Out
+                                    </button>
+                                </form>
+                                {% else %}
+                                    <a href="{% url 'signin' %}" class="rts-btn btn-primary border me-3" style="padding: 10px 20px; min-width: auto; height: auto;">
+                                        Log In
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'contact' %}" class="rts-btn btn-primary border">Book Tour</a>
+                                <div class="menu-btn menu-btn-toggle radius-6" id="menu-btn">
+                                    <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect y="14" width="20" height="2" fill="#FFFFFF"></rect>
+                                        <rect y="7" width="20" height="2" fill="#FFFFFF"></rect>
+                                        <rect width="20" height="2" fill="#FFFFFF"></rect>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

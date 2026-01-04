@@ -1,0 +1,133 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+{% endblock custom_css %}
+
+{% block content %}
+    
+    <div class="rts-breadcrumb-area one" 
+    style="background-image: url('{% if banner %}{{ banner.background_image.url }}{% else %}{% static 'assets/images/breadcrumb/01.webp' %}{% endif %}');">
+        <div class="container h-100">
+           <div class="breadcrumb-area-wrapper">
+               <div class="nav-bread-crumb">
+                   <a href="{% url 'home' %}">Home</a>
+                   <span><i class="fa-regular fa-chevron-right"></i></span>
+                   <a href="#" class="current">Blog</a>
+               </div>
+               <h1 class="title">
+                   {% if banner %}{{ banner.title }}{% else %}Our Blog{% endif %}
+               </h1>
+           </div>
+        </div>
+    </div>
+    <section class="rts-blog-area inner rts-section-gap">
+        <div class="container">
+            <div class="section-inner">
+                <div class="row g-5">
+                    
+                    <div class="col-lg-8">
+                        <div class="left-blog">
+                            <div class="row g-5">
+                                {% for post in posts %}
+                                <div class="col-lg-6">
+                                    <div class="blog-wrapper image-transform radius-10">
+                                        <div class="image-area">
+                                            <a href="{% url 'blog_details' post.slug %}"> {% if post.image %}
+                                                <img class="hover-image" src="{{ post.image.url }}" alt="{{ post.title }}" style="height:250px; object-fit:cover; width:100%;">
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="content-area">
+                                            <div class="blog-meta">
+                                                <ul>
+                                                    <li>{{ post.date|date:"d M, Y" }}</li>
+                                                    <li class="mid"></li>
+                                                    <li>{{ post.read_time }}</li>
+                                                </ul>
+                                            </div>
+                                            <h5 class="blog-title">
+                                                <a class="title-w-hover" href="{% url 'blog_details' post.slug %}">{{ post.title }}</a>
+                                            </h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12"><p>No posts found.</p></div>
+                                {% endfor %}
+                            </div>
+
+                            {% if posts.has_other_pages %}
+                            <div class="rts-course-pagination-area mt--50">
+                                <ul>
+                                    {% if posts.has_previous %}
+                                        <li><a href="?page={{ posts.previous_page_number }}"><button><i class="fa-regular fa-chevron-left"></i></button></a></li>
+                                    {% endif %}
+                                    
+                                    {% for i in posts.paginator.page_range %}
+                                        <li><a href="?page={{ i }}"><button class="{% if posts.number == i %}active{% endif %}">{{ i }}</button></a></li>
+                                    {% endfor %}
+
+                                    {% if posts.has_next %}
+                                        <li><a href="?page={{ posts.next_page_number }}"><button><i class="fa-regular fa-chevron-right"></i></button></a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-lg-4 pl--30 pl_md--15 pl_sm--15">
+                        <div class="rts-sidebar">
+                            <div class="rts-single-sidebar search mb--30">
+                                <h5 class="title">Search</h5>
+                                <div class="body">
+                                    <form action="{% url 'blog' %}" method="GET">
+                                        <div class="input-group">
+                                            <input type="text" name="q" class="form-control" placeholder="Search..." value="{{ request.GET.q|default:'' }}" required>
+                                            <button class="rts-btn btn-primary" type="submit">
+                                                <i class="fa-regular fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="rts-single-sidebar recent-post">
+                                <h5 class="title">Recent Posts</h5>
+                                <div class="recent-post-area">
+                                    
+                                    {% for recent in recent_posts %}
+                                    <div class="recent-post-single">
+                                        <div class="thumbnail">
+                                            <a href="{% url 'blog_details' recent.slug %}">
+                                                <img src="{{ recent.image.url }}" alt="Blog" 
+                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px;">
+                                            </a>
+                                        </div>
+                                        <div class="content-area">
+                                            <div class="user">
+                                                <i class="fa-regular fa-clock"></i>
+                                                <span>{{ recent.date|date:"d M, Y" }}</span>
+                                            </div>
+                                            <a class="post-title" href="{% url 'blog_details' recent.slug %}">
+                                                <h6 class="title">{{ recent.title }}</h6>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+
+                                </div>
+                            </div>
+
+
+                            
+
+                            </div>
+                    </div>
+                    </div> </div>
+        </div>
+    </section>
+
+{% endblock content %}
+
+{% block custom_js %}
+{% endblock custom_js %}

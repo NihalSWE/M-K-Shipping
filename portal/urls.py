@@ -13,5 +13,14 @@ urlpatterns = [
     path('tour',views.tour,name='tour'),
     path('tourDetails',views.tourDetails,name='tourDetails'),
     
-
+    
+    #Auth
+    path('signin',views.signin,name='signin'),
+    path('signup',views.signup,name='signup'),
+    
+    path('get-destinations/', views.get_available_destinations, name='get_available_destinations'),
+    
+    # Schedules
+    path('search-trips/', views.search_trips, name='search_trips'),
+    path('get-seat-layout/<int:trip_id>/', views.get_seat_layout, name='get_seat_layout'),
 ]

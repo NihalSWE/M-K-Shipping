@@ -1,0 +1,143 @@
+{% load static %}
+{% load trip_extras %}
+
+<div class="deck-selection-container p-4">
+    <h3 class="deck-header text-center">Deck Selection</h3>
+
+    <div class="deck-selection-wrapper">
+        <ul class="nav nav-pills modern-tabs px-3" id="deckTabs" role="tablist">
+            {% for deck in decks %}
+            <li class="nav-item">
+                <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                        id="deck-tab-{{ deck.id }}"
+                        data-bs-toggle="pill" 
+                        data-bs-target="#deck-{{ deck.id }}" 
+                        type="button">
+                    {{ deck.name }}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="legend-container mb-4">
+            <div class="legend-card shadow-sm border">
+                <div class="legend-section border-bottom">
+                    <span class="legend-label">Seat Status:</span>
+                    <div class="legend-items">
+                        <div class="l-item"><span class="l-box available"></span>Available</div>
+                        <div class="l-item"><span class="l-box selected"></span>Selected</div>
+                        <div class="l-item"><span class="l-box occupied"></span>Booked</div>
+                        <div class="l-item"><span class="l-box on-hold"></span>On Hold</div>
+                        <div class="l-item"><span class="l-box non-bookable"></span>Facility</div>
+                    </div>
+                </div>
+                
+                <div class="legend-section">
+                    <span class="legend-label" style="font-size: 12px;">Icons:</span>
+                    <div class="legend-items">
+                        {% regroup decks.0.layout_objects.all|dictsort:"category.name" by category as category_list %}
+                        {% for item in category_list %}
+                            {% if item.grouper.is_bookable %} <div class="l-item">
+                                    {% if item.grouper.icon %}
+                                        <iconify-icon icon="{{ item.grouper.icon.iconify_code }}" 
+                                                    style="color: {{ item.grouper.color_code }}; font-size: 18px;">
+                                        </iconify-icon>
+                                    {% endif %}
+                                    <span style="font-size: 12px; font-weight: 500; color: #475569;">{{ item.grouper.name }}</span>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content w-100" id="deckTabContent">
+            {% for deck in decks %}
+            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="deck-{{ deck.id }}">
+                <div class="deck-scroll-container d-flex justify-content-center">
+                    <div class="grid-canvas" 
+                            style="display: grid; 
+                                    /* COMPACT START */
+                                    grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
+                                    grid-template-rows: repeat({{ deck.total_rows }}, 50px);
+                                    gap: 8px;
+                                    padding: 20px;
+                                    /* COMPACT END */
+                                    background: #fff;
+                                    max-width: 100%;">
+                        
+                        {% for obj in deck.layout_objects.all %}
+                            <div class="layout-item 
+                                        {% if not obj.category.is_bookable %}non-bookable
+                                        {% elif obj.id in occupied_seats %}occupied
+                                        {% else %}available{% endif %}"
+                                        style="grid-column: {{ obj.col_index }} / span {{ obj.col_span }}; 
+                                        grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
+                                        {% if obj.category.is_bookable and obj.id not in occupied_seats %}--category-color: {{ obj.category.color_code }};{% endif %}"
+                                data-id="{{ obj.id }}"
+                                data-label="{{ obj.label }}"
+                                data-price="{% get_segment_price trip obj.category from_stop to_stop %}"
+                                data-category="{{ obj.category.name }}">
+                                
+                                <div class="item-content-wrapper">
+                                    {% if obj.category.icon %}
+                                        <iconify-icon 
+                                            icon="{{ obj.category.icon.iconify_code }}" 
+                                            class="obj-icon"
+                                            style="color: {{ obj.category.color_code }};">
+                                        </iconify-icon>
+                                    {% endif %}
+                                    
+                                    {% if obj.label %}
+                                        <span class="obj-label-modern">{{ obj.label }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="hover-details">
+                                    <div class="d-flex align-items-center mb-1">
+                                        {% if obj.category.icon %}
+                                            <iconify-icon icon="{{ obj.category.icon.iconify_code }}" class="me-2"></iconify-icon>
+                                        {% endif %}
+                                        <strong>{{ obj.label }}</strong>
+                                    </div>
+                                    
+                                    {% if obj.category.is_bookable %}
+                                        <small class="text-muted d-block mb-1">{{ obj.category.name }}</small>
+                                        {% if obj.id in occupied_seats %}
+                                            <span class="badge bg-secondary">Occupied</span>
+                                        {% else %}
+                                            <span class="badge bg-success">৳{% get_segment_price trip obj.category from_stop to_stop %}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <small class="text-info">Building Facility</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="height: 160px; width: 100%; display: block; clear: both;"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% comment %} <div class="modern-booking-footer">
+    <div class="footer-info-group">
+        <span class="footer-label">Your Selection</span>
+        <div id="selectedSeatsList" class="footer-value">None selected</div>
+    </div>
+
+    <div class="footer-info-group text-center">
+        <span class="footer-label">Total Payable</span>
+        <div class="total-price-display">৳ <span id="totalPrice">0</span></div>
+    </div>
+
+    <div class="footer-action">
+        <button id="checkoutBtn" class="btn-modern-checkout" disabled>
+            PROCEED TO CHECKOUT <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div> {% endcomment %}

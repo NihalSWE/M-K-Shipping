@@ -1,0 +1,159 @@
+{% load static %}
+
+<div class="rts-footer-area-one tour-marketplace pt--100 pb--30">
+    <div class="container">
+        <div class="footer-inner">
+            <div class="left">
+                <div class="single-footer-widget-one logo-area">
+                    <a href="{% url 'home' %}" class="logo">
+                        {% if site_identity.logo %}
+                            <img src="{{ site_identity.logo.url }}" alt="logo" style="
+                            height: 80px;
+                        ">
+                        {% else %}
+                            <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+                        {% endif %}
+                    </a>
+                    <p class="desc">We take care of every detail you can travel with confidence ease.</p>
+                    <div class="call-us">
+                        <div class="icon"><img src="{% static 'portal/assets/images/others/01.svg'%}" alt=""></div>
+                        <div class="text">
+                            <p>Call Us 24/7</p>
+                            <h5><a href="call-to:25621452156">(+256) 2145 2156</a></h5>
+                        </div>
+                    </div>
+                    <ul class="social-area">
+                        <li>Follow Us -</li>
+                        <li><a href="#"><i class="fa-brands fa-facebook-f"></i></a></li>
+                        <li><a href="#"><i class="fa-brands fa-linkedin"></i></a></li>
+                        <li><a href="#"><i class="fa-brands fa-youtube"></i></a></li>
+                        <li><a href="#"><i class="fa-brands fa-twitter"></i></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mid d-flex justify-content-center">
+                <div class="single-footer-widget-one essential-links">
+                    <h6 class="title">Quick Links</h6>
+                    <ul>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="tour.html">Featured Tours</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination.html">Destinations</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="about.html">About Us</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="team.html">Travel Guiders</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="tour.html">Tour Type</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="single-footer-widget-one essential-links">
+                    <h6 class="title">Popular Location</h6>
+                    <ul>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination-details.html">New York</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination-details.html">Cape Town</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination-details.html">Gold Coast</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination-details.html">Fiji Islands</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
+                            </svg>
+                            <a href="destination-details.html">Los Angeles</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="single-footer-widget-one essential-links">
+                    <h6 class="title">Support</h6>
+                    <ul>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
+                            </svg>
+                            <a href="contact.html">Help Center</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
+                            </svg>
+                            <a href="contact.html">Contact Us</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
+                            </svg>
+                            <a href="contact.html">Booking Guide</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
+                            </svg>
+                            <a href="contact.html">Privacy Policy</a>
+                        </li>
+                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
+                            </svg>
+                            <a href="contact.html">FAQs</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="right">
+                <div class="footer-input-main-wrapper-one">
+                    <div class="single-footer-widget-one">
+                        <h6 class="title">Newsletter</h6>
+                        <p class="desc">Subscribe to our newsletter</p>
+                        <form action="#">
+                            <input type="email" placeholder="Email address.." required>
+                            <button class="rts-btn btn-primary border">Subscribe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- copyright area start -->
+                <div class="copyright-area-start">
+                    <p>Copyright © <script>
+                            document.write(
+                                new Date().getFullYear()
+                            )
+                        </script> All Rights Reserved, Design by <span><a href="{% url 'home' %}">IGL Group</a></span></p>
+                    <ul>
+                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-01.svg'%}" alt=""></a></li>
+                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-02.svg'%}" alt=""></a></li>
+                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-03.svg'%}" alt=""></a></li>
+                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-04.svg'%}" alt=""></a></li>
+                    </ul>
+                </div>
+                <!-- copyright area end -->
+            </div>
+        </div>
+    </div>
+</div>

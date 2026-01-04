@@ -72,58 +72,6 @@
         max-height: 200px;
         opacity: 1;
     }
-
-
-
-
-
-    /* Remove default link underline */
-.view a {
-    text-decoration: none;
-}
-
-/* Style the wrapper spans to be flex containers for centering */
-.view-icon-span, .edit-icon-span, .delete-icon-span {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-/* --- VIEW BUTTON STYLES --- */
-.view-icon-span {
-    background-color: rgba(13, 110, 253, 0.1); /* Light Blue Background */
-}
-.view-icon {
-    color: #0d6efd; /* Bootstrap Primary Blue */
-    font-size: 14px;
-}
-.view:hover .view-icon-span {
-    background-color: #0d6efd;
-    transform: translateY(-2px);
-}
-.view:hover .view-icon {
-    color: #ffffff;
-}
-
-/* --- ADD SPACING BETWEEN ICONS --- */
-/* Add margin to the right of the view and edit icons */
-.action .view, .action .edit {
-    margin-right: 10px; /* Adjust this value for a larger or smaller gap */
-}
-
-/* Ensure the list items are displayed in a row */
-.action {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex; /* Makes the list items sit next to each other */
-    align-items: center; /* Vertically centers them */
-}
 </style>
 {% endblock css %}
 
@@ -218,26 +166,21 @@
                                     </td>
                                     <td>
                                         <ul class="action">
-                                            <li class="view">
-                                                <a href="{% url 'view_seat_plan' deck.id %}">
-                                                    <span class="view-icon-span">
-                                                        <i class="fa-regular fa-eye view-icon"></i>
-                                                    </span>
-                                                </a>
-                                            </li>
-                                        
                                             <li class="edit">
                                                 <span class="edit-icon-span">
                                                     <i class="fa-regular fa-pen-to-square edit-icon"
-                                                       data-bs-toggle="modal" data-bs-target="#editDeckModal"
-                                                       ></i>
+                                                        data-bs-toggle="modal" data-bs-target="#editDeckModal"
+                                                        data-id="{{ deck.id }}" data-name="{{ deck.name }}"
+                                                        data-level="{{ deck.level_order }}"
+                                                        data-cols="{{ deck.grid_cols }}"
+                                                        data-rows="{{ deck.total_rows }}">
+                                                    </i>
                                                 </span>
                                             </li>
-                                        
                                             <li class="delete" data-id="{{ deck.id }}">
                                                 <span class="delete-icon-span">
                                                     <i class="fa-solid fa-trash-can delete-icon" data-id="{{ deck.id }}"
-                                                       data-bs-toggle="modal" data-bs-target="#deleteDeckModal">
+                                                        data-bs-toggle="modal" data-bs-target="#deleteDeckModal">
                                                     </i>
                                                 </span>
                                             </li>

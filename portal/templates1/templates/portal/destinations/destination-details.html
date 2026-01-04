@@ -1,0 +1,94 @@
+{% extends "portal/base.html" %}
+
+{% load static %}
+
+{% block custom_css %}
+
+
+{% endblock custom_css %}
+
+{% block content %}
+
+    <section class="rts-gallery-area rts-section-gap">
+        <div class="container">
+            <div class="section-top-area d-flex align-items-end justify-content-between">
+                <div class="section-title-area wow fadeInLeft" data-wow-delay="0.2s">
+                    <p class="sub-title">{{ gallery_settings.subtitle|default:"Gallery" }}</p>
+                    <h2 class="section-title mb-0">{{ gallery_settings.title|default:"Experience Through Images" }}</h2>
+                    <p class="desc">{{ gallery_settings.description }}</p>
+                </div>
+                <div class="right-btn-area wow fadeInRight" data-wow-delay="0.2s">
+                    <div class="swiper-btn swiper-btn-prev4 radius-6"><i class="fa-regular fa-chevron-left"></i></div>
+                    <div class="swiper-btn swiper-btn-next4 radius-6"><i class="fa-regular fa-chevron-right"></i></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-inner mt--60 wow fadeInUp" data-wow-delay="0.2s">
+            <div class="swiper gallery-slider">
+                <div class="swiper-wrapper">
+                    {% for item in gallery_images %}
+                    <div class="swiper-slide">
+                        <div class="gallery-wrapper image-transform radius-10">
+                            <a href="{{ item.image.url }}" class="gallery-image">
+                                <img class="hover-image" src="{{ item.image.url }}" width="410" alt="Gallery Image {{ forloop.counter }}">
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="swiper-slide">
+                         <div class="gallery-wrapper image-transform radius-10">
+                            <p class="text-center p-5">No images uploaded yet.</p>
+                         </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="rts-tour-area rts-section-gap body-bg-one">
+        <div class="container">
+            <div class="section-title-area center-style">
+                <p class="sub-title wow fadeInUp" data-wow-delay="0.1s">{{ seasonal_settings.subtitle|default:"Featured Tours" }}</p>
+                <h2 class="section-title wow fadeInUp" data-wow-delay="0.2s">{{ seasonal_settings.title|default:"Discover Extraordinary Seasonal Specials" }}</h2>
+            </div>
+            
+            <div class="section-inner mt--60 position-relative pb--80 wow fadeInUp" data-wow-delay="0.2s">
+                <div class="swiper tour-slider">
+                    <div class="swiper-wrapper">
+                        
+                        {% for tour in seasonal_tours %}
+                        <div class="swiper-slide">
+                            <div class="tour-wrapper radius-10 image-transform">
+                                <div class="image-area radius-6">
+                                    <a href="{{ tour.link }}" target="_blank">
+                                        <img class="hover-image" src="{{ tour.image.url }}" alt="{{ tour.title }}">
+                                    </a>
+                                </div>
+                                <div class="content">
+                                    <h6 class="title"><a href="{{ tour.link }}">{{ tour.title }}</a></h6> 
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center w-100">No tours available right now.</div>
+                        {% endfor %}
+
+                    </div>
+                </div>
+                
+                <div class="swiper-nav-pag-area">
+                    <div class="swiper-pagination3"></div>
+                    <div class="swiper-navigation">
+                        <div class="swiper-btn swiper-btn-prev3"><i class="fa-regular fa-chevron-left"></i></div>
+                        <div class="swiper-btn swiper-btn-next3"><i class="fa-regular fa-chevron-right"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endblock content %}
+
+    {% block custom_js %}
+    
+    {% endblock custom_js %}

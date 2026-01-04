@@ -1,0 +1,252 @@
+{% load static%}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/fav.svg'%}">
+    <title>Travel & Tour Booking HTML Template</title>
+   <!-- swiper css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/swiper.min.css' %}" />
+<!-- Custom Font css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/fonts/custom-font.css' %}" />
+<!-- magnific popup css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/magnific-popup.css' %}" />
+<!-- metismenu css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/metismenu.css' %}" />
+<!-- bootstrap css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/vendor/bootstrap.min.css' %}" />
+<!-- bootstrap css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/vendor/animate.css' %}" />
+<!-- odometer css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/odometer.css' %}" />
+<!-- fontawesome css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/fontawesome.min.css' %}" />
+<!-- Nice Select css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/plugins/nice-select.css' %}" />
+<!-- Custom css -->
+<link rel="stylesheet preload" href="{% static 'portal/assets/css/style.css' %}" />
+
+{% block custom_css %}
+  
+  {% endblock custom_css %}
+</head>
+
+<body class="tour-marketplace">
+
+    <!-- preloader -->
+    {% comment %} <div class="preloader">
+        <div class="loader">
+            <span style="--i:1;"></span>
+            <span style="--i:2;"></span>
+            <span style="--i:3;"></span>
+            <span style="--i:4;"></span>
+            <span style="--i:5;"></span>
+            <span style="--i:6;"></span>
+            <span style="--i:7;"></span>
+            <span style="--i:8;"></span>
+            <span style="--i:9;"></span>
+            <span style="--i:10;"></span>
+            <span style="--i:11;"></span>
+            <span style="--i:12;"></span>
+            <span style="--i:13;"></span>
+            <span style="--i:14;"></span>
+            <span style="--i:15;"></span>
+            <span style="--i:16;"></span>
+            <span style="--i:17;"></span>
+            <span style="--i:18;"></span>
+            <span style="--i:19;"></span>
+            <span style="--i:20;"></span>
+            <div class="loader-plane">
+                <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+            </div>
+        </div>
+    </div> {% endcomment %}
+
+
+    <div class="preloader">
+        <div class="loader">
+            <div class="loader-logo">
+                <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Simple Logo Preloader */
+    .preloader .loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    
+    .preloader .loader-logo img {
+        width: 150px;
+        height: auto;
+    }
+    
+    .preloader .loading-dots {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .preloader .loading-dots span {
+        width: 12px;
+        height: 12px;
+        background-color: #0d6efd;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out;
+    }
+    
+    .preloader .loading-dots span:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .preloader .loading-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .preloader .loading-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes bounce {
+        0%, 80%, 100% {
+            transform: scale(0);
+            opacity: 0.5;
+        }
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    </style>
+
+
+
+
+    <!-- preloader end -->
+    <!-- header area start -->
+    {% include "portal/partial/header.html" %}
+    <!-- header area end -->
+
+    {% block content %}{% endblock content %}
+
+    <!-- rts footer area start -->
+    {% include "portal/partial/footer.html" %}
+    <!-- rts footer area end -->
+
+    <div id="side-bar" class="side-bar header-two header-eight">
+        <button class="close-icon-menu"><i class="fa-sharp fa-thin fa-xmark"></i></button>
+        <a class="logo" href="index.html"><img src="{% static 'portal/assets/images/logo/09.svg'%}" alt=""></a>
+        <!-- mobile menu area start -->
+        <div class="mobile-menu-main">
+            <nav class="nav-main mainmenu-nav mt--30">
+                <ul class="mainmenu metismenu" id="mobile-menu-active">
+                    <li class="has-droupdown">
+                        <a href="#" class="main">Home</a>
+                        <ul class="submenu mm-collapse">
+                            <li><a class="mobile-menu-link" href="index.html">Travel Agency</a></li>
+                            <li><a class="mobile-menu-link" href="index-two.html">Hiking Travel</a></li>
+                            <li><a class="mobile-menu-link" href="index-three.html">Home Yacht</a></li>
+                            <li><a class="mobile-menu-link" href="index-four.html">Wild Travel</a></li>
+                            <li><a class="mobile-menu-link" href="index-five.html">Travel Africa</a></li>
+                            <li><a class="mobile-menu-link" href="index-six.html">Tour Marketplace</a></li>
+                            <li><a class="mobile-menu-link" href="index-seven.html">Summer Travel</a></li>
+                            <li><a class="mobile-menu-link" href="index-eight.html">Travel Agency Two</a></li>
+                            <li><a class="mobile-menu-link" href="index-nine.html">Kayaking</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-droupdown">
+                        <a href="#" class="main">Tour</a>
+                        <ul class="submenu mm-collapse">
+                            <li><a class="mobile-menu-link" href="tour.html">Tour One</a></li>
+                            <li><a class="mobile-menu-link" href="tour-two.html">Tour Two</a></li>
+                            <li><a class="mobile-menu-link" href="tour-three.html">Tour Three</a></li>
+                            <li><a class="mobile-menu-link" href="tour-four.html">Tour Four</a></li>
+                            <li><a class="mobile-menu-link" href="tour-five.html">Tour Five</a></li>
+                            <li><a class="mobile-menu-link" href="tour-details.html">Tour Details</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-droupdown">
+                        <a href="#" class="main">Destinations</a>
+                        <ul class="submenu mm-collapse">
+                            <li><a class="mobile-menu-link" href="destination.html">Destinations</a></li>
+                            <li><a class="mobile-menu-link" href="destination-details.html">Destinations Details</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-droupdown">
+                        <a href="#" class="main">Pages</a>
+                        <ul class="submenu mm-collapse">
+                            <li><a class="mobile-menu-link" href="about.html">About</a></li>
+                            <li><a class="mobile-menu-link" href="team.html">Teams</a></li>
+                            <li><a class="mobile-menu-link" href="sign-in.html">Log In</a></li>
+                            <li><a class="mobile-menu-link" href="sign-up.html">Sign Up</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="contact.html" class="main">Contact Us</a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="follow-us">
+                <ul>
+                    <li><a href="#" aria-label="Facebook"><i class="fab fa-facebook-f" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
+                    <li><a href="#" aria-label="twitter"><i class="fab fa-twitter" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
+                    <li><a href="#" aria-label="instagram"><i class="fab fa-instagram" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
+                    <li><a href="#" aria-label="linkdin"><i class="fa-brands fa-linkedin-in" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
+                </ul>
+            </div>
+        </div>
+        <!-- mobile menu area end -->
+    </div>
+
+
+    <div id="anywhere-home" class="">
+    </div>
+
+    <div class="slider-drag-cursor"><i class="fas fa-angle-left me-2"></i> DRAG <i class="fas fa-angle-right ms-2"></i>
+    </div>
+
+    <!-- progress area start -->
+    <div class="progress-wrap">
+        <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102">
+            <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" style="transition: stroke-dashoffset 10ms linear 0s; stroke-dasharray: 307.919, 307.919; stroke-dashoffset: 307.919;"></path>
+        </svg>
+    </div>
+    <!-- progress area end -->
+
+    
+
+
+
+   <!-- jquery js -->
+<script defer src="{% static 'portal/assets/js/plugins/jquery.min.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/bootstrap.min.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/metismenu.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/vendor/jqueryui.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/vendor/waypoint.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/swiper.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/smoothscroll.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/vendor/wow.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/odometer.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/magnific-popup.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/isotop.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/plugins/contact-form.js' %}"></script>
+<script defer src="{% static 'portal/assets/js/main.js' %}"></script>
+
+{% block custom_js %}
+
+{% endblock custom_js %}
+</body>
+
+</html>

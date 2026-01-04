@@ -1,0 +1,382 @@
+{% extends "portal/base.html" %}
+
+{% load static %}
+
+{% block custom_css %}
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet preload" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'portal/assets/css/schedule.css' %}" />
+
+<style>
+    
+</style>
+
+{% endblock custom_css %}
+
+{% block content %}
+<!-- breadcrumb area start -->
+<!-- rts breadcrumb area start -->
+<div class="rts-breadcrumb-area one" 
+    style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
+    <div class="container h-100">
+        <div class="breadcrumb-area-wrapper">
+            <div class="nav-bread-crumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span><i class="fa-regular fa-chevron-right"></i></span>
+                <a href="#" class="current">About</a>
+            </div>
+            <h1 class="title">{{ banner.title|default:"Schedules" }}</h1>
+        </div>
+    </div>
+</div>
+<!-- rts breadcrumb area end -->
+<!-- breadcrumb area end -->
+
+
+    <!-- rts story area start -->
+<div class="search-results-wrapper">
+    <div class="container">
+        <div class="search-results-header">
+            <div class="container">
+                <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
+                    
+                    <div class="search-input-group">
+                        <div class="icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#2ECC71"/>
+                            </svg>
+                        </div>
+                        <div class="input-content">
+                            <p class="label-tag">FROM</p>
+                            <select id="search-from" class="search-field select2" name="from">
+                                {% for loc in locations %}
+                                    <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.from %}selected{% endif %}>
+                                        {{ loc.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="exchange-icon" id="switch-location">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
+                        </svg>
+                    </div>
+
+                    <div class="search-input-group">
+                        <div class="icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#2ECC71"/>
+                            </svg>
+                        </div>
+                        <div class="input-content">
+                            <p class="label-tag">TO</p>
+                            <select id="search-to" class="search-field select2" name="to">
+                                {% for loc in locations %}
+                                    <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.to %}selected{% endif %}>
+                                        {{ loc.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="search-input-group calendar-trigger">
+                        <div class="input-content ps-3">
+                            <p class="label-tag">JOURNEY DATE</p>
+                            <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" name="date" value="{{ search_params.date }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="button-area">
+                        <button type="submit" class="search-submit-btn">UPDATE SEARCH</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <h3 class="results-title" style="font-size: 24px; margin-bottom: 30px;">
+            <span style="color: var(--primary-green);">{{ trips|length }}</span> Ships found for your route
+        </h3>
+
+        <div class="results-list">
+    {% for item in trips %}
+        <div class="trip-card">
+            <div class="ship-media">
+                <img src="{{ item.trip.ship.image.url|default:'https://placehold.co/600x400?text=Ship+Image' }}" class="ship-img-v2" alt="Ship">
+                <span class="ship-type-tag">{{ item.trip.ship.ship_type }}</span>
+                <h4 class="ship-name-v2">{{ item.trip.ship.name }}</h4>
+            </div>
+
+            <div class="journey-details">
+                <div class="timeline-container">
+                    <div class="time-point">
+                        <span class="time-val">{{ item.trip.departure_datetime|date:"h:i A" }}</span>
+                        <span class="loc-val">{{ item.stop_from.location.name }}</span>
+                    </div>
+
+                    <div class="route-visual">
+                        <span class="duration-label">Direct Trip</span>
+                        <div class="visual-line-container">
+                            <div class="visual-line"></div>
+                            <i class="fas fa-ship ship-icon-mid"></i>
+                        </div>
+                    </div>
+
+                    <div class="time-point text-end">
+                        <span class="time-val">{{ item.trip.arrival_datetime|date:"h:i A" }}</span>
+                        <span class="loc-val">{{ item.stop_to.location.name }}</span>
+                    </div>
+                </div>
+
+                <div class="amenities-row">
+                    <div class="amenity"><i class="fas fa-snowflake"></i> AC</div>
+                    <div class="amenity"><i class="fas fa-wifi"></i> WiFi</div>
+                    <div class="amenity"><i class="fas fa-utensils"></i> Meals</div>
+                    <div class="amenity"><i class="fas fa-tv"></i> LED TV</div>
+                </div>
+            </div>
+
+            <div class="price-action-side">
+                {% comment %} <span class="loc-val">Starting from</span>
+                <div class="price-amount-v2">৳{{ item.preview_price|floatformat:0 }}</div> {% endcomment %}
+                
+                <a href="#" 
+                    class="book-btn-v2" 
+                    data-trip-id="{{ item.trip.id }}"
+                    data-from-stop="{{ item.stop_from.id }}"
+                    data-to-stop="{{ item.stop_to.id }}">
+                    SELECT SEATS
+                </a>
+            </div>
+        </div>
+    {% empty %}
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border">
+            <img src="/static/img/no-results.png" alt="No Trips" style="max-width: 150px; opacity: 0.6;">
+            <h4 class="fw-bold mt-4" style="color: #1A2B3C;">No Ships Available</h4>
+            <p class="text-muted">We couldn't find any trips for this route and date.</p>
+        </div>
+    {% endfor %}
+</div>
+    </div>
+</div>
+
+
+{% comment %} <div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="seat-selection-drawer" id="seatDrawer">
+    <div class="drawer-header p-4 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <div class="text-center">
+            <h3 class="m-0" id="drawerShipName">Deck Selection</h3>
+            <p class="text-muted m-0 small" id="drawerRouteInfo"></p>
+        </div>
+        <button class="btn-close" id="closeDrawer" style="font-size: 1.5rem;"></button>
+    </div>
+
+    <div id="drawerContent" class="flex-grow-1 overflow-auto">
+        </div>
+
+    <div class="drawer-footer">
+    </div>
+</div> {% endcomment %}
+
+{% comment %} <div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="seat-selection-drawer" id="seatDrawer">
+    <div class="drawer-header border-0 position-relative" style="height: 0; z-index: 1060;">
+        <button class="btn-close position-absolute" id="closeDrawer" 
+                style="right: 1.5rem; top: 1.5rem; font-size: 1.5rem;">
+        </button>
+    </div>
+
+    <div id="drawerContent" class="d-flex flex-column h-100">
+        </div>
+</div> {% endcomment %}
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="seat-selection-drawer" id="seatDrawer">
+    <div class="drawer-header border-0 position-relative" style="z-index: 1060;">
+        <button class="btn-close position-absolute" id="closeDrawer" 
+                style="right: 1.5rem; top: 1.5rem; font-size: 1.5rem; z-index: 1061;">
+        </button>
+    </div>
+
+    <div id="drawerContent">
+    </div>
+    <div class="modern-booking-footer">
+        <div class="footer-info-group">
+            <span class="footer-label">Your Selection</span>
+            <div id="selectedSeatsList" class="footer-value">None selected</div>
+        </div>
+
+        <div class="footer-info-group text-center">
+            <span class="footer-label">Total Payable</span>
+            <div class="total-price-display">৳ <span id="totalPrice">0</span></div>
+        </div>
+
+        <div class="footer-action">
+            <button id="checkoutBtn" class="btn-modern-checkout" disabled>
+                PROCEED TO CHECKOUT <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock content %}
+
+{% block custom_js %}
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('.select2').select2();
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#journey-date", {
+            altInput: true,       // Shows the "pretty" date to user
+            altFormat: "d M Y",   // Format shown: 04 Jan 2026
+            dateFormat: "Y-m-d",  // Format sent to Django: 2026-01-04
+            minDate: "today",
+            disableMobile: "true",
+            animate: true,
+            nextArrow: '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"></path></svg>',
+            prevArrow: '<svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"></path></svg>'
+        });
+    });
+</script>
+
+
+<script>
+    $(document).ready(function() {
+        // 1. Define the base URL using Django's URL name
+        // We use '0' as a placeholder for the trip_id
+        const baseLayoutUrl = "{% url 'get_seat_layout' 0 %}";
+
+        $('.book-btn-v2').on('click', function(e) {
+            e.preventDefault();
+            
+            // UI State
+            const $btn = $(this);
+            const tripId = $btn.data('trip-id');
+            const fromStop = $btn.data('from-stop');
+            const toStop = $btn.data('to-stop');
+
+            $('#drawerOverlay').fadeIn();
+            $('#seatDrawer').addClass('open');
+            $('body').css('overflow', 'hidden');
+
+            // Show a loader while fetching
+            $('#drawerContent').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 text-muted">Loading deck layout...</p>
+                </div>
+            `);
+
+            // 2. Resolve the URL by replacing placeholder '0' with actual tripId
+            let requestUrl = baseLayoutUrl.replace('0', tripId);
+            
+            // 3. Add query parameters using URLSearchParams
+            const params = new URLSearchParams({
+                from_stop: fromStop,
+                to_stop: toStop
+            });
+
+            // 4. Modern Fetch Promise
+            fetch(`${requestUrl}?${params.toString()}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text(); // We expect HTML partial from the view
+                })
+                .then(html => {
+                    $('#drawerContent').html(html);
+                    initializeSeatBooking(); // Re-attach listeners to the new HTML
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    $('#drawerContent').html(`
+                        <div class="alert alert-danger m-4">
+                            Failed to load layout. Please try again.
+                        </div>
+                    `);
+                });
+        });
+
+        // Close Logic
+        $('#closeDrawer, #drawerOverlay').on('click', function() {
+            $('#seatDrawer').removeClass('open');
+            $('#drawerOverlay').fadeOut();
+            $('body').css('overflow', 'auto');
+        });
+
+        // Cabin or seat initialization
+        // Maximum selection logic and summary update
+        function initializeSeatBooking() {
+            $('.layout-item.available').off('click').on('click', function() {
+                const $seat = $(this);
+                
+                // Check if the seat is already selected
+                const isSelected = $seat.hasClass('selected');
+                
+                // Count how many are currently selected
+                const selectedCount = $('.layout-item.selected').length;
+
+                // LOGIC: If trying to select a new seat and already at 5, stop them
+                if (!isSelected && selectedCount >= 5) {
+                    alert('Maximum of 5 seats/cabins can be booked at once.');
+                    return; // Exit here so toggleClass('selected') never runs
+                }
+
+                $seat.toggleClass('selected');
+                updateSummary();
+            });
+        }
+
+        function updateSummary() {
+            let selectedLabels = [];
+            let total = 0;
+            
+            // 1. Gather data from all currently selected items
+            $('.layout-item.selected').each(function() {
+                // We use || 0 to prevent "NaN" if a price is missing
+                selectedLabels.push($(this).data('label'));
+                total += parseFloat($(this).data('price') || 0);
+            });
+
+            // 2. Abbreviation Logic: prevent the "Selected Seats" list from breaking the layout
+            let displayTemplate = 'None selected';
+            if (selectedLabels.length > 0) {
+                if (selectedLabels.length > 3) {
+                    // Show first 3 and a count of the rest (e.g., "D-201, D-202, D-203 +2 more")
+                    displayTemplate = selectedLabels.slice(0, 3).join(', ') + ` +${selectedLabels.length - 3} more`;
+                } else {
+                    displayTemplate = selectedLabels.join(', ');
+                }
+            }
+
+            // 3. Update the UI Elements
+            // Use .toLocaleString() to turn 35000 into 35,000
+            $('#selectedSeatsList').text(displayTemplate);
+            $('#totalPrice').text(total.toLocaleString()); 
+
+            // 4. Button State: Enable only if at least one seat is selected
+            const $checkoutBtn = $('#checkoutBtn');
+            if (selectedLabels.length > 0) {
+                $checkoutBtn.prop('disabled', false).addClass('active');
+            } else {
+                $checkoutBtn.prop('disabled', true).removeClass('active');
+            }
+        }
+    });
+</script>
+
+{% endblock custom_js %}
