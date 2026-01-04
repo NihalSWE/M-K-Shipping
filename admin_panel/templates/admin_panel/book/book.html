@@ -252,9 +252,10 @@
                                 </div>
 
                                 <div class="col-md-3 text-end">
-                                    <a href="#" class="btn btn-outline-primary btn-book w-100 mb-2">
-                                        Select Seats
-                                    </a>
+                                    <a href="{% url 'select_seats' trip.id %}?from_loc={{ searched_from.id }}&to_loc={{ searched_to.id }}" 
+   class="btn btn-outline-primary btn-book w-100 mb-2">
+    Select Seats
+</a>
                                     <div class="text-center">
                                         <small class="text-success fw-bold"><i class="fa-solid fa-check-circle"></i> Available</small>
                                     </div>

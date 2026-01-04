@@ -10,6 +10,10 @@ urlpatterns = [
     
     #tckt booking
     path('tcktbook/', views.tcktbook, name='tcktbook'),
+    path('book/seats/<int:trip_id>/', views.select_seats, name='select_seats'),
+    path('book/confirm/', views.admin_book_confirm, name='admin_book_confirm'),
+    path('bookings/list/', views.booking_list, name='admin_booking_list'),
+    path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     #tckt booking
     
     

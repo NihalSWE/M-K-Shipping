@@ -1,0 +1,142 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0" id="print-area">
+                
+                <div class="card-header bg-primary text-white p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0 fw-bold">E-TICKET</h3>
+                            <p class="mb-0 opacity-75">Booking ID: #{{ booking.booking_ref }}</p>
+                        </div>
+                        <div class="text-end">
+                            <h5 class="mb-0">MKShipping Lines</h5>
+                            <small>Issue Date: {{ booking.created_at|date:"d M Y" }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-5">
+                    
+                    <div class="row mb-4">
+                        <div class="col-sm-6">
+                            <h6 class="text-muted text-uppercase fw-bold">Passenger Details</h6>
+                            <h5 class="fw-bold text-primary">{{ booking.passenger_name }}</h5>
+                            
+                            <p class="mb-1">
+                                <i class="fa fa-phone me-2"></i> 
+                                {% if booking.user.phone_number %}
+                                    {{ booking.user.phone_number }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </p>
+
+                            {% if booking.user.email %}
+                                <p class="mb-0"><i class="fa fa-envelope me-2"></i> {{ booking.user.email }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6 text-sm-end">
+                            <h6 class="text-muted text-uppercase fw-bold">Status</h6>
+                            {% if booking.status == 'CONFIRMED' %}
+                                <span class="badge bg-success fs-6 px-3 py-2">CONFIRMED</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ booking.status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-bold">Route</small>
+                            <h4 class="fw-bold mb-0">
+                                {{ booking.trip.route.source.name }} 
+                                <i class="fa fa-long-arrow-right text-primary mx-2"></i> 
+                                {{ booking.trip.route.destination.name }}
+                            </h4>
+                            <p class="text-muted">{{ booking.trip.ship.name }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end mb-3">
+                            <small class="text-muted text-uppercase fw-bold">Departure Date</small>
+                            <h4 class="fw-bold mb-0">{{ booking.trip.departure_datetime|date:"d M Y" }}</h4>
+                            <p class="text-muted">{{ booking.trip.departure_datetime|date:"h:i A" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive bg-light p-3 rounded mb-4">
+                        <table class="table table-borderless mb-0">
+                            <thead>
+                                <tr class="text-muted text-uppercase small border-bottom">
+                                    <th>Seat No</th>
+                                    <th>Deck / Floor</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in tickets %}
+                                <tr>
+                                    <td class="fw-bold">{{ ticket.seat_object.label }}</td>
+                                    
+                                    <td class="text-muted">{{ ticket.seat_object.deck.name }}</td>
+
+                                    <td class="text-end">{{ ticket.fare_amount }} ৳</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No individual seats assigned.</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="border-top">
+                                    <td class="pt-3 fw-bold" colspan="2">Total Seats: {{ seat_count }}</td>
+                                    <td class="pt-3 text-end fw-bold fs-5 text-primary">Total: {{ booking.total_amount }} ৳</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center text-muted mt-5">
+                        <p class="small mb-1">Please show this ticket at the counter 30 minutes before departure.</p>
+                        <p class="small">Thank you for traveling with us!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 mb-5 no-print">
+                <button onclick="window.print()" class="btn btn-primary btn-lg me-2">
+                    <i class="fa fa-print me-2"></i> Print / Download PDF
+                </button>
+                <a href="javascript:window.close()" class="btn btn-outline-secondary btn-lg">Close</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .no-print, header, footer, .sidebar, .navbar {
+            display: none !important;
+        }
+        #print-area {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: white !important;
+            padding: 0;
+            margin: 0;
+        }
+    }
+</style>
+{% endblock %}
