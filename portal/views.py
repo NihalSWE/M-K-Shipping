@@ -20,11 +20,14 @@ from django.db.models import Min
 def home (request):
     banner = HomeBanner.objects.filter(is_active=True).first()
     locations = Location.objects.all().order_by('name')
+    # Fetch the overview section
+    overview = CompanyOverview.objects.filter(is_active=True).first()
     
     
     context={
         'banner': banner,
         'locations': locations,
+        'overview': overview, 
     }
     
     return render (request,'portal/index.html',context)
@@ -88,8 +91,35 @@ def aboutUs (request):
     }
     return render(request,'portal/aboutus/aboutus.html',context)
 
+
+
+def services(request):
+    return render(request,'portal/services/services.html')
+
 def team(request):
-    return render (request,'portal/team/team.html')
+    """
+    Displays the list of team members on the public 'Our Team' page.
+    """
+    # Fetch all members, newest first
+    members = TeamMember.objects.all().order_by('-created_at')
+    
+    context = {
+        'team_members': members
+    }
+    return render(request, 'portal/team/team.html', context)
+
+
+
+
+def technology_innovation_view(request):
+    context = {
+        'page_title': 'Technology & Innovation',
+        'breadcrumb_title': 'Technology & Innovation',
+        'meta_description': 'Explore our advanced technology solutions for river transportation including online ticketing, GPS tracking, and digital innovations.'
+    }
+    return render(request, 'portal/t&i/technology_innovation.html', context)
+
+
 
 from django.db.models import Q # Import Q for complex queries
 

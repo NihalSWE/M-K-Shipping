@@ -68,7 +68,7 @@
     <div class="preloader">
         <div class="loader">
             <div class="loader-logo">
-                <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+                <img src="{% static 'portal/assets/images/logo/logo5.jpg'%}" alt="logo">
             </div>
             <div class="loading-dots">
                 <span></span>
@@ -143,28 +143,28 @@
     {% include "portal/partial/footer.html" %}
     <!-- rts footer area end -->
 
-    <div id="side-bar" class="side-bar header-two header-eight">
+    <div id="side-bar" class="side-bar header-two header-eight" style="
+    background: #fff;
+">
         <button class="close-icon-menu"><i class="fa-sharp fa-thin fa-xmark"></i></button>
-        <a class="logo" href="index.html"><img src="{% static 'portal/assets/images/logo/09.svg'%}" alt=""></a>
+        <a class="logo" href="index.html"><img src="{% static 'portal/assets/images/logo/logo5.jpg'%}" alt=""></a>
         <!-- mobile menu area start -->
         <div class="mobile-menu-main">
             <nav class="nav-main mainmenu-nav mt--30">
-                <ul class="mainmenu metismenu" id="mobile-menu-active">
-                    <li class="has-droupdown">
-                        <a href="#" class="main">Home</a>
-                        <ul class="submenu mm-collapse">
-                            <li><a class="mobile-menu-link" href="index.html">Travel Agency</a></li>
-                            <li><a class="mobile-menu-link" href="index-two.html">Hiking Travel</a></li>
-                            <li><a class="mobile-menu-link" href="index-three.html">Home Yacht</a></li>
-                            <li><a class="mobile-menu-link" href="index-four.html">Wild Travel</a></li>
-                            <li><a class="mobile-menu-link" href="index-five.html">Travel Africa</a></li>
-                            <li><a class="mobile-menu-link" href="index-six.html">Tour Marketplace</a></li>
-                            <li><a class="mobile-menu-link" href="index-seven.html">Summer Travel</a></li>
-                            <li><a class="mobile-menu-link" href="index-eight.html">Travel Agency Two</a></li>
-                            <li><a class="mobile-menu-link" href="index-nine.html">Kayaking</a></li>
-                        </ul>
+                 <ul class="mainmenu metismenu" id="mobile-menu-active">
+                    <li>
+                        <a href="{% url 'home' %}" class="main">Home</a>
                     </li>
-                    <li class="has-droupdown">
+                    <li>
+                        <a href="{% url 'aboutUs' %}" class="main">About Us</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'services' %}" class="main">Services</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'technology_innovation' %}" class="main">Technology & Innovation</a>
+                    </li>
+                    {% comment %} <li class="has-droupdown">
                         <a href="#" class="main">Tour</a>
                         <ul class="submenu mm-collapse">
                             <li><a class="mobile-menu-link" href="tour.html">Tour One</a></li>
@@ -174,25 +174,23 @@
                             <li><a class="mobile-menu-link" href="tour-five.html">Tour Five</a></li>
                             <li><a class="mobile-menu-link" href="tour-details.html">Tour Details</a></li>
                         </ul>
-                    </li>
-                    <li class="has-droupdown">
+                    </li> {% endcomment %}
+                    {% comment %} <li class="has-droupdown">
                         <a href="#" class="main">Destinations</a>
                         <ul class="submenu mm-collapse">
                             <li><a class="mobile-menu-link" href="destination.html">Destinations</a></li>
                             <li><a class="mobile-menu-link" href="destination-details.html">Destinations Details</a></li>
                         </ul>
-                    </li>
+                    </li> {% endcomment %}
                     <li class="has-droupdown">
                         <a href="#" class="main">Pages</a>
                         <ul class="submenu mm-collapse">
-                            <li><a class="mobile-menu-link" href="about.html">About</a></li>
-                            <li><a class="mobile-menu-link" href="team.html">Teams</a></li>
-                            <li><a class="mobile-menu-link" href="sign-in.html">Log In</a></li>
-                            <li><a class="mobile-menu-link" href="sign-up.html">Sign Up</a></li>
+                            <li><a class="mobile-menu-link" href="{% url 'signin' %}">Log In</a></li>
+                            <li><a class="mobile-menu-link" href="{% url 'signup' %}">Sign Up</a></li>
                         </ul>
                     </li>
                     <li>
-                        <a href="contact.html" class="main">Contact Us</a>
+                        <a href="{% url 'contact' %}" class="main">Contact Us</a>
                     </li>
                 </ul>
             </nav>
@@ -208,6 +206,7 @@
         </div>
         <!-- mobile menu area end -->
     </div>
+
 
 
     <div id="anywhere-home" class="">

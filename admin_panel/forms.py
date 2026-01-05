@@ -113,3 +113,48 @@ class TripSearchForm(forms.Form):
 
         if loc_from and loc_to and loc_from == loc_to:
             raise forms.ValidationError("Source and Destination cannot be the same.")
+        
+        
+
+class CompanyOverviewForm(forms.ModelForm):
+    class Meta:
+        model = CompanyOverview
+        fields = ['title', 'description', 'key_points', 'image', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Title'}),
+            
+            # ID for Description Editor
+            'description': forms.Textarea(attrs={'class': 'form-control', 'id': 'editor-desc', 'rows': 5}),
+            
+            # ID for Key Points Editor
+            'key_points': forms.Textarea(attrs={'class': 'form-control', 'id': 'editor-points', 'rows': 5}),
+            
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        
+        
+        
+class AboutStoryForm(forms.ModelForm):
+    class Meta:
+        model = AboutStory
+        fields = ['title', 'description', 'story_image', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Main Title'}),
+            'story_image': forms.FileInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        
+class TeamMemberForm(forms.ModelForm):
+    class Meta:
+        model = TeamMember
+        fields = ['name', 'designation', 'description', 'image'] # Added description here
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Name'}),
+            'designation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Job Title'}),
+            
+            # Widget for the new description field
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter their quote or point of view...'}),
+            
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+        }

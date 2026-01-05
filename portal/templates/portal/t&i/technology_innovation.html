@@ -1,0 +1,397 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* --- PAGE CONTAINER: #mk-tech-distinct --- */
+    #mk-tech-distinct {
+        font-family: 'Manrope', sans-serif !important;
+        background-color: #f8fafc;
+        overflow-x: hidden;
+    }
+
+    /* --- SECTION 1: TICKETING (Light & Clean) --- */
+    .ticketing-section {
+        padding: 80px 0;
+        text-align: center;
+    }
+
+    /* The "Blue Underline" Header Style from your image */
+    .tech-header {
+        margin-bottom: 60px;
+        position: relative;
+        display: inline-block;
+    }
+
+    .tech-header h2 {
+        font-size: 3rem !important;
+        {% comment %} font-weight: 800 !important; {% endcomment %}
+        color: #1e3a8a; /* Deep Royal Blue */
+        text-transform: uppercase;
+        margin-bottom: 15px;
+        letter-spacing: -0.5px;
+    }
+
+    .tech-header p {
+        font-size: 2rem !important;
+        color: #64748b;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* The Blue Accent Line */
+    .tech-header::after {
+        content: '';
+        display: block;
+        width: 60px;
+        height: 4px;
+        background: #3b82f6; /* Bright Tech Blue */
+        margin: 20px auto 0;
+        border-radius: 2px;
+    }
+
+    /* --- 4-COLUMN CARD ROW --- */
+    .process-row {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .process-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 40px 25px;
+        flex: 1;
+        min-width: 250px;
+        max-width: 300px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Very soft shadow */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Hover Lift */
+    .process-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15); /* Blue glow shadow */
+        border-color: #bfdbfe;
+    }
+
+    /* Circular Icon Wrapper (Like your demo) */
+    .icon-circle {
+        width: 100px;
+        height: 100px;
+        background-color: #eff6ff; /* Very light blue bg */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3b82f6; /* Bright Blue Icon */
+        font-size: 32px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .process-card:hover .icon-circle {
+        background-color: #3b82f6;
+        color: #ffffff;
+        transform: rotate(360deg); /* Playful spin on hover */
+    }
+
+    .process-card h3 {
+        font-size: 3rem !important;
+        {% comment %} font-weight: 800 !important; {% endcomment %}
+        color: #0f172a;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+    }
+
+    .process-card p {
+        font-size: 1.8rem !important;
+        line-height: 1.6;
+        color: #64748b;
+        margin: 0;
+        font-weight: 400;
+    }
+
+    /* --- SECTION 2: GPS / SAFETY (Dark "Radar" Look) --- */
+    .gps-section {
+        background-color: #0f172a; /* Dark Navy */
+        padding: 80px 0;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Background Radar Animation Effect */
+    .radar-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        z-index: 0;
+    }
+    .c1 { width: 300px; height: 300px; }
+    .c2 { width: 600px; height: 600px; }
+    .c3 { width: 900px; height: 900px; }
+
+    .gps-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 50px;
+    }
+
+    .gps-text h2 {
+        font-size: 2.5rem !important;
+        color: #ffffff;
+        margin-bottom: 20px;
+        {% comment %} font-weight: 800; {% endcomment %}
+    }
+    .gps-text span { color: #3b82f6; }
+
+    .gps-text p {
+        font-size: 1.15rem !important;
+        color: #94a3b8;
+        max-width: 500px;
+        margin-bottom: 30px;
+    }
+
+    .gps-stat-box {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        max-width: 400px;
+    }
+    
+    .gps-icon {
+        font-size: 2.5rem;
+        color: #3b82f6;
+    }
+
+    /* Mobile Tweaks */
+    @media (max-width: 991px) {
+        .gps-content { flex-direction: column; text-align: center; }
+        .gps-stat-box { margin: 0 auto; }
+        .process-row { flex-direction: column; align-items: center; }
+        .process-card { width: 100%; max-width: 100%; }
+    }
+
+
+    /* --- SECTION 2: GPS / SAFETY (Dark "Radar" Look) --- */
+    .gps-section {
+        background-color: #0f172a; /* Dark Navy */
+        padding: 100px 0;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-top: 0; /* Connects seamlessly to the top section */
+    }
+
+    /* Background Radar Animation Effect */
+    .radar-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        z-index: 0;
+    }
+    .c1 { width: 400px; height: 400px; }
+    .c2 { width: 800px; height: 800px; }
+    .c3 { width: 1200px; height: 1200px; }
+
+    .gps-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 80px;
+    }
+
+    /* Typography updated to match your new BIG sizes */
+    .gps-text h2 {
+        font-size: 3rem !important; /* Matches your Ticketing Header */
+        color: #ffffff;
+        margin-bottom: 25px;
+        {% comment %} font-weight: 800; {% endcomment %}
+        line-height: 1.2;
+    }
+    .gps-text span { color: #3b82f6; }
+
+    .gps-text p {
+        font-size: 1.8rem !important; /* Matches your Process Card Text */
+        color: #94a3b8;
+        max-width: 600px;
+        margin-bottom: 40px;
+        line-height: 1.6;
+        font-weight: 400;
+    }
+
+    /* The Visual Box on the right */
+    .gps-visual {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .gps-stat-box {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 40px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .gps-icon {
+        font-size: 4rem; /* Larger icon */
+        color: #3b82f6;
+    }
+
+    /* Mobile Tweaks */
+    @media (max-width: 991px) {
+        .gps-content { flex-direction: column; text-align: center; }
+        .gps-stat-box { margin: 0 auto; width: 100%; justify-content: center; }
+        .gps-text p { font-size: 1.2rem !important; } /* Scale down slightly on mobile for readability */
+    }
+
+
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="rts-breadcrumb-area one" data-bg-src="{% static 'portal/assets/images/breadcrumb/07.webp'%}">
+    <div class="container h-100">
+        <div class="breadcrumb-area-wrapper">
+            <div class="nav-bread-crumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span><i class="fa-regular fa-chevron-right"></i></span>
+                <a href="#" class="current">Technology</a>
+            </div>
+            <h1 class="title">Innovation</h1>
+        </div>
+    </div>
+</div>
+
+<div id="mk-tech-distinct">
+    
+    <section class="ticketing-section">
+        <div class="container">
+            
+            <div class="tech-header fade-up">
+                <h2>Online Ticketing System</h2>
+                <p>Book your journey anytime, anywhere with our advanced digital ticketing platform designed for convenience and reliability.</p>
+            </div>
+
+            <div class="process-row">
+                
+                <div class="process-card fade-up" style="transition-delay: 0.1s;">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <h3>24/7 Online Booking</h3>
+                    <p>Access our platform anytime via website or app. No more waiting in long queues at the terminal.</p>
+                </div>
+
+                <div class="process-card fade-up" style="transition-delay: 0.2s;">
+                    <div class="icon-circle">
+                        <i class="fa-regular fa-credit-card"></i>
+                    </div>
+                    <h3>Secure Payments</h3>
+                    <p>Pay safely using credit cards, mobile banking, or digital wallets. SSL encrypted transactions.</p>
+                </div>
+
+                <div class="process-card fade-up" style="transition-delay: 0.3s;">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <h3>Instant Notifications</h3>
+                    <p>Get real-time SMS & Email alerts for booking confirmation, schedules, and departure updates.</p>
+                </div>
+
+                <div class="process-card fade-up" style="transition-delay: 0.4s;">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </div>
+                    <h3>Easy Cancellation</h3>
+                    <p>Change of plans? Cancel effortlessly online with our instant automated refund processing.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+    <section class="gps-section">
+        <div class="radar-circle c1"></div>
+        <div class="radar-circle c2"></div>
+        <div class="radar-circle c3"></div>
+
+        <div class="container">
+            <div class="gps-content fade-up">
+                
+                <div class="gps-text">
+                    <h2>Advanced <span>Fleet Tracking</span></h2>
+                    <p>Safety is our core technology. We utilize state-of-the-art GPS satellite tracking to monitor every vessel's location, speed, and status in real-time, ensuring total security for every passenger.</p>
+                    
+                    <a href="{% url 'contact' %}" class="rts-btn btn-primary" style="background: #3b82f6; border: none; padding: 20px 40px; font-size: 1.2rem; border-radius: 8px;">
+                        Contact Tech Support
+                    </a>
+                </div>
+
+                <div class="gps-visual">
+                    <div class="gps-stat-box">
+                        <i class="fa-solid fa-location-crosshairs gps-icon"></i>
+                        <div>
+                            <h4 style="color:white; margin:0; font-size: 1.8rem;">Live Satellite Feed</h4>
+                            <span style="color:#94a3b8; font-size: 1.4rem;">Monitoring Active Routes</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        });
+
+        document.querySelectorAll('#mk-tech-distinct .fade-up').forEach((el) => {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(30px)";
+            el.style.transition = "all 0.8s ease-out";
+            observer.observe(el);
+        });
+    });
+</script>
+{% endblock custom_js %}

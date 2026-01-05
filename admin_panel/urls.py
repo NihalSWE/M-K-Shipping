@@ -38,10 +38,14 @@ urlpatterns = [
     # Site Identity
     path('identity/', views.site_identity_view, name='site_identity'),
     path('banner/', views.banner, name='banner'),
+    path('overview/', views.overview, name='overview'),
     #for search bar
     path('api/get-search-locations/', views.get_search_locations, name='get_search_locations'),
 
-    
+    #team
+    path('admin-panel/team/', views.manage_team, name='manage_team'),
+    path('admin-panel/team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
+    #team
     #contact
     path('contact-us/banner/', views.contact_banner_view, name='contact_banner'),
     path('contact-us/messages/', views.contact_messages_view, name='contact_messages'),
