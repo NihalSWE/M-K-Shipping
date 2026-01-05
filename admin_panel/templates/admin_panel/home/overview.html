@@ -1,0 +1,162 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+    .ql-container {
+        font-family: 'Inter', sans-serif; /* Match admin font */
+        font-size: 1rem;
+        border-bottom-left-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+        background-color: #fff;
+    }
+    .ql-toolbar {
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    .ql-editor {
+        min-height: 150px;
+    }
+    .form-label.fw-bold {
+        color: #343a40;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h3 class="mb-1">Home Page Overview</h3>
+                    <p class="text-muted mb-0 small">Manage the main title, description, and key points for the home page.</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data" id="overview-form">
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <div class="col-lg-8">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Section Title</label>
+                                    {{ form.title }}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Description (Paragraphs)</label>
+                                    <div id="desc-editor">
+                                        {{ form.description.value|default_if_none:""|safe }}
+                                    </div>
+                                    <input type="hidden" name="description" id="hidden-description">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Key Points (Bullet List)</label>
+                                    <div id="points-editor">
+                                        {{ form.key_points.value|default_if_none:""|safe }}
+                                    </div>
+                                    <input type="hidden" name="key_points" id="hidden-key-points">
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card bg-light border-0" style="
+                                color: black;
+                            ">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-3">Media & Settings</h5>
+                                        
+                                        <div class="mb-4">
+                                            <label class="form-label fw-bold">Side Image(700*390)</label>
+                                            {{ form.image }}
+                                            <small class="text-muted d-block mt-1">Upload an image to be displayed next to the text.</small>
+                                        </div>
+                                        
+                                        {% if existing_image %}
+                                        <div class="mb-4">
+                                            <label class="form-label fw-bold mb-2">Current Image</label>
+                                            <div class="p-2 bg-white border rounded text-center">
+                                                <img src="{{ existing_image.url }}" class="img-fluid rounded" style="max-height: 200px;" alt="Current Overview Image">
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="mb-4">
+                                            <div class="form-check form-switch">
+                                                {{ form.is_active }}
+                                                <label class="form-check-label fw-bold ms-2" for="id_is_active">Show on Home Page?</label>
+                                            </div>
+                                            <small class="text-muted d-block mt-1 ms-4">Toggle to enable or disable this entire section on the website.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white border-top p-4 text-end">
+                            <button class="btn btn-primary btn-lg px-5" type="submit">
+                                <i class="fa fa-save me-2"></i> Update Overview
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scriptcontent %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Initialize Quill for Description
+        var descQuill = new Quill('#desc-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'align': [] }],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your description paragraphs here...'
+        });
+
+        // 2. Initialize Quill for Key Points
+        var pointsQuill = new Quill('#points-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'color': [] }],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Create your bulleted list of key points here...'
+        });
+
+        // 3. On Form Submit, transfer HTML from Quill to Hidden Inputs
+        var form = document.getElementById('overview-form');
+        form.onsubmit = function() {
+            // Populate hidden input for description
+            var descHtml = document.querySelector('#desc-editor .ql-editor').innerHTML;
+            document.getElementById('hidden-description').value = descHtml;
+
+            // Populate hidden input for key points
+            var pointsHtml = document.querySelector('#points-editor .ql-editor').innerHTML;
+            document.getElementById('hidden-key-points').value = pointsHtml;
+        };
+    });
+</script>
+{% endblock %}

@@ -5,8 +5,8 @@
 <div class="sidebar-wrapper" data-sidebar-layout="stroke-svg">
     <div>
         <div class="logo-wrapper"><a href="/index"><img class="img-fluid for-light"
-                    src="{% static 'assets/images/logo/logo.png' %}" alt=""><img class="img-fluid for-dark"
-                    src="{% static 'assets/images/logo/logo_dark.png' %}" alt=""></a>
+                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt=""><img class="img-fluid for-dark"
+                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt=""></a>
             <div class="back-btn"><i class="fa-solid fa-angle-left"></i></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
         </div>
@@ -125,10 +125,33 @@
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'site_identity' %}">Add Logo</a></li>
                             <li><a href="{% url 'banner' %}">Add Banner</a></li>
+                            <li><a href="{% url 'overview' %}">overview</a></li>
                             
                         </ul>
                     </li>
                     <!--Home-->
+
+
+                    <!--Team-->
+                    <li class="sidebar-list">
+                        <i class="fa-solid fa-thumbtack"></i>
+                        <a class="sidebar-link sidebar-title" href="#">
+                            <svg class="stroke-icon">
+                                <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-home"></use>
+                            </svg>
+                            <svg class="fill-icon">
+                                <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
+                            </svg>
+                            <span>Leader Profile</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li><a href="{% url 'manage_team' %}">Manage Profile</a></li>
+                            
+                            
+                        </ul>
+                    </li>
+                    <!--Team-->
+
 
                     <!--User-->
                     <li class="sidebar-list">

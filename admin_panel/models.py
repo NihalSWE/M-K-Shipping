@@ -449,7 +449,24 @@ class HomeBanner(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
+class CompanyOverview(models.Model):
+    title = models.CharField(max_length=200, default="Welcome to MK Shipping Lines")
+    description = models.TextField(help_text="The main paragraph text.")
+    key_points = models.TextField(help_text=" The list of key highlights (bullet points).")
+    image = models.ImageField(upload_to='company_overview/', blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Home Overview"
+        verbose_name_plural = "Home Overview"
+
+    def __str__(self):
+        return self.title
+
+
+   
     
 #Contact Us
 class ContactBanner(models.Model):
@@ -527,7 +544,7 @@ class AboutBanner(models.Model):
         return "About Page Banner"
 
 class AboutStory(models.Model):
-    subtitle = models.CharField(max_length=100, default="Our Story", help_text="Small text above title")
+    subtitle = models.CharField(max_length=100, default="Our Story", help_text="Small text above title" ,null=True,blank=True)
     title = models.CharField(max_length=200, default="Discover the World with Confidence")
     description = models.TextField(help_text="The main paragraph text")
     story_image = models.ImageField(upload_to='about/story/', help_text="The image on the right side")
@@ -625,3 +642,19 @@ class BlogComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.name} on {self.post.title}"
+
+
+
+#team
+class TeamMember(models.Model):
+    name = models.CharField(max_length=100)
+    designation = models.CharField(max_length=100, help_text="e.g. Lead Wildlife")
+    
+    # NEW FIELD: Their point of view or quote
+    description = models.TextField(blank=True, null=True, help_text="A short quote or bio about the member.")
+    
+    image = models.ImageField(upload_to='team/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

@@ -1093,6 +1093,41 @@ def banner(request):
 
 
 
+from .forms import CompanyOverviewForm
+def overview(request):
+    """
+    Manages the 'Company Overview' section on the Home Page.
+    Acts as a singleton editor (always edits the first object).
+    """
+    
+    # 1. Try to get the existing record (we only want one 'About Us' section)
+    obj = CompanyOverview.objects.first()
+
+    if request.method == 'POST':
+        # 2. If data is sent, bind it to the form (and the object if it exists)
+        form = CompanyOverviewForm(request.POST, request.FILES, instance=obj)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Home Page Overview updated successfully!")
+            return redirect('overview') # Reload the page to show changes
+        else:
+            messages.error(request, "Please correct the errors below.")
+            
+    else:
+        # 3. If GET request, show the form with existing data (if any)
+        form = CompanyOverviewForm(instance=obj)
+
+    # 4. Prepare context for the template
+    context = {
+        'form': form,
+        # Pass the image separately so we can show a preview in the HTML
+        'existing_image': obj.image if obj else None 
+    }
+    
+    return render(request, 'admin_panel/home/overview.html', context)
+
+
 
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
@@ -1348,38 +1383,62 @@ def about_banner_view(request):
         
     return render(request, 'admin_panel/about/banner.html', {'banner': banner})
 
-# 2. Manage Story Section
+from .forms import AboutStoryForm
 def about_story_view(request):
     story = AboutStory.objects.first()
-    
+
     if request.method == 'POST':
-        subtitle = request.POST.get('subtitle')
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        is_active = request.POST.get('is_active') == 'on'
+        form = AboutStoryForm(request.POST, request.FILES, instance=story)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "About Us content updated!")
+            return redirect('about_story')
+    else:
+        form = AboutStoryForm(instance=story)
 
-        if story:
-            story.subtitle = subtitle
-            story.title = title
-            story.description = description
-            story.is_active = is_active
-            if request.FILES.get('story_image'):
-                story.story_image = request.FILES.get('story_image')
-            story.save()
-            messages.success(request, "Story Section Updated!")
+    return render(request, 'admin_panel/about/story.html', {'form': form, 'story': story})
+
+
+#team
+from .forms import TeamMemberForm
+def manage_team(request):
+    """
+    Allows the admin to:
+    1. See a list of all members.
+    2. Add a new member (Name, Designation, Description, Image).
+    """
+    # Get all current members to show in the table
+    members = TeamMember.objects.all().order_by('-created_at')
+    
+    # Handle the "Add New Member" Form
+    if request.method == 'POST':
+        form = TeamMemberForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save() # This saves Name, Designation, Description, and Image
+            messages.success(request, "New Team Member Added Successfully!")
+            return redirect('manage_team')
         else:
-            img = request.FILES.get('story_image')
-            AboutStory.objects.create(
-                subtitle=subtitle, title=title, description=description, 
-                story_image=img, is_active=is_active
-            )
-            messages.success(request, "Story Section Created!")
-        return redirect('about_story')
+            messages.error(request, "Error adding member. Please check the form.")
+    else:
+        form = TeamMemberForm()
 
-    return render(request, 'admin_panel/about/story.html', {'story': story})
+    context = {
+        'members': members,
+        'form': form
+    }
+    return render(request, 'admin_panel/team/manage_team.html', context)
 
-
-
+# ==========================================
+# 3. DELETE VIEW (Admin Action)
+# ==========================================
+def delete_team_member(request, pk):
+    """
+    Deletes a specific team member by their ID (pk).
+    """
+    member = get_object_or_404(TeamMember, pk=pk)
+    member.delete()
+    messages.success(request, "Team member deleted.")
+    return redirect('manage_team')
 
 
 

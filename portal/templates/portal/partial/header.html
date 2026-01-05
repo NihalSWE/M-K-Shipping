@@ -23,21 +23,29 @@
                                 <li class="menu-item rts-has-dropdown">
                                     <a class="main-element rts-dropdown-main-element" href="{% url 'home' %}">Home</a>
                                 </li>
-                                <li class="menu-item rts-has-dropdown">
+                                {% comment %} <li class="menu-item rts-has-dropdown">
                                     <a href="#" class="rts-dropdown-main-element">Tours</a>
                                     <ul class="rts-submenu list-unstyled menu-home">
                                         <li class="nav-item"><a class="nav-link page" href="{% url 'tour' %}">Tour</a></li>
                                         <li class="nav-item"><a class="nav-link page" href="{% url 'tourDetails' %}">Tour Details</a></li>
                                     </ul>
-                                </li>
-                                <li class="menu-item rts-has-dropdown">
+                                </li> {% endcomment %}
+                                
+
+                                <li class="menu-item"><a class="main-element rts-dropdown-main-element" href="{% url 'aboutUs' %}">About</a></li>
+                                <li class="menu-item"><a class="main-element rts-dropdown-main-element" href="{% url 'services' %}">Services</a></li>
+
+
+                                {% comment %} <li class="menu-item rts-has-dropdown">
                                     <a href="{% url 'destinations' %}" class="rts-dropdown-main-element">Destinations</a>
-                                </li>
+                                </li> {% endcomment %}
                                 <li class="menu-item rts-has-dropdown">
                                     <a href="#" class="rts-dropdown-main-element">Pages</a>
                                     <ul class="rts-submenu list-unstyled menu-home">
-                                        <li class="nav-item"><a class="nav-link page" href="{% url 'aboutUs' %}">About</a></li>
-                                        <li class="nav-item"><a class="nav-link" href="{% url 'team' %}">Teams</a></li>
+                                        
+                                       
+                                        <li class="nav-item"><a class="nav-link" href="{% url 'technology_innovation' %}">Technology & Innovation</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="{% url 'team' %}">Leadership Profile</a></li>
                                         <li class="nav-item"><a class="nav-link" href="{% url 'blog' %}">Blog</a></li>
                                         
                                         {% if not user.is_authenticated %}

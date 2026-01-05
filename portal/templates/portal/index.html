@@ -210,6 +210,40 @@
             margin: 5px 0;
         }
     }
+
+
+
+
+
+
+    /* Fix Quill Editor List Styling */
+    .highlights-list ul {
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+    
+    .highlights-list li {
+        margin-bottom: 10px;
+        color: #555;
+        font-size: 15px;
+        list-style-type: disc; /* Ensures bullets show */
+    }
+    
+    /* Ensure the image container handles the fixed height gracefully */
+    .overview-image-wrapper {
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* On mobile, let the image height adjust automatically */
+    @media (max-width: 768px) {
+        .overview-image-wrapper img {
+            height: auto !important;
+            max-height: 300px;
+        }
+    }
+
  </style>
 {% endblock custom_css %}
 
@@ -305,12 +339,6 @@
         </form>
     </div>
 
- 
-
-
-    
-
-
     <!-- rts Offer area start -->
     <div class="rts-offer-area rts-section-gap">
         <section id="content" class="container">
@@ -373,79 +401,51 @@
     </div>
     <!-- rts Offer area end -->
 
-    <!-- rts Destination area start -->
-    <section class="rts-destination-area rts-section-gapBottom">
+
+    {% if overview %}
+    <div class="rts-section bg-white">
         <div class="container">
-            <div class="section-title-area center-style">
-                <h2 class="section-title text-uppercase wow fadeInUp" data-wow-delay="0.4s">Top Destination</h2>
-            </div>
-            <div class="section-inner mt--60">
-                <div class="destination-area-3">
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.2s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/27.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">New York </a></h6>
-                        </div>
-                    </div>
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.4s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/28.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">Maldives</a></h6>
-                        </div>
-                    </div>
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.6s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/29.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">Greek Islands</a></h6>
-                        </div>
-                    </div>
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="0.8s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/30.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">Dubai Coastline</a></h6>
-                        </div>
-                    </div>
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="1s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/31.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">Bali, Indonesia</a></h6>
-                        </div>
-                    </div>
-                    <div class="destination-wrapper-3 image-transform wow scaleIn" data-wow-delay="1.2s">
-                        <div class="image-area wow zoomIn">
-                            <a href="destination-details.html">
-                                <img class="hover-image" src="{% static 'portal/assets/images/destination/32.webp'%}" width="150" alt="">
-                            </a>
-                        </div>
-                        <div class="content">
-                            <h6 class="title f-medium"><a href="destination-details.html">Croatia</a></h6>
-                        </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2 class="section-heading mb-3" style="color: #2C3E50; font-weight: 800; text-transform: uppercase;">
+                        {{ overview.title }}
+                    </h2>
+                    
+                    <div class="description-content text-secondary" style="font-size: 16px; line-height: 1.8;">
+                        {{ overview.description|safe }}
                     </div>
                 </div>
             </div>
+    
+            <div class="row align-items-center">
+                
+                <div class="col-lg-6 col-md-12 mb-4 mb-lg-0">
+                    <div class="key-highlights p-4 rounded" style="background: #f8f9fa; border-left: 5px solid #079D49;">
+                        <h5 class="mb-3" style="color: #2C3E50; font-weight: 700;">Key Highlights:</h5>
+                        <div class="highlights-list">
+                            {{ overview.key_points|safe }}
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="col-lg-6 col-md-12">
+                    {% if overview.image %}
+                    <div class="overview-image-wrapper">
+                        <img src="{{ overview.image.url }}" 
+                             alt="{{ overview.title }}" 
+                             class="img-fluid rounded shadow-sm w-100"
+                             style="height: 350px; object-fit: cover;"> 
+                    </div>
+                    {% endif %}
+                </div>
+    
+            </div>
+    
         </div>
-    </section>
-    <!-- rts Destination area end -->
+    </div>
+    {% endif %}
+
 
 {% endblock content %}
 

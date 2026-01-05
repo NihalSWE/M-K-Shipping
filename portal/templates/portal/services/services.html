@@ -1,0 +1,413 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* ISOLATION STRATEGY:
+       All styles start with #mk-impact-page to prevent global theme clashes.
+    */
+
+    #mk-impact-page {
+        font-family: 'Manrope', sans-serif !important;
+        background-color: #f8fafc;
+        color: #1e293b;
+        --mk-blue: #1c3d8d;
+        --mk-gold: #c5a059;
+    }
+
+    /* --- Force Huge Titles --- */
+    #mk-impact-page .pro-title {
+        color: #0a1128 !important;
+        font-size: 3.5rem !important; /* Forces 56px+ */
+        font-weight: 800 !important;
+        line-height: 1.1 !important;
+        margin-bottom: 25px !important;
+    }
+
+    #mk-impact-page .pro-subtitle {
+        color: var(--mk-gold) !important;
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 3px !important;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 15px;
+    }
+
+    #mk-impact-page .pro-desc {
+        font-size: 2rem !important; /* Forces 20px */
+        color: #475569 !important;
+        line-height: 1.6 !important;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    #mk-impact-page .pro-section-header {
+        text-align: center;
+        margin-bottom: 70px;
+    }
+
+    /* --- Cards Scoped Styles --- */
+    #mk-impact-page .card-mk-custom {
+        background: #ffffff !important;
+        border-radius: 16px !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 0 !important; /* Reset padding to handle inner */
+        height: 100% !important;
+        transition: transform 0.4s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #mk-impact-page .card-mk-custom:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        border-color: var(--mk-blue) !important;
+    }
+
+    /* Top Accent Line */
+    #mk-impact-page .card-mk-custom::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: var(--mk-blue);
+    }
+
+    #mk-impact-page .card-inner {
+        padding: 50px 40px !important;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Icon Styling */
+    #mk-impact-page .mk-icon-box {
+        width: 80px;
+        height: 80px;
+        background: #eff6ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px !important;
+        color: var(--mk-blue);
+        margin-bottom: 30px;
+    }
+
+    /* Card Headings - Force Size */
+    #mk-impact-page .mk-card-title {
+        font-size: 4rem !important; /* Forces 32px */
+        {% comment %} font-weight: 800 !important; {% endcomment %}
+        color: #0a1128 !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Card Text - Force Size */
+    #mk-impact-page .mk-card-text {
+        font-size: 1.5rem !important; /* Forces 18px */
+        line-height: 1.7 !important;
+        color: #475569 !important;
+        margin-bottom: 30px !important;
+    }
+
+    /* --- Features & Lists --- */
+    #mk-impact-page .mk-feature-area {
+        margin-top: auto;
+        padding-top: 25px;
+        border-top: 2px solid #f1f5f9;
+    }
+
+    #mk-impact-page .mk-feature-label {
+        font-size: 1.5rem !important;
+        font-weight: 800 !important;
+        color: #0a1128 !important;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    /* Route Pills (Big Buttons) */
+    #mk-impact-page .mk-route-pill {
+        display: inline-block;
+        background: #e2e8f0;
+        color: #0a1128 !important;
+        font-size: 1.4rem !important; /* Larger text */
+        font-weight: 700 !important;
+        padding: 10px 18px !important; /* More padding */
+        border-radius: 8px;
+        margin: 0 5px 8px 0;
+    }
+
+    /* Check List */
+    #mk-impact-page ul.mk-check-list {
+        list-style: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #mk-impact-page ul.mk-check-list li {
+        font-size: 1.4rem !important; /* 18px list items */
+        color: #334155 !important;
+        margin-bottom: 12px !important;
+        position: relative;
+        padding-left: 30px;
+        font-weight: 500 !important;
+    }
+
+    #mk-impact-page ul.mk-check-list li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        top: 2px;
+        color: var(--mk-gold);
+        font-weight: 900;
+        font-size: 1.2rem;
+    }
+
+    /* Luxury Specifics */
+    #mk-impact-page .luxury-mode {
+        background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%) !important;
+        border: 1px solid #e7dcc6 !important;
+    }
+    #mk-impact-page .luxury-mode .mk-icon-box {
+        background: #fef3c7;
+        color: #b45309;
+    }
+    #mk-impact-page .luxury-mode::before {
+        background: linear-gradient(90deg, #c5a059, #eab308);
+    }
+
+    /* --- Big Stats Bar --- */
+    #mk-impact-page .mk-stats-wrapper {
+        margin-top: 80px;
+        background: var(--mk-blue);
+        border-radius: 20px;
+        padding: 60px 30px;
+        color: white;
+    }
+
+    #mk-impact-page .mk-stat-box {
+        text-align: center;
+        border-right: 1px solid rgba(255,255,255,0.15);
+    }
+    #mk-impact-page .mk-stat-box:last-child { border: none; }
+
+    #mk-impact-page .mk-stat-num {
+        font-size: 4rem !important; /* Massive 64px */
+        font-weight: 800 !important;
+        color: var(--mk-gold) !important;
+        display: block;
+        line-height: 1;
+        margin-bottom: 10px;
+    }
+
+    #mk-impact-page .mk-stat-txt {
+        font-size: 1.2rem !important;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+
+    /* Mobile Responsive Fixes */
+    @media (max-width: 991px) {
+        #mk-impact-page .pro-title { font-size: 2.5rem !important; }
+        #mk-impact-page .mk-stat-box { border-right: none; margin-bottom: 40px; }
+        #mk-impact-page .mk-stat-num { font-size: 3rem !important; }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+    <div class="rts-breadcrumb-area one" data-bg-src="{% static 'portal/assets/images/breadcrumb/07.webp'%}">
+        <div class="container h-100">
+            <div class="breadcrumb-area-wrapper">
+                <div class="nav-bread-crumb">
+                    <a href="{% url 'home' %}">Home</a>
+                    <span><i class="fa-regular fa-chevron-right"></i></span>
+                    <a href="#" class="current">Services</a>
+                </div>
+                <h1 class="title">Our Services</h1>
+            </div>
+        </div>
+    </div>
+
+    <div id="mk-impact-page">
+        <section class="rts-section-gap">
+            <div class="container">
+                
+                <div class="pro-section-header">
+                    <span class="pro-subtitle">MK Shipping Lines</span>
+                    <h2 class="pro-title">World-Class River Transportation</h2>
+                    <p class="pro-desc">
+                        Since 2016, we have been Bangladesh's leading inland waterways operator. 
+                        We combine modern technology with professional hospitality to serve thousands daily.
+                    </p>
+                </div>
+
+                <div class="row g-5"> 
+
+                    <div class="col-lg-6 col-md-12">
+                        <div class="card-mk-custom">
+                            <div class="card-inner">
+                                <div class="mk-icon-box">
+                                    <i class="fa-solid fa-ship"></i>
+                                </div>
+                                <h3 class="mk-card-title">Passenger Launch Service</h3>
+                                <p class="mk-card-text">
+                                    Our modern fleet ensures comfort, safety, and timely departures. Experience professional hospitality across all major river routes.
+                                </p>
+                                
+                                <div class="mk-feature-area">
+                                    <span class="mk-feature-label">Major Routes:</span>
+                                    <div>
+                                        <span class="mk-route-pill">Dhaka</span>
+                                        <span class="mk-route-pill">Bhola</span>
+                                        <span class="mk-route-pill">Barishal</span>
+                                        <span class="mk-route-pill">Jhalokathi</span>
+                                        <span class="mk-route-pill">Patuakhali</span>
+                                        <span class="mk-route-pill">Chandpur</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-12">
+                        <div class="card-mk-custom">
+                            <div class="card-inner">
+                                <div class="mk-icon-box">
+                                    <i class="fa-solid fa-truck-ramp-box"></i>
+                                </div>
+                                <h3 class="mk-card-title">RoRo Ferry Service</h3>
+                                <p class="mk-card-text">
+                                    <strong>First Private RoRo Operator in Bangladesh.</strong> 
+                                    Seamless vehicle transportation between Dhaka and Bhola for cars, buses, and trucks.
+                                </p>
+                                
+                                <div class="mk-feature-area">
+                                    <span class="mk-feature-label">Key Advantages:</span>
+                                    <ul class="mk-check-list">
+                                        <li>No lifting/cargo handling (Drive-on/off)</li>
+                                        <li>Fastest turnaround time</li>
+                                        <li>Safe for heavy vehicles & trucks</li>
+                                        <li>Daily schedule: Bhola – Dhaka – Bhola</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-12">
+                        <div class="card-mk-custom">
+                            <div class="card-inner">
+                                <div class="mk-icon-box">
+                                    <i class="fa-solid fa-anchor"></i>
+                                </div>
+                                <h3 class="mk-card-title">Inland Cargo Service</h3>
+                                <p class="mk-card-text">
+                                    Specialized lighter vessels for efficient bulk cargo movement. Optimized for industrial goods, construction materials, and grains.
+                                </p>
+                                
+                                <div class="mk-feature-area">
+                                    <span class="mk-feature-label">Capabilities:</span>
+                                    <ul class="mk-check-list">
+                                        <li>Bulk Cargo Handling</li>
+                                        <li>Indo-Bangla Protocol Routes</li>
+                                        <li>GPS Tracking for safety</li>
+                                        <li>Cost-effective logistics</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-md-12">
+                        <div class="card-mk-custom luxury-mode">
+                            <div class="card-inner">
+                                <div class="mk-icon-box">
+                                    <i class="fa-solid fa-crown"></i>
+                                </div>
+                                <h3 class="mk-card-title">Luxury River Cruise</h3>
+                                <p class="mk-card-text">
+                                    Premium experience on the <strong>M V Mithamoin</strong>. 
+                                    Departing from Mawa, perfect for family trips, corporate events, and sightseeing.
+                                </p>
+                                
+                                <div class="mk-feature-area">
+                                    <span class="mk-feature-label">Premium Features:</span>
+                                    <ul class="mk-check-list">
+                                        <li>Exquisite Buffet Meal (20+ Items)</li>
+                                        <li>Live Entertainment & Music</li>
+                                        <li>Climate-Controlled Cabins</li>
+                                        <li>Fully Secured Environment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mk-stats-wrapper">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="mk-stat-box">
+                                <span class="mk-stat-num">2016</span>
+                                <span class="mk-stat-txt">Operating Since</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="mk-stat-box">
+                                <span class="mk-stat-num">14+</span>
+                                <span class="mk-stat-txt">Major Routes</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="mk-stat-box">
+                                <span class="mk-stat-num">08</span>
+                                <span class="mk-stat-txt">Passenger Launches</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="mk-stat-box">
+                                <span class="mk-stat-num">100%</span>
+                                <span class="mk-stat-txt">Safety Record</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div> {% endblock content %}
+
+{% block custom_js %}
+<script>
+    // Specific animation for this page only
+    document.addEventListener("DOMContentLoaded", function() {
+        const elements = document.querySelectorAll('#mk-impact-page .card-mk-custom, #mk-impact-page .mk-stats-wrapper');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        });
+
+        elements.forEach((el, index) => {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(40px)";
+            el.style.transition = `all 0.8s ease ${index * 0.1}s`;
+            observer.observe(el);
+        });
+    });
+</script>
+{% endblock custom_js %}
