@@ -127,7 +127,7 @@ class LayoutObject(models.Model):
         # This ensures '101' can exist on Deck 1 and Deck 2, 
         # but you can't have two '101's on the SAME deck.
         unique_together = (('deck', 'row_index', 'col_index'), ('deck', 'seat_identifier'))
-        
+    
     def __str__(self):
         return self.label
 
@@ -182,6 +182,7 @@ class Counter(models.Model):
     name = models.CharField(max_length=100)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='counters')
     is_active = models.BooleanField(default=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
@@ -356,23 +357,41 @@ class TripPricing(models.Model):
 
 # --- 4. BOOKING TRANSACTIONS ---
 
+from django.db import models
+from django.conf import settings
+# Import your Trip, Counter models if they are in the same file or imported above
+
 class Booking(models.Model):
+    # --- CHOICES ---
     STATUS_CHOICES = (
         ('PENDING', 'Pending Payment'),
         ('CONFIRMED', 'Confirmed'),
         ('CANCELLED', 'Cancelled'),
         ('EXPIRED', 'Expired'),
+        ('LOCKED', 'Admin Locked'),
     )
+
+    PAYMENT_STATUS_CHOICES = (
+        ('PAID', 'Paid'),
+        ('UNPAID', 'Unpaid'),
+    )
+
+    # --- FIELDS ---
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    trip = models.ForeignKey(Trip, on_delete=models.PROTECT)
+    trip = models.ForeignKey('Trip', on_delete=models.PROTECT) # specific 'Trip' string or class
     booking_ref = models.CharField(max_length=12, unique=True)
     
     # Counter Logic
-    counter = models.ForeignKey(Counter, null=True, blank=True, on_delete=models.SET_NULL)
+    counter = models.ForeignKey('Counter', null=True, blank=True, on_delete=models.SET_NULL)
     sales_channel = models.CharField(max_length=20, default='ONLINE', choices=(('ONLINE', 'Online'), ('COUNTER', 'Counter')))
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Booking Status (e.g., Is the seat held?)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    
+    # [NEW] Payment Status (e.g., Is the money collected?)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='UNPAID')
     
     # Return Trip Link
     linked_booking = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
@@ -380,6 +399,9 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
+    def __str__(self):
+        return f"{self.booking_ref} - {self.passenger_name}"
+
     @property
     def passenger_name(self):
         """Returns the user's full name, or username if name is missing."""
@@ -389,7 +411,6 @@ class Booking(models.Model):
                 return full_name
             return self.user.username  # Fallback to username if name is blank
         return "Unknown Guest"
-    
 
 class Ticket(models.Model):
     STATUS_CHOICES = (
@@ -451,7 +472,7 @@ class HomeBanner(models.Model):
 
     def __str__(self):
         return self.title
-
+    
 
 class CompanyOverview(models.Model):
     title = models.CharField(max_length=200, default="Welcome to MK Shipping Lines")
@@ -465,10 +486,8 @@ class CompanyOverview(models.Model):
         verbose_name_plural = "Home Overview"
 
     def __str__(self):
-        return self.title
-
-
-   
+        return self.title    
+    
     
 #Contact Us
 class ContactBanner(models.Model):
@@ -647,7 +666,7 @@ class BlogComment(models.Model):
 
 
 
-#team
+
 class TeamMember(models.Model):
     name = models.CharField(max_length=100)
     designation = models.CharField(max_length=100, help_text="e.g. Lead Wildlife")
@@ -660,3 +679,13 @@ class TeamMember(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
+
+
+
+
+
+
+

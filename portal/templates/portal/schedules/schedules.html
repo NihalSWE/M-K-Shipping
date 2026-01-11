@@ -42,11 +42,11 @@
         <div class="search-results-header">
             <div class="container">
                 <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
-                    
+                    {% csrf_token %}
                     <div class="search-input-group">
                         <div class="icon-box">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#21a2dc"/>
+                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#2ECC71"/>
                             </svg>
                         </div>
                         <div class="input-content">
@@ -70,7 +70,7 @@
                     <div class="search-input-group">
                         <div class="icon-box">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#21a2dc"/>
+                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#2ECC71"/>
                             </svg>
                         </div>
                         <div class="input-content">
@@ -93,9 +93,7 @@
                     </div>
 
                     <div class="button-area">
-                        <button type="submit" class="search-submit-btn" style="
-                        background-color: #21a2dc;
-                    ">UPDATE SEARCH</button>
+                        <button type="submit" class="search-submit-btn">UPDATE SEARCH</button>
                     </div>
                 </form>
             </div>
@@ -107,9 +105,7 @@
 
         <div class="results-list">
     {% for item in trips %}
-        <div class="trip-card" style="
-        border-color: #21a2dc;
-    ">
+        <div class="trip-card">
             <div class="ship-media">
                 <img src="{{ item.trip.ship.image.url|default:'https://placehold.co/600x400?text=Ship+Image' }}" class="ship-img-v2" alt="Ship">
                 <span class="ship-type-tag">{{ item.trip.ship.ship_type }}</span>
@@ -119,12 +115,15 @@
             <div class="journey-details">
                 <div class="timeline-container">
                     <div class="time-point">
-                        <span class="time-val">{{ item.trip.departure_datetime|date:"h:i A" }}</span>
+                        <span class="time-val">{{ item.segment_departure|date:"h:i A" }}</span>
                         <span class="loc-val">{{ item.stop_from.location.name }}</span>
-                    </div>
+                    </div> 
 
                     <div class="route-visual">
-                        <span class="duration-label">Direct Trip</span>
+                        <span class="duration-label">
+                            <i class="fa-regular fa-clock me-1"></i> 
+                            {{ item.stop_to.time_offset_minutes|add:item.stop_from.time_offset_minutes|dictsort:"0" }} min 
+                        </span>
                         <div class="visual-line-container">
                             <div class="visual-line"></div>
                             <i class="fas fa-ship ship-icon-mid"></i>
@@ -132,7 +131,7 @@
                     </div>
 
                     <div class="time-point text-end">
-                        <span class="time-val">{{ item.trip.arrival_datetime|date:"h:i A" }}</span>
+                        <span class="time-val">{{ item.segment_arrival|date:"h:i A" }}</span>
                         <span class="loc-val">{{ item.stop_to.location.name }}</span>
                     </div>
                 </div>
@@ -153,9 +152,7 @@
                     class="book-btn-v2" 
                     data-trip-id="{{ item.trip.id }}"
                     data-from-stop="{{ item.stop_from.id }}"
-                    data-to-stop="{{ item.stop_to.id }}" style="
-                    background: #21a2dc;
-                ">
+                    data-to-stop="{{ item.stop_to.id }}">
                     SELECT SEATS
                 </a>
             </div>
@@ -203,14 +200,37 @@
 
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <div class="seat-selection-drawer" id="seatDrawer">
-    <div class="drawer-header border-0 position-relative" style="z-index: 1060;">
+    <div class="drawer-header border-0 position-relative" style="z-index: 1060; flex-shrink: 0;">
         <button class="btn-close position-absolute" id="closeDrawer" 
                 style="right: 1.5rem; top: 1.5rem; font-size: 1.5rem; z-index: 1061;">
         </button>
     </div>
 
-    <div id="drawerContent">
+    <div class="drawer-body" id="drawerBody">
+        <div id="drawerContent">
+            </div>
+
+        <div id="passengerDetailsSection" class="p-4" style="display: none;">
+            <div class="d-flex flex-column align-items-center w-100">
+                <div class="w-100 d-flex justify-content-between align-items-center mb-4" style="max-width: 600px; margin-top: 2rem;">
+                    <h5 class="mb-0 text-uppercase" style="letter-spacing: 1px; color: #1e293b; font-size: 1rem;">Passenger Details</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="small text-muted">Same as first</span>
+                        <label class="custom-switch">
+                            <input type="checkbox" id="copyFirstPassenger">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <form id="bookingForm" class="w-100" style="max-width: 600px;">
+                    {% csrf_token %}
+                    <div id="passengerRows"></div>
+                </form>
+            </div>
+        </div>
     </div>
+
     <div class="modern-booking-footer">
         <div class="footer-info-group">
             <span class="footer-label">Your Selection</span>
@@ -222,15 +242,29 @@
             <div class="total-price-display">৳ <span id="totalPrice">0</span></div>
         </div>
 
-        <div class="footer-action">
+        <div class="footer-action d-flex gap-2">
+            <button id="backToSeatsBtn" class="btn btn-outline-secondary rounded-pill px-4" style="display: none;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
             <button id="checkoutBtn" class="btn-modern-checkout" disabled>
-                PROCEED TO CHECKOUT <i class="fas fa-chevron-right"></i>
+                <span id="btnText">NEXT</span> <i class="fas fa-chevron-right ms-2"></i>
             </button>
         </div>
     </div>
 </div>
 
 
+<div id="successModal">
+    <div class="modal-backdrop-blur"></div>
+    <div class="modal-card">
+        <div class="success-icon-circle">
+            <i class="fas fa-check"></i>
+        </div>
+        <h3 style="color: #1e293b; margin-bottom: 8px;">Booking Confirmed!</h3>
+        <p style="color: #64748b; font-size: 15px;">Your trip has been successfully booked. Your reference is <span id="modalRef" style="font-weight: 600; color: #059669;"></span></p>
+        <button id="finalRedirectBtn" class="view-tickets-btn">View My Tickets</button>
+    </div>
+</div>
 
 {% endblock content %}
 
@@ -261,8 +295,30 @@
 </script>
 
 
+
+
 <script>
+    // Add this helper to the top of your script to get CSRF token
     $(document).ready(function() {
+        function getCookie(name) {
+            // 1. Try to get the token from the hidden input field first (most reliable)
+            let token = $('input[name="csrfmiddlewaretoken"]').val();
+            if (token) return token;
+
+            // 2. Fallback to cookie-searching logic if input isn't found
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
         // 1. Define the base URL using Django's URL name
         // We use '0' as a placeholder for the trip_id
         const baseLayoutUrl = "{% url 'get_seat_layout' 0 %}";
@@ -382,60 +438,184 @@
                 $checkoutBtn.prop('disabled', true).removeClass('active');
             }
         }
+
+
+        // helper function for generating passenger rows
+        function generatePassengerRows() {
+            const $container = $('#passengerRows');
+            $container.empty();
+
+            $('.layout-item.selected').each(function(index) {
+                const seatLabel = $(this).data('label');
+                const seatId = $(this).data('id');
+                
+                const rowHtml = `
+                    <div class="passenger-row" data-seat-id="${seatId}">
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <span class="seat-badge" style="background: #334155; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px;">SEAT ${seatLabel}</span>
+                            <span class="text-muted" style="font-size: 14px;">Passenger ${index + 1}</span>
+                        </div>
+                        <div class="field-grid">
+                            <div>
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="modern-input p-name" placeholder="Enter name" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Gender</label>
+                                <select class="modern-input p-gender">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="modern-input p-phone" placeholder="017..." required>
+                            </div>
+                            <div>
+                                <label class="form-label">Email</label>
+                                <input type="email" class="modern-input p-email" placeholder="email@example.com">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $container.append(rowHtml);
+            });
+        }
+
+
+        // Copy First Passenger Details
+        $(document).on('change', '#copyFirstPassenger', function() {
+            if(this.checked) {
+                const firstName = $('.p-name').first().val();
+                const firstGender = $('.p-gender').first().val();
+                const firstPhone = $('.p-phone').first().val();
+                const firstEmail = $('.p-email').first().val();
+
+                $('.p-name').val(firstName);
+                $('.p-gender').val(firstGender);
+                $('.p-phone').val(firstPhone);
+                $('.p-email').val(firstEmail);
+            }
+        });
+
+
+        // Checkout Button Click
+        $('#checkoutBtn').on('click', function() {
+            const isPassengerStep = $('#passengerDetailsSection').is(':visible');
+
+            if (!isPassengerStep) {
+                if ($('.layout-item.selected').length === 0) return;
+
+                generatePassengerRows();
+                
+                $('#drawerContent').fadeOut(300, function() {
+                    // Show passenger section
+                    $('#passengerDetailsSection').fadeIn(400);
+        
+                    // ADD THIS LINE: It forces the scrollable area back to the top
+                    $('#drawerBody').scrollTop(0);
+
+                    $('#backToSeatsBtn').fadeIn();
+                    $('#btnText').text('CONFIRM & PAY');
+                });
+
+                
+            } else {
+                // 1. Collect all passenger data
+                let passengers = [];
+                let allValid = true;
+
+                $('.passenger-row').each(function() {
+                    const name = $(this).find('.p-name').val().trim();
+                    const phone = $(this).find('.p-phone').val().trim();
+                    const email = $(this).find('.p-email').val().trim(); // Get email
+                    const gender = $(this).find('.p-gender').val();
+
+                    // STRICT VALIDATION: Check Name, Phone, AND Email
+                    if (!name || !phone || !email) {
+                        allValid = false;
+                        // Optional: highlight the empty fields in red
+                        $(this).find('.modern-input').each(function() {
+                            if (!$(this).val().trim()) {
+                                $(this).css('border-color', 'red');
+                            } else {
+                                $(this).css('border-color', '#e2e8f0');
+                            }
+                        });
+                    }
+
+                    passengers.push({
+                        seat_id: $(this).data('seat-id'),
+                        name: name,
+                        gender: gender,
+                        phone: phone,
+                        email: email
+                    });
+                });
+
+                // 2. Strict Validation Check
+                if (!allValid) {
+                    alert('Please fill in the Full Name and Phone Number for ALL passengers.');
+                    return; // THIS STOPS THE REDIRECT
+                }
+
+                // 3. Send Data to Server (Replaces your old window.location.href)
+                const $btn = $(this);
+                $btn.prop('disabled', true).text('PROCESSING...');
+
+                const $origBtn = $('.book-btn-v2'); 
+                const payload = {
+                    trip_id: $origBtn.data('trip-id'),
+                    from_stop: $origBtn.data('from-stop'),
+                    to_stop: $origBtn.data('to-stop'),
+                    passengers: passengers 
+                };
+
+                fetch("{% url 'save_booking' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 1. Set the reference text
+                        $('#modalRef').text(data.booking_ref);
+
+                        // 2. Show the Modal with Animation
+                        $('#successModal').css('display', 'flex').hide().fadeIn(100, function() {
+                            $(this).addClass('show');
+                        });
+
+                        // 3. Handle Redirect on Button Click
+                        $('#finalRedirectBtn').on('click', function() {
+                            window.location.href = "/booking/success/" + data.booking_ref + "/";
+                        });
+                    } else {
+                        alert('Error: ' + data.error);
+                        $btn.prop('disabled', false).text('CONFIRM & PAY');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Failed to save booking. Please check your connection.');
+                    $btn.prop('disabled', false).text('CONFIRM & PAY');
+                });
+            }
+        });
+
+        // Back Button Logic
+        $('#backToSeatsBtn').on('click', function() {
+            $('#passengerDetailsSection').fadeOut(300, function() {
+                $('#drawerContent').fadeIn(300);
+                $('#backToSeatsBtn').hide();
+                $('#btnText').text('NEXT');
+            });
+        });
     });
 </script>
-
-<script>
-    $(document).ready(function() {
-        let waitingToSetValue = null;
-        
-        $('#switch-location').on('click', function() {
-            const fromValue = $('#search-from').val();
-            const toValue = $('#search-to').val();
-            
-            // Only swap if both have values
-            if (fromValue && toValue) {
-                // Store the value we want to set in TO
-                waitingToSetValue = fromValue;
-                
-                // Change FROM (this will trigger AJAX load for TO dropdown)
-                $('#search-from').val(toValue).trigger('change');
-            }
-        });
-        
-        // Listen for when Select2 finishes loading results
-        $('#search-to').on('select2:select select2:unselect', function() {
-            // Reset after manual selection
-            waitingToSetValue = null;
-        });
-        
-        // After FROM changes, wait for TO to load, then set the value
-        $('#search-from').on('change', function() {
-            if (waitingToSetValue !== null) {
-                // Small delay to let AJAX complete
-                setTimeout(function() {
-                    // Create a new option if it doesn't exist (for preloading)
-                    const $toSelect = $('#search-to');
-                    
-                    // Check if option already exists
-                    if ($toSelect.find('option[value="' + waitingToSetValue + '"]').length === 0) {
-                        // Fetch the text for this option from the original FROM dropdown
-                        const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
-                        
-                        // Create and append the option
-                        const newOption = new Option(optionText, waitingToSetValue, true, true);
-                        $toSelect.append(newOption);
-                    }
-                    
-                    // Set the value
-                    $toSelect.val(waitingToSetValue).trigger('change');
-                    
-                    // Reset
-                    waitingToSetValue = null;
-                }, 800); // Increased delay for AJAX
-            }
-        });
-    });
-    </script>
 
 {% endblock custom_js %}

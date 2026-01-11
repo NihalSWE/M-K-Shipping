@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-4fnm5q5pq7l%n$(l4#yetfzsdt4924f6!@-z$&n@^&ajop$7o#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'mk.studentvisabd.com', 'www.mk.studentvisabd.com']
 
 AUTH_USER_MODEL = 'accounts.User'
 

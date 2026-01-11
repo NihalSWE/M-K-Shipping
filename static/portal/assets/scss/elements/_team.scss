@@ -1,0 +1,47 @@
+// team area
+
+.team-wrapper{
+    position: relative;
+    z-index: 1;
+    background: var(--color-white);
+    padding: 20px 20px 30px;
+    text-align: center;
+    &:hover{
+        .image-area{
+            .social-wrapper{
+                bottom: 25px;
+            }
+        }
+    }
+    .image-area{
+        position: relative;
+        z-index: 1;
+        .social-wrapper{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            max-width: max-content;
+            position: absolute;
+            z-index: 1;
+            bottom: -15%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            transition: var(--transition);
+            li{
+                padding: 0;
+                margin: 0;
+            }
+        }
+    }
+    .content{
+        margin-top: 25px;
+        h6{
+            margin-bottom: 8px;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+    }
+}
+
+

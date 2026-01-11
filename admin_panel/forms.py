@@ -113,9 +113,11 @@ class TripSearchForm(forms.Form):
 
         if loc_from and loc_to and loc_from == loc_to:
             raise forms.ValidationError("Source and Destination cannot be the same.")
-        
-        
-
+            
+            
+            
+            
+            
 class CompanyOverviewForm(forms.ModelForm):
     class Meta:
         model = CompanyOverview
@@ -131,10 +133,11 @@ class CompanyOverviewForm(forms.ModelForm):
             
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-        
-        
-        
+        }            
+            
+            
+            
+            
 class AboutStoryForm(forms.ModelForm):
     class Meta:
         model = AboutStory
@@ -144,7 +147,12 @@ class AboutStoryForm(forms.ModelForm):
             'story_image': forms.FileInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        
+            
+            
+            
+            
+            
+            
 class TeamMemberForm(forms.ModelForm):
     class Meta:
         model = TeamMember
@@ -158,3 +166,16 @@ class TeamMemberForm(forms.ModelForm):
             
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            

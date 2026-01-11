@@ -367,7 +367,7 @@
         const name = $("#addModal #name").val();
         const code = $("#addModal #code").val();
         const total_capacity = $("#addModal #capacity").val();
-        fetch("/ships/", {
+        fetch("{% url 'ships' %}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -393,7 +393,7 @@
         const name = $("#edit-name").val();
         const code = $("#edit-code").val();
         const total_capacity = $("#edit-capacity").val();
-        fetch("/ships/", {
+        fetch("{% url 'ships' %}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -416,7 +416,7 @@
 
     // Confirm delete
     $("#confirm-delete").on("click", function () {
-        fetch("/ships/", {
+        fetch("{% url 'ships' %}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

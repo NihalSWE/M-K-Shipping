@@ -133,6 +133,32 @@
         border-left: 5px solid #ef4444 !important;
     }
     .alert-danger-modern .btn-close { filter: invert(15%) sepia(85%) saturate(3015%) hue-rotate(352deg) brightness(89%) contrast(98%); }
+
+    /* NEW: Locked Mode Styles */
+    .seat-map-wrapper.locked-mode {
+        pointer-events: none; /* Disables all clicking inside */
+        opacity: 0.6;
+        filter: grayscale(80%);
+        position: relative;
+    }
+    .seat-map-wrapper.locked-mode::after {
+        content: "SEAT SELECTION LOCKED";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        background: rgba(255,255,255,0.9);
+        padding: 20px 40px;
+        border-radius: 10px;
+        border: 2px solid #333;
+        z-index: 100;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+
 </style>
 
 <div class="container-fluid py-4">
@@ -142,37 +168,27 @@
                 <h5 class="fw-bold m-0 text-dark">
                     <i class="fa fa-ship me-2"></i> {{ trip.ship.name }}
                 </h5>
-                <span class="badge bg-primary p-2">
-                    {{ from_stop.location.name }} <i class="fa fa-arrow-right mx-1"></i> {{ to_stop.location.name }}
-                </span>
+                
+                <div>
+                    <button id="btn-report" class="btn btn-info text-white">
+                        <i class="fa fa-bar-chart"></i> Seat Report
+                    </button>
+                    <button type="button" id="lock-toggle-btn" class="btn btn-outline-danger btn-sm fw-bold">
+                        <i class="fa fa-lock me-1"></i> <span id="lock-btn-text">Lock Seats</span>
+                    </button>
+                    <span class="badge bg-primary p-2 ms-2">
+                        {{ from_stop.location.name }} <i class="fa fa-arrow-right mx-1"></i> {{ to_stop.location.name }}
+                    </span>
+                </div>
             </div>
 
             {% if messages %}
-                <div class="row">
-                    <div class="col-12">
-                        {% for message in messages %}
-                        <div class="alert custom-alert alert-dismissible fade show shadow-sm border-0 
-                                    {% if message.tags == 'success' %}alert-success-modern{% else %}alert-danger-modern{% endif %}" 
-                            role="alert">
-                            <div class="d-flex align-items-center">
-                                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-3 fs-5"></i>
-                                <div>
-                                    <strong>{% if message.tags == 'success' %}Success!{% else %}Error!{% endif %}</strong> 
-                                    <div class="small opacity-75">{{ message }}</div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
+                {% endif %}
 
-            <div class="seat-map-wrapper">
+            <div class="seat-map-wrapper" id="seat-map-container">
                 {% for deck in decks %}
                 <div class="deck-section">
                     <div class="deck-title">{{ deck.name }}</div>
-                    
                     <div class="deck-grid" style="
                         grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
                         grid-template-rows: repeat({{ deck.total_rows }}, 45px);
@@ -230,15 +246,19 @@
                     </div>
 
                     <div class="bg-light p-3 rounded mb-3 border">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="toggleUserForm">
-                            <label class="form-check-label fw-bold small" for="toggleUserForm">Add Passenger Info</label>
-                        </div>
-                        <div id="user-form" class="mt-3" style="display:none;">
-                            <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Full Name">
-                            <input type="text" name="customer_phone" class="form-control form-control-sm mb-2" placeholder="Phone Number">
-                            <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email (Optional)">
-                        </div>
+                        <h6 class="fw-bold small text-uppercase text-muted mb-3">Passenger Details</h6>
+                        <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Full Name *" required>
+                        <input type="text" name="customer_phone" class="form-control form-control-sm mb-2" placeholder="Phone Number *" required>
+                        <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email (Optional)">
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-4 border">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-2">Payment Info</h6>
+                        <label class="small text-muted mb-1">Payment Status</label>
+                        <select name="payment_status" class="form-select form-select-sm fw-bold">
+                            <option value="PAID">Paid (Confirmed)</option>
+                            <option value="UNPAID">Unpaid (Pending)</option>
+                        </select>
                     </div>
 
                     <button type="submit" id="btn-book" class="btn btn-secondary w-100 py-2 fw-bold text-uppercase" disabled>
@@ -249,41 +269,148 @@
         </div>
     </div>
 </div>
+
+
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Trip Seat Report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="print-area">
+          <h6>Sales by Category</h6>
+          <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                  <tr>
+                      <th>Category</th>
+                      <th class="text-center">Sold</th>
+                      <th class="text-end">Total (Tk)</th>
+                  </tr>
+              </thead>
+              <tbody id="report-table-body">
+                  </tbody>
+              <tfoot class="fw-bold">
+                  <tr>
+                      <td>OVERALL TOTAL</td>
+                      <td class="text-center" id="rep-total-sold">0</td>
+                      <td class="text-end" id="rep-total-rev">0.00</td>
+                  </tr>
+              </tfoot>
+          </table>
+  
+          <h6 class="mt-4">Occupancy Status</h6>
+          <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                  Sold Seats
+                  <span class="badge bg-success rounded-pill" id="rep-sold-badge">0</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                  Admin Locked
+                  <span class="badge bg-danger rounded-pill" id="rep-locked-badge">0</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                  Unsold / Available
+                  <span class="badge bg-secondary rounded-pill" id="rep-unsold-badge">0</span>
+              </li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="printReport()">
+              <i class="fa fa-print"></i> Download / Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 {% endblock %}
 
 {% block scriptcontent %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("Seat Map Script Loaded.");
+        console.log("Seat Map Script Loaded (Database Lock Mode).");
 
-        // SELECTORS
+        // --- 1. CONFIGURATION & SELECTORS ---
+        const tripId = "{{ trip.id }}";
+        const csrfToken = "{{ csrf_token }}"; // Ensure this is available in template context
+        
+        // Select only AVAILABLE seats (Locked/Booked seats are ignored automatically)
         const seats = document.querySelectorAll('.layout-obj.seat.available');
+        
         const selectedInput = document.getElementById('selected_seats_input');
         const totalAmountEl = document.getElementById('total-amount');
         const selectedListEl = document.getElementById('selected-list');
         const btnBook = document.getElementById('btn-book');
-        const userFormToggle = document.getElementById('toggleUserForm');
-        const userForm = document.getElementById('user-form');
+        
+        // Lock Button
+        const lockBtn = document.getElementById('lock-toggle-btn');
+        const lockBtnText = document.getElementById('lock-btn-text');
 
+        // State
         let selectedSeatIds = [];
         let total = 0;
 
-        console.log("Found clickable seats:", seats.length);
+        // --- 2. SMART LOCK LOGIC (Server-Side) ---
+        if(lockBtn) {
+            // OPTIONAL: If you passed 'is_locked' from Django, set button state on load
+            // const isLockedServerSide = "{{ is_locked|yesno:'true,false' }}" === "true";
+            // if(isLockedServerSide) { updateLockButtonUI(true); }
 
-        // 1. Toggle User Form
-        if(userFormToggle){
-            userFormToggle.addEventListener('change', function() {
-                userForm.style.display = this.checked ? 'block' : 'none';
+            lockBtn.addEventListener('click', function() {
+                // A. UI Feedback (Prevent double clicks)
+                lockBtn.disabled = true;
+                const originalText = lockBtnText.textContent;
+                lockBtnText.textContent = "Processing...";
+
+                // B. Send Command to Django
+                fetch("{% url 'toggle_trip_lock' trip.id %}", { 
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    // C. Handle Success
+                    if(data.status === 'locked' || data.status === 'unlocked') {
+                        // RELOAD THE PAGE
+                        // This is the safest way to ensure all seats render correctly 
+                        // as "Booked" (Gray) or "Available" (Green) based on the DB.
+                        window.location.reload(); 
+                    } else {
+                        alert("Notice: " + data.message);
+                        resetLockButton(originalText);
+                    }
+                })
+                .catch(error => {
+                    console.error('Lock Error:', error);
+                    alert("Failed to toggle lock. Check console/network.");
+                    resetLockButton(originalText);
+                });
             });
         }
 
-        // 2. Seat Click Logic
+        function resetLockButton(text) {
+            lockBtn.disabled = false;
+            lockBtnText.textContent = text;
+        }
+
+        // --- 3. SEAT SELECTION LOGIC ---
+        // Note: We only attach listeners to 'available' seats. 
+        // If the trip is Locked, Django renders seats as 'booked', so this loop runs on 0 elements.
         seats.forEach(seat => {
             seat.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const price = parseFloat(this.dataset.price) || 0;
-                const label = this.dataset.label;
-
+                
                 if (this.classList.contains('selected')) {
                     // DESELECT
                     this.classList.remove('selected');
@@ -300,13 +427,9 @@
         });
 
         function updateUI() {
-            // Update Hidden Input
             selectedInput.value = selectedSeatIds.join(',');
-
-            // Update Total Price
             totalAmountEl.textContent = total.toFixed(2);
 
-            // Update Button & List
             if (selectedSeatIds.length > 0) {
                 selectedListEl.innerHTML = `<span class="text-success fw-bold">Selected ${selectedSeatIds.length} seat(s)</span>`;
                 btnBook.disabled = false;
@@ -320,5 +443,65 @@
             }
         }
     });
+
+
+
+
+
+// --- REPORT LOGIC ---
+document.getElementById('btn-report').addEventListener('click', function() {
+    // 1. Fetch Data
+    fetch("{% url 'trip_seat_report' trip.id %}")
+    .then(response => response.json())
+    .then(data => {
+        const tbody = document.getElementById('report-table-body');
+        tbody.innerHTML = ''; // Clear old data
+
+        // 2. Fill Table (Categories)
+        data.breakdown.forEach(item => {
+            const row = `<tr>
+                <td>${item.seat_object__category__name}</td>
+                <td class="text-center">${item.count}</td>
+                <td class="text-end">${parseFloat(item.total_revenue).toFixed(2)}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+
+        // 3. Fill Totals
+        document.getElementById('rep-total-sold').textContent = data.summary.total_sold;
+        document.getElementById('rep-total-rev').textContent = parseFloat(data.summary.total_revenue).toFixed(2);
+        
+        // 4. Fill Badges
+        document.getElementById('rep-sold-badge').textContent = data.summary.total_sold;
+        document.getElementById('rep-locked-badge').textContent = data.summary.total_locked;
+        document.getElementById('rep-unsold-badge').textContent = data.summary.total_unsold;
+
+        // 5. Show Modal
+        var myModal = new bootstrap.Modal(document.getElementById('reportModal'));
+        myModal.show();
+    })
+    .catch(err => alert("Failed to load report."));
+});
+
+// --- SMART PRINT FUNCTION ---
+function printReport() {
+    // This prints ONLY the modal content nicely
+    var printContent = document.getElementById('print-area').innerHTML;
+    var originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+        <h2 style="text-align:center; margin-bottom:20px;">Trip Report: {{ trip.route.name }}</h2>
+        <p style="text-align:center;">Date: {{ trip.departure_datetime|date:"d M Y, h:i A" }}</p>
+        <hr/>
+        ${printContent}
+    `;
+    
+    window.print();
+    
+    // Restore page after printing so user can keep working
+    document.body.innerHTML = originalContent;
+    window.location.reload(); // Reload to restore event listeners
+}
+
 </script>
 {% endblock %}

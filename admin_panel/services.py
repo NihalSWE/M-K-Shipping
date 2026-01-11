@@ -140,10 +140,12 @@ def generate_smart_trips(ship_id, days_to_generate=10, override_time=None):
                 created_trips.append(new_trip)
 
     return f"Generated {len(created_trips)} new trips."
-
-
-
-
+    
+    
+    
+    
+    
+    
 #------------------------------------------------------------------------------------------------------------
 from django.db import transaction
 from django.utils import timezone
@@ -259,3 +261,32 @@ class BookingService:
         
         
         
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

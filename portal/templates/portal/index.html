@@ -81,7 +81,7 @@
     }
 
     .search-submit-btn:hover {
-        background-color:#21a2dc;
+        background-color: #21a2dc;
     }
 
     /* --- 2. SELECT2 CUSTOM MODERN STYLING --- */
@@ -210,40 +210,6 @@
             margin: 5px 0;
         }
     }
-
-
-
-
-
-
-    /* Fix Quill Editor List Styling */
-    .highlights-list ul {
-        padding-left: 20px;
-        margin-bottom: 0;
-    }
-    
-    .highlights-list li {
-        margin-bottom: 10px;
-        color: #555;
-        font-size: 15px;
-        list-style-type: disc; /* Ensures bullets show */
-    }
-    
-    /* Ensure the image container handles the fixed height gracefully */
-    .overview-image-wrapper {
-        overflow: hidden;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* On mobile, let the image height adjust automatically */
-    @media (max-width: 768px) {
-        .overview-image-wrapper img {
-            height: auto !important;
-            max-height: 300px;
-        }
-    }
-
  </style>
 {% endblock custom_css %}
 
@@ -285,6 +251,7 @@
     <div id="advance_search" class="rts__section advance__search__section is__home__one tour-marketplace">
         <div class="container">
             <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
+                {% csrf_token %}
                 <div class="form-area-v2 bg-white">
                     <div class="search-input-group">
                         <div class="icon-box">
@@ -338,6 +305,12 @@
             </div>
         </form>
     </div>
+
+ 
+
+
+    
+
 
 <!-- rts Offer area start -->
 <div class="rts-offer-area rts-section-gap">
@@ -402,6 +375,9 @@
 <!-- rts Offer area end -->
 
 
+    
+    
+    
     {% if overview %}
     <div class="rts-section bg-white">
         <div class="container">
@@ -445,7 +421,6 @@
         </div>
     </div>
     {% endif %}
-
 
 {% endblock content %}
 

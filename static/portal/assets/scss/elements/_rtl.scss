@@ -1,0 +1,381 @@
+[dir="rtl"] {
+    .main-nav-area ul.rts-desktop-menu .rts-has-dropdown .rts-submenu li.nav-item .nav-link{
+        padding: 12px 15px 12px 45px;
+        text-align: right;
+    }
+    .header-style-one .header-style-one-wrapper .main-nav-area{
+        margin-left: 0;
+        margin-right: 120px;
+    }
+    .header-eight .header-style-one-wrapper .main-nav-area {
+        margin-right: 0;
+    }
+    .main-nav-area ul.rts-desktop-menu .rts-has-dropdown .rts-submenu.mega-menu .ad-image .ad-content,
+    .package-wrapper4 .tag{
+        left: unset;
+        right: 20px;
+    }
+    .main-nav-area ul.rts-desktop-menu .rts-has-dropdown .rts-submenu.mega-menu .destination-area-wrapper .destlist{
+        transform: translateX(70px);
+        &.active{
+            transform: translateX(0);
+        }
+    }
+    .advance__search__section .form-area .custom-select-trigger{
+        padding-left: 15px;
+        padding-right: 35px;
+        text-align: right;
+    }
+    .advance__search__section .form-area .custom-select .dropdown-icon,
+    .package-wrapper5 .wishlist{
+        right: unset;
+        left: 20px;
+    }
+    .advance__search__section .form-area .custom-select .icon{
+        left: unset;
+        right: 12px;
+    }
+    .advance__search__section.travel-africa .form-area .custom-select-trigger,
+    .advance__search__section.tour-marketplace .form-area .custom-select-trigger,
+    .advance__search__section.summer-travel .form-area .custom-select-trigger{
+        padding-right: 18px;
+    }
+    .swiper{
+        direction: ltr;
+        .package-wrapper,
+        .package-wrapper2,
+        .testimonials-wrapper-four,
+        .testimonials-wrapper-three,
+        .package-wrapper4,
+        .blog-wrapper3,
+        .package-wrapper5{
+            direction: rtl;
+        }
+    }
+    .package-wrapper5 .content{
+        padding: 34px 30px 33px 20px;
+    }
+    .advance__search__section .form-area .custom-select .tag{
+        text-align: right;
+    }
+    .blog-wrapper3 .content-area{
+        padding-right: 0;
+        padding-left: 35px;
+    }
+    .testimonials-wrapper-three .quote{
+        right: unset;
+        left: 40px;
+    }
+    .offer-wrapper .person{
+        img{
+            transform: scaleX(-1);
+        }
+    }
+    .destination-wrapper .content{
+        text-align: right;
+    }
+    .destination-wrapper .content .tag{
+        justify-content: end;
+    }
+    .why-choose-left-image-area{
+        margin-right: 0;
+        margin-left: 55px;
+    }
+    .why-choose-left-image-area .floating-image{
+        right: unset;
+        left: 0;
+    }
+    .testimonials-wrapper,
+    .tour-wrapper,
+    .rts-banner-area-three .rts-hero-banner {
+        direction: rtl;
+    }
+    .blog-wrapper .author-area{
+        left: unset;
+        right: 34px;
+    }
+    .rts-banner-area-two .rts-banner-content-area .content-inner{
+        direction: rtl;
+    }
+    .advance__search__section.home-hiking .form-area .custom-select .custom-select-trigger,
+    .advance__search__section.home-wild .form-area .custom-select-trigger{
+        padding-right: 15px;
+    }
+    .why-choose-wrapper .content{
+        left: unset;
+        right: 34px;
+    }
+    .why-choose-wrapper.big .content{
+        left: unset;
+        right: 70px;
+    }
+    .tour-wrapper-two .image-area .tag{
+        left: unset;
+        right: 16px;
+    }
+    .tour-wrapper-two .image-area .wishlist{
+        right: unset;
+        left: 16px;
+    }
+    .rts-banner-area-three .rts-hero-banner::after{
+        left: unset;
+        right: 0;
+        background: linear-gradient(270deg, rgba(0, 58, 89, 0.9) 44.35%, rgba(0, 58, 89, 0.09) 84.81%);
+    }
+    .rts-banner-area-three .swiper-pagination-vertical{
+        right: unset;
+        left: 60px;
+    }
+    .package-wrapper .wishlist,
+    .package-wrapper4 .wishlist,
+    .header-style-one.header-seven .header-mid .form-area button{
+        right: unset;
+        left: 20px;
+    }
+    .package-wrapper .content{
+        left: 10px;
+        right: 30px;
+    }
+    .offer-wrapper-2{
+        padding: 65px 30px 65px 65px;
+        &:after{
+            background: linear-gradient(270deg, #003A59 0%,  rgba(0, 58, 89, 0) 84.02%);
+        }
+    }
+    .package-wrapper .tag,
+    .tour-wrapper .image-area .tag{
+        left: unset;
+        right: 16px;
+    }
+    .counter-wrapper{
+        padding: 21px 30px 20px 15px;
+    }
+    .why-choose-right-side-content.yacht .stats-area ul li{
+        writing-mode: sideways-rl;
+    }
+    .why-choose-right-side-content.yacht .stats-area{
+        right: unset;
+        left: 0;
+    }
+    .single-footer-widget-one.essential-links ul li{
+        svg{
+            transform: rotate(-180deg);
+        }
+    }
+    .header-style-two .main-nav-area{
+        margin-left: 0;
+        margin-right: 80px;
+    }
+    .header-style-two .header-top .right-information{
+        padding-left: 0;
+        padding-right: 30px;
+        border-left: 0;
+        border-right: 1px solid #BDC3C6;
+    }
+    .header-style-two .header-top .header-top-inner .right .social-area{
+        padding-right: 0 !important;
+        padding-left: 30px !important;
+    }
+    .rts-banner-area-four .social-area{
+        right: unset;
+        left: 100px;
+    }
+    .about-image-area .rotate-image{
+        transform: rotate(10deg);
+    }
+    .rotateImg {
+        animation-name: rotateImg2 !important;
+    }
+    .about-content-area{
+        margin-left: unset;
+        margin-right: auto;
+    }
+    .project-block-four .content-area{
+        left: unset;
+        right: -100%;
+    }
+    .project-block-four.active .content-area{
+        right: 60px;
+        left: unset;
+    }
+    .package-wrapper2 .wishlist,
+    .package-wrapper3 .wishlist{
+        right: unset;
+        left: 20px;
+    }
+    .blog-wrapper2 .content-area{
+        left: unset;
+        right: 34px;
+    }
+    .rts-banner-area-five .rts-banner-wrapper .title span{
+        margin-left: auto;
+        margin-right: 0;
+        &:last-child{
+            margin-left: 0;
+            margin-right: auto;
+        }
+    }
+    .rts-banner-area-five .rts-banner-wrapper .bottom-content-area{
+        margin-left: 0;
+        margin-right: auto;
+    }
+    .rts-banner-area-five .rts-banner-wrapper .location{
+        right: unset;
+        left: -7%;
+        transform: scaleX(-1);
+    }
+    .rts-banner-area-five .rts-banner-wrapper .banner-hero{
+        left: unset;
+        right: -15.5%;
+        transform: scaleX(-1);
+    }
+    .header-five .header-style-one-wrapper .main-nav-area{
+        margin-right: 0;
+    }
+    .header-style-one.header-seven .header-mid .inner .right-button-area .right-information .rts-dropdown-menu .has-child-menu{
+        border-right: 0;
+        border-left: 1px solid var(--color-border);
+    }
+    .header-style-one.header-seven .header-mid .inner .right-button-area .right-information .rts-dropdown-menu.switcher-currency .has-child-menu{
+        border: none;
+    }
+    .header-style-one.header-seven .header-style-one-wrapper .main-nav-area{
+        margin-right: 0;
+    }
+    .rts-banner-area-seven .banner-wrapper,
+    .testimonials-wrapper-five{
+        direction: rtl;
+    }
+    .testimonials-wrapper-five{
+        padding: 60px 50px 50px 70px;
+    }
+    .rts-banner-area-seven .banner-wrapper .content-area{
+        right: -50%;
+        left: unset;
+    }
+    .rts-banner-area-seven .swiper-slide-active .banner-wrapper .content-area{
+        right: 80px;
+    }
+    .rts-testimonials-area.summer-travel .section-inner .slider-dots-2{
+        right: unset;
+        left: 25px;
+    }
+    .rts-tour-area.inner .left-sidebar-area .side-box .cross, .rts-blog-area.inner .left-sidebar-area .side-box .cross{
+        right: unset;
+        left: 0;
+    }
+    .rts-tour-area.inner.with-map{
+        padding-left: 0;
+        padding-right: 125px;
+    }
+    .tour-details-tab-content .tab-content-inner .itinerary-title{
+        text-align: right;
+    }
+    .tour-details-tab-content .tab-content-inner .itinerary-list{
+        padding-left: 0;
+        padding-right: 60px;
+    }
+    .tour-details-tab-content .tab-content-inner .itinerary-title .icon,
+    .tour-details-tab-content .tab-content-inner .itinerary-title .icon-2{
+        left: unset;
+        right: -60px;
+    }
+    .tour-details-tab-content .tab-content-inner .itinerary-list::after{
+        left: unset;
+        right: 20px;
+    }
+    .tour-details-tab-content .tab-content-inner .itinerary-title::after{
+        left: unset;
+        right: -48px;
+    }
+    .tour-details-tab-content .tab-content-inner .faq .itinerary-list{
+        padding-right: 0;
+    }
+    .tour-details-tab-content .tab-content-inner .faq .itinerary-item .itinerary-title::before,
+    .accordion .accordion-item .accordion-header button::after{
+        right: unset;
+        left: 0;
+    }
+    .faq-content{
+        margin-left: unset;
+        margin-right: 50px;
+    }
+    .rts-service-area .section-inner .service-wrapper{
+        border-right: 0;
+        border-left: 1px solid var(--color-border);
+    }
+    .rts-service-area .section-inner .service-wrapper:last-child{
+        border: none;
+    }
+    .rts-tour-area.inner .left-sidebar-area .side-box.search-area form .input-wrapper button, .rts-blog-area.inner .left-sidebar-area .side-box.search-area form .input-wrapper button{
+        left: unset;
+        right: 20px;
+    }
+    .side-bar{
+        left: -100%;
+        right: unset
+    }
+    .side-bar.show{
+        left: 0;
+        right: unset;
+    }
+    .mobile-menu-main nav ul li.has-droupdown::after{
+        left: 0;
+        right: unset;
+    }
+    .rtl-ltr-switcher-btn{
+        left: 0;
+        right: unset;
+    }
+    .offer-wrapper .person{
+        right: unset;
+        left: 0;
+    }
+    .about-img-area{
+        margin-left: unset;
+        margin-right: 70px;
+    }
+    .about-img-area .rotate-img{
+        right: unset;
+        left: -20px;
+    }
+    .rts-faq-area.kayaking .faq-content{
+        margin-left: unset;
+        margin-right: 120px;
+    }
+    .about-left-image-area{
+        margin-right: unset;
+        margin-left: 70px;
+    }
+    .about-left-image-area .floating-image{
+        right: unset;
+        left: 0;
+    }
+    .rts-banner-area-nine .is__home__nine .form-area .custom-select .icon,
+    .rts-banner-area-nine .is__home__nine .form-area .custom-cal .icon{
+        left: unset;
+        right: 12px
+    }
+    .rts-banner-area-nine .is__home__nine .form-area .custom-select .dropdown-icon,
+    .rts-banner-area-nine .is__home__nine .form-area .custom-cal .icon{
+        right: unset;
+        left: 20px;
+    }
+    .rts-banner-area-nine .is__home__nine .form-area .custom-select-trigger,
+    .rts-banner-area-nine .is__home__nine .form-area .custom-cal input{
+        padding-right: 40px;
+    }
+    .rts-marquee-area .marquee-wrapper .marquee-track{
+        direction: ltr;
+    }
+    .rts-features-wrapper .features-item:last-child{
+        padding-left: 0;
+        padding-right: 67px;
+        border-right: 1px solid #B7EAE4;
+    }
+    .rts-features-wrapper .features-item:first-child{
+        padding-left: 70px;
+        padding-right: 0;
+        border-right: none;
+    }
+}

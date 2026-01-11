@@ -1,0 +1,245 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+
+<style>
+    /* MODERN UI STYLES */
+    :root { --primary-soft: #7366ff; --danger-soft: #f8d7da; --danger-text: #721c24; }
+    
+    .update-card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background: #fff; }
+    .section-title { font-weight: 700; color: #2c3e50; font-size: 1.1rem; margin-bottom: 20px; display: flex; align-items: center; }
+    .section-title i { margin-right: 10px; color: var(--primary-soft); }
+
+    /* ITINERARY TIMELINE */
+    .itinerary-list { list-style: none; padding: 0; position: relative; }
+    .itinerary-item { padding-left: 30px; position: relative; margin-bottom: 20px; }
+    .itinerary-item::before { content: ''; position: absolute; left: 0; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary-soft); border: 3px solid #eef1ff; z-index: 2; }
+    .itinerary-item::after { content: ''; position: absolute; left: 5px; top: 15px; width: 2px; height: 100%; background: #eef1ff; z-index: 1; }
+    .itinerary-item:last-child::after { display: none; }
+    .stop-time { font-weight: 700; color: #333; font-size: 0.9rem; }
+    .stop-name { color: #666; font-size: 0.85rem; }
+
+    /* ERROR CONTAINER (PINPOINTED) */
+    #error-container {
+        display: none;
+        background-color: var(--danger-soft);
+        color: var(--danger-text);
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        animation: shake 0.5s ease-in-out;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    /* TOASTS */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    .custom-toast { min-width: 300px; padding: 15px; border-radius: 12px; margin-bottom: 10px; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; align-items: center; transition: 0.4s; }
+    .toast-success { background: #28a745; }
+    .toast-error { background: #dc3545; }
+</style>
+
+{% endblock css %}
+
+
+{% block content %}
+<div id="toast-container"></div>
+
+<div class="container-fluid py-4">
+    <div class="page-title mb-4">
+        <h3>Trip & Itinerary Management</h3>
+    </div>
+
+    <form id="updateTripForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-xl-4">
+                <div class="card update-card mb-4">
+                    <div class="card-body">
+                        <div class="section-title"><i class="fa-solid fa-clock"></i> General Schedule</div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Departure Date & Time</label>
+                            <input type="text" id="departurePicker" name="departure_datetime" 
+                                class="form-control border" 
+                                style="color: #333 !important;"
+                                value="{{ trip.departure_datetime|date:'Y-m-d H:i' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Global Price Multiplier</label>
+                            <input type="number" step="0.01" name="price_multiplier" 
+                                class="form-control border" 
+                                style="color: #333 !important;"
+                                value="{{ trip.price_multiplier }}">
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="section-title"><i class="fa-solid fa-route"></i> Calculated Itinerary</div>
+                        <div class="itinerary-list">
+                            {% for item in itinerary %}
+                            <div class="itinerary-item">
+                                <div class="stop-time">{{ item.time|date:"h:i A" }}</div>
+                                <div class="stop-name">
+                                    {{ item.location }} 
+
+                                    {% if item.is_start %}
+                                        <span class="badge border text-primary ms-2" style="background: #eef1ff;">Departure Point</span>
+                                        <input type="hidden" name="offset_{{ item.stop_id }}" value="0">
+                                    {% else %}
+                                        <div class="input-group input-group-sm d-inline-flex ms-2" style="width: 110px;">
+                                            <span class="input-group-text bg-white border-end-0 text-muted">+</span>
+                                            <input type="number" name="offset_{{ item.stop_id }}" 
+                                                class="form-control border-start-0 border-end-0 ps-0" 
+                                                style="color: #333 !important; font-weight: 500;"
+                                                value="{{ item.offset }}">
+                                            <span class="input-group-text bg-white border-start-0 text-muted">m</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div id="error-container">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                                <strong>Origin: <span id="error-source"></span></strong>
+                            </div>
+                            <div id="error-message" class="small"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" id="saveBtn" style="border-radius: 12px;">
+                            <span class="spinner-border spinner-border-sm d-none" id="btnSpinner"></span>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card update-card">
+                    <div class="card-body">
+                        <div class="section-title"><i class="fa-solid fa-tags"></i> Segment Pricing Overrides</div>
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead class="bg-light">
+                                    <tr class="text-muted small">
+                                        <th>Route Segment</th>
+                                        <th>Category</th>
+                                        <th>Base Price</th>
+                                        <th>Active Total</th>
+                                        <th>Manual Override</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for segment in base_segments %}
+                                    <tr>
+                                        <td class="small">{{ segment.from_stop.location.name }} → {{ segment.to_stop.location.name }}</td>
+                                        <td>
+                                            <span class="badge border" style="background-color: #eef1ff; color: #7366ff !important; font-weight: 600;">
+                                                {{ segment.seat_category.name }}
+                                            </span>
+                                        </td>
+                                        <td class="text-muted">{{ segment.price }}</td>
+                                        <td class="fw-bold text-primary">{{ segment.current_total_price|floatformat:2 }}</td>
+                                        <td>
+                                            <input type="number" step="0.01" name="price_override_{{ segment.id }}" 
+                                                   class="form-control form-control-sm bg-light border-0" 
+                                                   value="{{ segment.existing_override|default:'' }}" style="width: 100px;">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    // 1. Initialize Date Picker (Always unlocked)
+    flatpickr("#departurePicker", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        allowInput: true
+    });
+
+    // 2. Notification Helper
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `custom-toast toast-${type}`;
+        toast.innerHTML = `<i class="fa ${type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'} me-2"></i> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // 3. AJAX Submission
+    document.getElementById('updateTripForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('saveBtn');
+        const spinner = document.getElementById('btnSpinner');
+        const errorDiv = document.getElementById('error-container');
+        const sourceSpan = document.getElementById('error-source');
+        const messageSpan = document.getElementById('error-message');
+        
+        // UI State
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        errorDiv.style.display = 'none';
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showNotification(data.message, 'success');
+                // Optional: Refresh itinerary times without reloading page
+                // location.reload(); 
+            } else {
+                // PINPOINT: Showing JSON error at the top
+                sourceSpan.innerText = data.origin;
+                messageSpan.innerText = data.message;
+                errorDiv.style.display = 'block';
+                showNotification('Update failed', 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Network error occurred.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+        });
+    });
+</script>
+{% endblock %}

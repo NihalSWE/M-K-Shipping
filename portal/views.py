@@ -4,7 +4,13 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from datetime import datetime
 from django.template.loader import render_to_string
+from django.utils.crypto import get_random_string
 from django.db.models import Min
+import json
+import uuid
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from datetime import timedelta
 
 
 
@@ -15,14 +21,15 @@ from django.db.models import Min
 
 
 
+
+
+User = get_user_model()
 
 
 def home (request):
     banner = HomeBanner.objects.filter(is_active=True).first()
     locations = Location.objects.all().order_by('name')
-    # Fetch the overview section
     overview = CompanyOverview.objects.filter(is_active=True).first()
-    
     
     context={
         'banner': banner,
@@ -90,11 +97,10 @@ def aboutUs (request):
         'story': story,
     }
     return render(request,'portal/aboutus/aboutus.html',context)
-
-
-
+    
 def services(request):
-    return render(request,'portal/services/services.html')
+    return render(request,'portal/services/services.html')    
+    
 
 def team(request):
     """
@@ -107,19 +113,17 @@ def team(request):
         'team_members': members
     }
     return render(request, 'portal/team/team.html', context)
-
-
-
-
+    
+    
+    
 def technology_innovation_view(request):
     context = {
         'page_title': 'Technology & Innovation',
         'breadcrumb_title': 'Technology & Innovation',
         'meta_description': 'Explore our advanced technology solutions for river transportation including online ticketing, GPS tracking, and digital innovations.'
     }
-    return render(request, 'portal/t&i/technology_innovation.html', context)
-
-
+    return render(request, 'portal/t&i/technology_innovation.html', context)    
+    
 
 from django.db.models import Q # Import Q for complex queries
 
@@ -288,11 +292,17 @@ def search_trips(request):
                     else:
                         final_preview_price = base_min_price * trip.price_multiplier
                     
+                    # Calculate segment-specific times using offsets
+                    departure_time = trip.departure_datetime + timedelta(minutes=stop_from.time_offset_minutes)
+                    arrival_time = trip.departure_datetime + timedelta(minutes=stop_to.time_offset_minutes)
+
                     trips_found.append({
                         'trip': trip,
                         'stop_from': stop_from,
                         'stop_to': stop_to,
-                        'preview_price': final_preview_price
+                        'preview_price': final_preview_price,
+                        'segment_departure': departure_time, # Added this
+                        'segment_arrival': arrival_time      # Added this
                     })
 
     return render(request, 'portal/schedules/schedules.html', {
@@ -372,4 +382,117 @@ def get_seat_layout(request, trip_id):
         'occupied_seats': occupied_seat_ids,
         'from_stop': stop_from,
         'to_stop': stop_to,
+    })
+    
+    
+def save_booking_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        trip_id = data.get('trip_id')
+        from_stop_id = data.get('from_stop')
+        to_stop_id = data.get('to_stop')
+        passengers_data = data.get('passengers', [])
+
+        # 1. Server-side Validation
+        if not all([trip_id, from_stop_id, to_stop_id, passengers_data]):
+            return JsonResponse({'success': False, 'error': 'Missing required booking data.'}, status=400)
+
+        trip = Trip.objects.get(id=trip_id)
+        from_stop = RouteStop.objects.get(id=from_stop_id)
+        to_stop = RouteStop.objects.get(id=to_stop_id)
+
+        with transaction.atomic():
+            # 2. User Handling (Logged in vs Guest)
+            booking_user = None
+            if request.user.is_authenticated:
+                booking_user = request.user
+            else:
+                # Use details from the FIRST passenger as the account owner
+                primary = passengers_data[0]
+                email = primary.get('email')
+                full_name = primary.get('name', '')
+                phone = primary.get('phone')
+
+                if not email or not phone:
+                    return JsonResponse({'success': False, 'error': 'Email and Phone are required for guest booking.'}, status=400)
+
+                # Check if user exists, else create
+                booking_user, created = User.objects.get_or_create(email=email, defaults={
+                    'username': email.split('@')[0] + str(uuid.uuid4().hex[:4]),
+                    'phone_number': phone,
+                    'user_type': 1, # Customer
+                })
+
+                if created:
+                    # Name splitting logic
+                    name_parts = full_name.split(' ', 1)
+                    booking_user.first_name = name_parts[0]
+                    booking_user.last_name = name_parts[1] if len(name_parts) > 1 else ""
+                    # Generate a random password for the new account
+                    temp_password = get_random_string(length=12)
+                    booking_user.set_password(temp_password)
+                    booking_user.save()
+
+            # 3. Booking & Ticket Creation
+            total_amount = 0
+            booking_ref = f"BK-{uuid.uuid4().hex[:8].upper()}"
+            
+            booking = Booking.objects.create(
+                user=booking_user,
+                trip=trip,
+                booking_ref=booking_ref,
+                total_amount=0, # Will update after calculating fares
+                status='CONFIRMED' # Since no payment gateway yet
+            )
+
+            for p in passengers_data:
+                seat = LayoutObject.objects.get(id=p['seat_id'])
+                
+                # Double-check availability inside transaction
+                if not trip.is_seat_available(seat, from_stop, to_stop):
+                    raise Exception(f"Seat {seat.label} is no longer available.")
+
+                fare = trip.get_price(seat.category, from_stop, to_stop)
+                total_amount += fare
+
+                Ticket.objects.create(
+                    booking=booking,
+                    trip=trip,
+                    seat_object=seat,
+                    passenger_name=p['name'],
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    fare_amount=fare,
+                    status='BOOKED',
+                    lock_expires_at=timezone.now() + timedelta(days=1) # Placeholder
+                )
+
+            # Update final total
+            booking.total_amount = total_amount
+            booking.save()
+
+        return JsonResponse({
+            'success': True, 
+            'booking_ref': booking_ref,
+            'message': 'Booking saved successfully!'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    
+def booking_success(request, booking_ref):
+    # 1. Use 'booking_ref' instead of 'reference'
+    # 2. Use 'tickets' (default related_name) instead of 'passengers'
+    # 3. Use 'seat_object' instead of 'seat'
+    booking = get_object_or_404(
+        Booking.objects.prefetch_related('tickets__seat_object'), 
+        booking_ref=booking_ref
+    )
+    
+    return render(request, 'portal/schedules/booking_success.html', {
+        'booking': booking
     })

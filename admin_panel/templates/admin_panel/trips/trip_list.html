@@ -1,0 +1,223 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
+
+
+<style>
+    /* YOUR EXACT STYLING */
+    .flatpickr-calendar {
+        background: #fff !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12) !important;
+        border: none !important;
+        border-radius: 16px !important;
+    }
+    .flatpickr-months {
+        background: #f8fafc !important; /* Adjusted to a standard light hex, change to your var if defined */
+        padding: 12px 0 !important;
+    }
+    .flatpickr-day.selected {
+        background: #7366ff !important; /* Standard brand blue, change to your var if defined */
+        border-color: #7366ff !important;
+    }
+</style>
+
+{% endblock css %}
+
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-6">
+                <h4 style="font-weight: 400;">Individual Trip Management</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h4 class="fw-bold">Trip Schedule Blueprints</h4>
+                            <p class="text-muted small">Manage automated trip generation settings</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <a href="{% url 'save_trip_schedule' %}">
+                                    <button class="btn btn-pill btn-primary btn-lg custom-large-btn">
+                                        <span class="me-2">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </span> Add New Trips
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-header pb-0">
+                    <form method="GET" action="{% url 'trip_management' %}" class="row align-items-center">
+                        <div class="col-md-4">
+                            <p class="text-muted" style="font-size: 14px; margin-bottom: 0;">List of all generated trips and sailings.</p>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="d-flex gap-2 justify-content-end align-items-end">
+                                <div style="min-width: 300px;">
+                                    <label class="form-label text-muted small mb-1">Filter by Specific Trip Dates</label>
+                                    <input type="text" id="dateRange" name="date_range" 
+                                        class="form-control form-control-sm" 
+                                        value="{{ date_range_value|default:'' }}" 
+                                        placeholder="Click to select dates">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px; height: 35px;">
+                                    Filter
+                                </button>
+                                <a href="{% url 'trip_management' %}" class="btn btn-light btn-sm">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Vessel</th>
+                                    <th>Route</th>
+                                    <th>Departure</th>
+                                    <th>Multiplier</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trip in trips %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ trip.ship.name }}</td>
+                                    <td>
+                                        <span class="small">{{ trip.route.source.name }}</span>
+                                        <i class="fa-solid fa-arrow-right-long mx-1 text-muted" style="font-size: 10px;"></i>
+                                        <span class="small">{{ trip.route.destination.name }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ trip.departure_datetime|date:"d M, Y" }}</div>
+                                        <div class="small text-muted">{{ trip.departure_datetime|time:"h:i A" }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light-secondary text-dark" style="font-weight: 400;">
+                                            x {{ trip.price_multiplier }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if trip.is_published %}
+                                            <span class="badge rounded-pill badge-light-success" style="font-weight: 400;">Published</span>
+                                        {% else %}
+                                            <span class="badge rounded-pill badge-light-warning" style="font-weight: 400;">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <ul class="action">
+                                            <li class="edit">
+                                                <a href="{% url 'update_trip' trip.id %}">
+                                                    <span class="edit-icon-span">
+                                                        <i class="fa-regular fa-pen-to-square edit-icon"></i>
+                                                    </span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+<script>
+    $(document).ready(function() {
+        flatpickr("#dateRange", {
+            mode: "multiple",
+            conjunction: ", ",
+            dateFormat: "Y-m-d",
+            prevArrow: '<i class="fa fa-chevron-left"></i>',
+            nextArrow: '<i class="fa fa-chevron-right"></i>'
+        });
+        // Grab the existing table instance initialized by your custom scripts
+        var table = $('#basic-1').DataTable();
+
+        // Custom Filtering Function for Dates
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                var minStr = $('#minDate').val();
+                var maxStr = $('#maxDate').val();
+                
+                // Get date text from the specific cell with class .trip-date-val
+                var tableDateStr = $(table.row(dataIndex).node()).find('.trip-date-val').text().trim();
+                if (!tableDateStr) return true;
+
+                var tableDate = new Date(tableDateStr);
+                
+                if (minStr === "" && maxStr === "") return true;
+
+                var min = minStr ? new Date(minStr) : null;
+                var max = maxStr ? new Date(maxStr) : null;
+
+                // Strip time for accurate comparison
+                tableDate.setHours(0,0,0,0);
+                if (min) min.setHours(0,0,0,0);
+                if (max) max.setHours(0,0,0,0);
+
+                if ((!min || tableDate >= min) && (!max || tableDate <= max)) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        // Redraw table when date inputs change
+        $('#minDate, #maxDate').on('change', function() {
+            table.draw();
+        });
+
+        // Reset button
+        $('#resetFilter').on('click', function() {
+            $('#minDate').val('');
+            $('#maxDate').val('');
+            table.draw();
+        });
+    });
+</script>
+{% endblock %}

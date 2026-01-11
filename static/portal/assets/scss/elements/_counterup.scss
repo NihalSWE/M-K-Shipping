@@ -1,0 +1,33 @@
+
+// counter up
+.rts-counter-area{
+    .section-inner{
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        justify-content: space-between;
+        &.kayaking{
+            margin-top: 40px;
+        }
+    }
+}
+.counter-wrapper{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border: 1px solid var(--color-border);
+    background: #FFF3EA;
+    padding: 21px 15px 20px 30px;
+    max-width: 300px;
+    width: 100%;
+    .counter-area{
+        .title{
+            margin-bottom: 0;
+            line-height: 1;
+        }
+        .done{
+            color: var(--color-heading-1);
+            font-weight: 500;
+        }
+    }
+}

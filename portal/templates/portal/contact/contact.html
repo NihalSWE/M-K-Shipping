@@ -119,61 +119,61 @@
     <!-- rts map area end -->
 
     <!-- rts faq area start -->
-    {% comment %} {% if faq_settings %}
-    <section class="rts-faq-area kayaking rts-section-gapTop">
-        <div class="container">
-            <div class="section-inner">
-                <div class="row g-5">
+    <!--{% if faq_settings %}-->
+    <!--<section class="rts-faq-area kayaking rts-section-gapTop">-->
+    <!--    <div class="container">-->
+    <!--        <div class="section-inner">-->
+    <!--            <div class="row g-5">-->
                     
-                    <div class="col-lg-4">
-                        <div class="image-area overflow-hidden radius-10 wow zoomIn" data-wow-delay="0.4s">
-                            {% if faq_settings.side_image %}
-                                <img class="wow scaleIn" data-wow-delay="0.4s" src="{{ faq_settings.side_image.url }}" alt="FAQ Image">
-                            {% endif %}
-                        </div>
-                    </div>
+    <!--                <div class="col-lg-4">-->
+    <!--                    <div class="image-area overflow-hidden radius-10 wow zoomIn" data-wow-delay="0.4s">-->
+    <!--                        {% if faq_settings.side_image %}-->
+    <!--                            <img class="wow scaleIn" data-wow-delay="0.4s" src="{{ faq_settings.side_image.url }}" alt="FAQ Image">-->
+    <!--                        {% endif %}-->
+    <!--                    </div>-->
+    <!--                </div>-->
     
-                    <div class="col-lg-8">
-                        <div class="faq-content">
-                            <div class="section-title-area">
-                                <h2 class="section-title mb-0">{{ faq_settings.title }}</h2>
-                            </div>
+    <!--                <div class="col-lg-8">-->
+    <!--                    <div class="faq-content">-->
+    <!--                        <div class="section-title-area">-->
+    <!--                            <h2 class="section-title mb-0">{{ faq_settings.title }}</h2>-->
+    <!--                        </div>-->
     
-                            <div class="accordion-faq-one mt--60">
-                                <div class="accordion" id="accordionExample">
+    <!--                        <div class="accordion-faq-one mt--60">-->
+    <!--                            <div class="accordion" id="accordionExample">-->
                                     
-                                    {% for item in faq_items %}
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
-                                                    data-bs-toggle="collapse" 
-                                                    data-bs-target="#collapse{{ forloop.counter }}" 
-                                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
-                                                    aria-controls="collapse{{ forloop.counter }}">
-                                                {{ item.question }}
-                                            </button>
-                                        </h2>
+    <!--                                {% for item in faq_items %}-->
+    <!--                                <div class="accordion-item">-->
+    <!--                                    <h2 class="accordion-header">-->
+    <!--                                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" -->
+    <!--                                                data-bs-toggle="collapse" -->
+    <!--                                                data-bs-target="#collapse{{ forloop.counter }}" -->
+    <!--                                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" -->
+    <!--                                                aria-controls="collapse{{ forloop.counter }}">-->
+    <!--                                            {{ item.question }}-->
+    <!--                                        </button>-->
+    <!--                                    </h2>-->
                                         
-                                        <div id="collapse{{ forloop.counter }}" 
-                                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
-                                             data-bs-parent="#accordionExample">
-                                            <div class="accordion-body">
-                                                {{ item.answer }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
+    <!--                                    <div id="collapse{{ forloop.counter }}" -->
+    <!--                                         class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" -->
+    <!--                                         data-bs-parent="#accordionExample">-->
+    <!--                                        <div class="accordion-body">-->
+    <!--                                            {{ item.answer }}-->
+    <!--                                        </div>-->
+    <!--                                    </div>-->
+    <!--                                </div>-->
+    <!--                                {% endfor %}-->
     
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!--                            </div>-->
+    <!--                        </div>-->
+    <!--                    </div>-->
+    <!--                </div>-->
     
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endif %} {% endcomment %}
+    <!--            </div>-->
+    <!--        </div>-->
+    <!--    </div>-->
+    <!--</section>-->
+    <!--{% endif %}-->
     <!-- rts faq area end -->
 
     {% endblock content %}

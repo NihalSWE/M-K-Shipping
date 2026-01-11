@@ -316,8 +316,6 @@
     // --- DATA ---
     const allObjects = JSON.parse('{{ pos_data_json|escapejs }}');
     let cart = [];
-
-    
     
     // --- STATE ---
     let currentStep = 1; // 1 = Type Select, 2 = Room Select
@@ -362,88 +360,83 @@
 
     // --- STEP 1: RENDER MAIN TYPES (Custom Grouping) ---
     function renderTypes() {
-        const container = document.getElementById("type-list-container");
-        container.innerHTML = "";
-    
-        const categoriesMap = {};
-    
-        allObjects.forEach(o => {
-            // 🔥 SKIP NON-BOOKABLE CATEGORIES
-            if (!o.is_bookable) return;
-    
-            if (!categoriesMap[o.category_id]) {
-                categoriesMap[o.category_id] = {
-                    id: o.category_id,
-                    name: o.category_name,
-                    icon: o.category_icon,
-                    color: o.category_color,
-                };
-            }
-        });
-    
-        Object.values(categoriesMap).forEach(cat => {
-            const availableCount = allObjects.filter(
-                o => o.category_id === cat.id &&
-                     !o.is_booked &&
-                     o.is_bookable
-            ).length;
-    
-            if (availableCount === 0) return; // optional
-    
-            const div = document.createElement("div");
-            div.className = "option-card";
-            div.onclick = () => selectType(cat.id, cat.name);
-    
+        const container = document.getElementById('type-list-container');
+        container.innerHTML = '';
+
+        // We define the 3 main types you asked for manually
+        const mainTypes = [
+            { key: 'Double', label: 'Double Bed', icon: 'fa-bed' },
+            { key: 'Single', label: 'Single Bed', icon: 'fa-user' },
+            { key: 'VIP', label: 'VIP Room', icon: 'fa-crown' }
+        ];
+
+        mainTypes.forEach(type => {
+            // Count total available for this keyword (checking both category name and label)
+            const keyword = type.key.toLowerCase();
+            const count = allObjects.filter(o => {
+                const searchStr = (o.category_name + " " + o.label).toLowerCase();
+                return searchStr.includes(keyword) && !o.is_booked;
+            }).length;
+
+            const div = document.createElement('div');
+            div.className = 'option-card';
+            div.onclick = () => selectType(type.key, type.label);
             div.innerHTML = `
-                <i class="fa ${cat.icon} fa-2x mb-2" style="color:${cat.color}"></i>
-                <div class="option-title">${cat.name}</div>
-                <div class="option-subtitle text-success fw-bold">
-                    ${availableCount} Available
-                </div>
+                <i class="fa ${type.icon} fa-2x text-primary mb-2 opacity-50"></i>
+                <div class="option-title">${type.label}</div>
+                <div class="option-subtitle text-success fw-bold">${count} Available</div>
             `;
-    
             container.appendChild(div);
         });
-    
+
         currentStep = 1;
         updateWizardUI();
     }
-    
-    
 
-    function selectType(categoryId, categoryName) {
-        currentTypeFilter = categoryId;
-        breadcrumbs.innerText = categoryName;
-        renderRooms(categoryId);
+    function selectType(key, label) {
+        currentTypeFilter = label; // For breadcrumb
+        renderRooms(key); // Pass the keyword "Double", "Single" etc.
     }
-    
 
     // --- STEP 2: RENDER ROOMS (SPLIT AC / NON-AC) ---
-    function renderRooms(categoryId) {
-        const filtered = allObjects.filter(
-            o => o.category_id === categoryId
-        );
-    
+    function renderRooms(keyword) {
+        keyword = keyword.toLowerCase();
+        
+        // 1. Filter ALL objects matching the Keyword (e.g. "Double")
+        const filtered = allObjects.filter(o => {
+            const searchStr = (o.category_name + " " + o.label).toLowerCase();
+            return searchStr.includes(keyword);
+        });
+
+        // 2. Split into AC vs Non-AC
+        // Logic: If it says "non ac" -> Non-AC list. Else -> AC list.
         const acRooms = [];
         const nonAcRooms = [];
-    
-        filtered.forEach(o => {
-            const features = o.features.map(f => f.toLowerCase());
-    
-            if (features.includes("ac")) acRooms.push(o);
-            else nonAcRooms.push(o);
+
+        filtered.forEach(obj => {
+            const searchStr = (obj.category_name + " " + obj.label).toLowerCase();
+            if (searchStr.includes('non ac') || searchStr.includes('non-ac')) {
+                nonAcRooms.push(obj);
+            } else {
+                acRooms.push(obj);
+            }
         });
-    
-        renderGrid(acRooms, "section-ac", "list-ac");
-        renderGrid(nonAcRooms, "section-non-ac", "list-non-ac");
-    
-        document.getElementById("no-rooms-msg")
-            .classList.toggle("d-none", filtered.length > 0);
-    
+
+        // 3. Render Arrays
+        renderGrid(acRooms, 'section-ac', 'list-ac');
+        renderGrid(nonAcRooms, 'section-non-ac', 'list-non-ac');
+
+        // 4. Handle Empty States
+        const noRoomsDiv = document.getElementById('no-rooms-msg');
+        if (acRooms.length === 0 && nonAcRooms.length === 0) {
+            noRoomsDiv.classList.remove('d-none');
+        } else {
+            noRoomsDiv.classList.add('d-none');
+        }
+
         currentStep = 2;
         updateWizardUI();
     }
-    
 
     function renderGrid(items, sectionId, listId) {
         const section = document.getElementById(sectionId);
@@ -485,23 +478,23 @@
     // --- CART SYSTEM ---
     function toggleCart(obj) {
         const index = cart.findIndex(c => c.id === obj.id);
-    
-        if (index > -1) {
-            cart.splice(index, 1);
-        } else {
-            cart.push(obj);
-        }
-    
-        // Re-render SAME category using ID
-        renderRooms(currentTypeFilter);
+        if (index > -1) cart.splice(index, 1);
+        else cart.push(obj);
+        
+        // Refresh Current View to show selection
+        // We need to know which keyword triggered the view to re-render correctly
+        // But simpler: just find the button in DOM and toggle class? 
+        // Safer to re-render using the stored label logic might be complex.
+        // Let's just re-render current state based on breadcrumbs/logic
+        const currentKey = currentTypeFilter.split(" ")[0]; // "Double Bed" -> "Double"
+        renderRooms(currentKey); 
         updateBottomBar();
     }
-    
 
     function updateBottomBar() {
         let total = 0;
         cart.forEach(item => total += item.price);
-        document.getElementById('bar-total-price').innerText = total.toFixed(0);
+        document.getElementById('bar-total-price').innerText = total;
         document.getElementById('bar-total-count').innerText = cart.length;
         document.getElementById('btn-checkout-bar').disabled = (cart.length === 0);
     }

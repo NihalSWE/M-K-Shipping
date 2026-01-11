@@ -25,4 +25,8 @@ urlpatterns = [
     # Schedules
     path('search-trips/', views.search_trips, name='search_trips'),
     path('get-seat-layout/<int:trip_id>/', views.get_seat_layout, name='get_seat_layout'),
+    
+    # booking
+    path('booking/save/', views.save_booking_view, name='save_booking'),
+    path('booking/success/<str:booking_ref>/', views.booking_success, name='booking_success'),
 ]

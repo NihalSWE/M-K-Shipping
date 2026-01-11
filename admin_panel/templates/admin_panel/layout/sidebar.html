@@ -5,8 +5,8 @@
 <div class="sidebar-wrapper" data-sidebar-layout="stroke-svg">
     <div>
         <div class="logo-wrapper"><a href="/index"><img class="img-fluid for-light"
-                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt=""><img class="img-fluid for-dark"
-                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt=""></a>
+                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt="" style="width: 40%;"><img class="img-fluid for-dark"
+                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt="" style="width: 40%;"></a>
             <div class="back-btn"><i class="fa-solid fa-angle-left"></i></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
         </div>
@@ -33,7 +33,7 @@
                     </li>
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
-                       
+                    
                         <a class="sidebar-link sidebar-title" href="{% url 'admin_dashboard' %}">
                             <svg class="stroke-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-home"></use>
@@ -104,7 +104,8 @@
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
                             </svg><span class="">Trips & Schedules</span></a>
                         <ul class="sidebar-submenu">
-                            <li><a class="" href="{% url 'trip_schedule_list' %}">Trip Schedules</a></li>
+                            {% comment %} <li><a class="" href="{% url 'trip_schedule_list' %}">Trip Schedules</a></li> {% endcomment %}
+                            <li><a class="" href="{% url 'trip_list' %}">Trips</a></li>
                         </ul>
                     </li>
                     <!-- Trips & Schedules -->
@@ -125,14 +126,12 @@
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'site_identity' %}">Add Logo</a></li>
                             <li><a href="{% url 'banner' %}">Add Banner</a></li>
-                            <li><a href="{% url 'overview' %}">overview</a></li>
-                            
+                             <li><a href="{% url 'overview' %}">overview</a></li>
                         </ul>
                     </li>
                     <!--Home-->
-
-
-                    <!--Team-->
+                    
+                     <!--Team-->
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -151,7 +150,6 @@
                         </ul>
                     </li>
                     <!--Team-->
-
 
                     <!--User-->
                     <li class="sidebar-list">
@@ -187,11 +185,13 @@
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'tcktbook' %}">Booking</a></li>
                             <li><a href="{% url 'admin_booking_list' %}">Booking List</a></li>
-
+                            <li><a href="{% url 'booking_issue_list' %}">Issue List</a></li>
+                            <li><a href="{% url 'booking_pending_list' %}">Pending List</a></li>
+                            <li><a href="{% url 'booking_cancel_list' %}">Cancellation List</a></li>
                         </ul>
                     </li>
                     <!--Tckt-->
-
+                    
                     <!--Tckt-pos-->
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>

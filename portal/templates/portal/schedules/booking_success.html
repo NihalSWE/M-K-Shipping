@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Ticket - {{ booking.booking_ref }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --text-dark: #0f172a;
+            --text-light: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background-color: #f1f5f9; 
+            font-family: 'Poppins', sans-serif; 
+            color: var(--text-dark);
+            padding: 20px;
+        }
+
+        /* Print Button / Nav */
+        .no-print {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+        }
+
+        .btn-print { background: var(--primary); color: white; }
+        .btn-back { background: white; color: var(--text-light); border: 1px solid var(--border-color); }
+
+        /* Ticket Layout - Optimized for A4 */
+        .ticket-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Header Area */
+        .header {
+            padding: 30px 40px;
+            border-bottom: 2px solid #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand h1 { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .brand p { font-size: 12px; color: var(--text-light); }
+
+        .booking-info { text-align: right; }
+        .booking-info h2 { font-size: 18px; color: var(--text-dark); }
+        .booking-info p { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
+
+        /* Journey Details Area */
+        .journey-grid {
+            padding: 30px 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .route-visual {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            grid-column: span 2;
+        }
+
+        .point h3 { font-size: 24px; color: var(--primary); margin: 0; }
+        .point p { font-size: 13px; color: var(--text-light); font-weight: 500; }
+        .point span { font-size: 11px; color: #94a3b8; }
+
+        .arrow { color: #cbd5e1; font-size: 20px; }
+
+        .meta-item { margin-bottom: 10px; }
+        .meta-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 600; }
+        .meta-value { font-size: 15px; font-weight: 600; }
+
+        /* Passenger Table - Compact for multiple tickets */
+        .manifest-container {
+            padding: 0 40px 30px;
+        }
+
+        .manifest-title {
+            font-size: 13px;
+            font-weight: 700;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ticket-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ticket-table th {
+            text-align: left;
+            font-size: 11px;
+            color: var(--text-light);
+            padding: 10px;
+            background: #fcfcfc;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .ticket-table td {
+            padding: 14px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+
+        .seat-badge {
+            background: #eef2ff;
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            border: 1px solid #e0e7ff;
+        }
+
+        .cabin-type {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Footer Summary */
+        .footer {
+            padding: 30px 40px;
+            background: #fafafa;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .total-box { text-align: right; }
+        .total-box p { font-size: 12px; color: var(--text-light); }
+        .total-box .price { font-size: 26px; font-weight: 800; color: var(--text-dark); }
+        .total-box .paid-status { color: #10b981; font-size: 12px; font-weight: 700; }
+
+        .qr-area { display: flex; align-items: center; gap: 15px; }
+        .qr-mock { width: 60px; height: 60px; border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: white; color: #cbd5e1; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none; }
+            .ticket-container { border: none; box-shadow: none; max-width: 100%; }
+            /* Force table to fit */
+            .ticket-table td { padding: 10px; }
+            @page { margin: 1cm; size: A4; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <a href="/" class="btn btn-back"><i class="fas fa-arrow-left"></i> Home</a>
+        <button onclick="window.print()" class="btn btn-print"><i class="fas fa-file-pdf"></i> Download Ticket</button>
+    </div>
+
+    <div class="ticket-container">
+        <div class="header">
+            <div class="brand">
+                <h1><i class="fas fa-anchor"></i> MK Shipping</h1>
+                <p>Digital Booking Receipt & Tax Invoice</p>
+            </div>
+            <div class="booking-info">
+                <p>Booking Reference</p>
+                <h2>{{ booking.booking_ref }}</h2>
+            </div>
+        </div>
+
+        <div class="journey-grid">
+            <div class="route-visual">
+                <div class="point">
+                    <h3>{{ booking.tickets.first.from_stop.location.name|slice:":3"|upper }}</h3>
+                    <p>{{ booking.tickets.first.from_stop.location.name }}</p>
+                    <span>{{ booking.tickets.first.from_stop.name }}</span>
+                </div>
+                <div class="arrow">
+                    <i class="fas fa-long-arrow-alt-right"></i>
+                </div>
+                <div class="point" style="text-align: right;">
+                    <h3>{{ booking.tickets.first.to_stop.location.name|slice:":3"|upper }}</h3>
+                    <p>{{ booking.tickets.first.to_stop.location.name }}</p>
+                    <span>{{ booking.tickets.first.to_stop.name }}</span>
+                </div>
+            </div>
+
+            <div>
+                <div class="meta-item">
+                    <p class="meta-label">Date of Journey</p>
+                    <p class="meta-value">{{ booking.trip.departure_datetime|date:"l, d M Y" }}</p>
+                </div>
+                <div class="meta-item">
+                    <p class="meta-label">Reporting Time</p>
+                    <p class="meta-value">{{ booking.trip.departure_datetime|date:"h:i A" }}</p>
+                </div>
+            </div>
+
+            <div>
+                <div class="meta-item">
+                    <p class="meta-label">Booking Date</p>
+                    <p class="meta-value">{{ booking.created_at|date:"d M Y, h:i A" }}</p>
+                </div>
+                <div class="meta-item">
+                    <p class="meta-label">Vessel / Launch</p>
+                    <p class="meta-value">{{ booking.trip.ship.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="manifest-container">
+            <div class="manifest-title"><i class="fas fa-id-card"></i> PASSENGER & SEAT ASSIGNMENTS</div>
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="35%">Passenger Name</th>
+                        <th width="25%">Cabin / Class</th>
+                        <th width="15%">Seat No</th>
+                        <th width="20%" style="text-align: right;">Fare</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in booking.tickets.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <div style="font-weight: 700;">{{ t.passenger_name }}</div>
+                            <div style="font-size: 10px; color: var(--text-light);">Adult / Regular</div>
+                        </td>
+                        <td class="cabin-type">{{ t.seat_object.category.name }}</td>
+                        <td><span class="seat-badge">{{ t.seat_object.label }}</span></td>
+                        <td style="text-align: right; font-weight: 700;">{{ t.fare_amount }} BDT</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div class="qr-area">
+                <div class="qr-mock">
+                    <i class="fas fa-qrcode fa-2x"></i>
+                </div>
+                <div>
+                    <p style="font-size: 11px; font-weight: 700;">SCAN TO VERIFY</p>
+                    <p style="font-size: 10px; color: var(--text-light); max-width: 140px;">Show this QR at the terminal gate for boarding.</p>
+                </div>
+            </div>
+            <div class="total-box">
+                <p>Total Amount Paid</p>
+                <div class="price">{{ booking.total_amount }} BDT</div>
+                <div class="paid-status"><i class="fas fa-check-circle"></i> TRANSACTION SUCCESSFUL</div>
+            </div>
+        </div>
+
+        <div style="padding: 15px 40px; background: #fff; border-top: 1px dashed var(--border-color);">
+            <p style="font-size: 9px; color: var(--text-light); line-height: 1.4;">
+                * This is a computer-generated electronic ticket. No signature is required. <br>
+                * Please carry a valid Photo ID during travel. Tickets are non-refundable within 12 hours of departure. <br>
+                * For support, call 01XXX-XXXXXX or email support@barisalline.com.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,121 @@
+.rts-breadcrumb-area{
+    position: relative;
+    z-index: 1;
+    &::after{
+        content: '';
+        position: absolute;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(#000000, $alpha: .4);
+    }
+    &.one{
+        height: 500px;
+        .breadcrumb-area-wrapper{
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding-top: 80px;
+            .nav-bread-crumb{
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                a, span{
+                    color: var(--color-white);
+                    font-weight: 500;
+                }
+            }
+            .title{
+                margin-bottom: 0;
+                color: var(--color-white);
+                font-size: 48px;
+                font-weight: 600;
+            }
+        }
+    }
+    &.two{
+        height: 430px;
+        .breadcrumb-area-wrapper{
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding-top: 60px;
+            .nav-bread-crumb{
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                a, span{
+                    color: var(--color-white);
+                    font-weight: 500;
+                }
+            }
+            .title{
+                margin-bottom: 0;
+                color: var(--color-white);
+                font-size: 48px;
+                font-weight: 600;
+            }
+        }
+    }
+    &.three{
+        height: 490px;
+        .breadcrumb-area-wrapper{
+            height: 100%;
+            display: flex;
+            align-items: start;
+            justify-content: center;
+            flex-direction: column;
+            padding: 0 125px;
+            padding-top: 60px;
+            .nav-bread-crumb{
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                a, span{
+                    color: var(--color-white);
+                    font-weight: 500;
+                }
+            }
+            .title{
+                margin-bottom: 0;
+                color: var(--color-white);
+                font-size: 48px;
+                font-weight: 600;
+            }
+            .advance__search__section.home-hiking{
+                margin-top: 0;
+            }
+        }
+    }
+    &.four{
+        padding: 180px 0 120px;
+        &::after{
+            display: none;
+        }
+        .nav-bread-crumb{
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            a{
+                color: var(--color-white);
+                font-weight: 500;
+                &:last-child{
+                    color: var(--color-white);
+                }
+            }
+            span{
+                color: var(--color-white);
+            }
+        }
+        .title{
+            color: var(--color-white);
+            margin-bottom: 0;
+        }
+    }
+}
