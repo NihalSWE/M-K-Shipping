@@ -34,18 +34,22 @@ urlpatterns = [
     path('trip/schedule/', views.trip_schedule_list, name='trip_schedule_list'),
     path('trip/update/schedule/<int:schedule_id>/', views.update_trip_schedule, name='update_trip_schedule'),
     path('delete-trip-schedule/<int:pk>/', views.delete_trip_schedule, name='delete_trip_schedule'),
+    path('trips/', views.trip_list, name='trip_list'),
+    path('trips/<int:trip_id>/update/', views.update_trip, name='update_trip'),
+    path('trips/management/', views.individual_trip_management, name='trip_management'),
+    
+    #team
+    path('admin-panel/team/', views.manage_team, name='manage_team'),
+    path('admin-panel/team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
     
     # Site Identity
     path('identity/', views.site_identity_view, name='site_identity'),
     path('banner/', views.banner, name='banner'),
-    path('overview/', views.overview, name='overview'),
+     path('overview/', views.overview, name='overview'),
     #for search bar
     path('api/get-search-locations/', views.get_search_locations, name='get_search_locations'),
 
-    #team
-    path('admin-panel/team/', views.manage_team, name='manage_team'),
-    path('admin-panel/team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
-    #team
+    
     #contact
     path('contact-us/banner/', views.contact_banner_view, name='contact_banner'),
     path('contact-us/messages/', views.contact_messages_view, name='contact_messages'),
@@ -82,12 +86,19 @@ urlpatterns = [
     path('tcktbook/', views.tcktbook, name='tcktbook'),
     path('book/seats/<int:trip_id>/', views.select_seats, name='select_seats'),
     path('book/confirm/', views.admin_book_confirm, name='admin_book_confirm'),
+    path('booking/update-status/<int:booking_id>/<str:new_status>/', views.update_booking_status, name='update_booking_status'),
+    path('trip/toggle-lock/<int:trip_id>/', views.toggle_trip_lock, name='toggle_trip_lock'),
+    path('trip/report/<int:trip_id>/', views.trip_seat_report, name='trip_seat_report'),
     path('bookings/list/', views.booking_list, name='admin_booking_list'),
+    path('bookings/issued/', views.booking_issue_list, name='booking_issue_list'),
+    path('bookings/pending/', views.booking_pending_list, name='booking_pending_list'),
+    path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
     #tckt booking
     
-    #pos
+    
+     #pos
     # 1. ADD THIS: The page to choose a ship (No ID needed here)
     path('pos/select-trip/', views.pos_trip_select, name='pos_trip_select'),
 
@@ -95,4 +106,7 @@ urlpatterns = [
     path('pos/booking/<int:trip_id>/', views.pos_booking_interface, name='pos_booking_interface'),
     path('pos/booking/confirm/', views.pos_book_confirm, name='pos_book_confirm'),
     #pos
+    
+    
+    
 ]

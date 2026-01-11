@@ -1,0 +1,65 @@
+
+// service area start
+.rts-service-area{
+    &.inner{
+        padding: 73px 0;
+        margin: 0 80px;
+        border-radius: 10px;
+    }
+    .section-inner{
+        display: flex;
+        align-items: center;
+        .service-wrapper{
+            padding: 60px 68px 35px;
+            border-right: 1px solid var(--color-border);
+            transition: var(--transition);
+            &:hover{
+                .icon{
+                    transform: translateY(-5px);
+                }
+            }
+            .icon{
+                margin-bottom: 25px;
+                height: 60px;
+                transform: translateY(0);
+                transition: var(--transition);
+            }
+            .title{
+                color: var(--color-title-dark);
+                margin-bottom: 15px;
+            }
+            &:last-child{
+                border: none;
+            }
+        }
+    }
+}
+.rts-features-area.destination{
+    .section-title-area{
+        .section-title{
+            font-size: 124px;
+            font-weight: 600;
+            margin-bottom: 35px;
+        }
+        .desc{
+            max-width: 850px;
+            margin: auto;
+        }
+    }
+    .feature-list{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 90px;
+        li{
+            text-align: center;
+            h5{
+                font-size: 16px;
+                margin-top: 20px;
+                margin-bottom: 0;
+                font-weight: 500;
+            }
+
+        }
+    }
+}

@@ -14,7 +14,7 @@
                 <div class="card-header pb-0 card-no-border">
                     <div class="row justify-content-center">
                         <div class="col-md-6">
-                            <h1>Booking List</h1>
+                            <h1>{{ page_title|default:"Booking List" }}</h1>
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex justify-content-end">
@@ -34,9 +34,9 @@
                                     <th>Passenger</th>
                                     <th>Trip Info</th>
                                     <th>Journey Date</th>
-                                    <th>Booked On</th> <th>Total (৳)</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
+                                    <th>Booked On</th> 
+                                    <th>Total (৳)</th>
+                                    <th>Status</th> <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -45,46 +45,48 @@
                                     <td>#{{ booking.id }}</td>
                                     <td>
                                         <div class="fw-bold">{{ booking.passenger_name }}</div>
-                                        <small class="text-muted">
-                                            {% if booking.user.email %}
-                                                {{ booking.user.email }}<br>
-                                            {% endif %}
-                                            {{ booking.customer_phone }}
-                                        </small>
+                                        <small class="text-muted">{{ booking.customer_phone }}</small>
                                     </td>
                                     <td>
-                                        {{ booking.trip.ship.name }}<br>
-                                        <span class="badge bg-light text-dark border">
-                                            {{ booking.trip.route.source.name }} &rarr; {{ booking.trip.route.destination.name }}
-                                        </span>
+                                        {{ booking.trip.ship.name }}
                                     </td>
+                                    <td>
+                                        {{ booking.trip.departure_datetime|date:"d M" }}
+                                    </td>
+                                    <td>{{ booking.created_at|date:"d M" }}</td>
+                                    <td class="fw-bold">{{ booking.total_amount }}</td>
                                     
-                                    <td>
-                                        <div class="fw-bold text-primary">
-                                            {{ booking.trip.departure_datetime|date:"d M Y" }}
-                                        </div>
-                                        <small class="text-muted">
-                                            {{ booking.trip.departure_datetime|date:"h:i A" }}
-                                        </small>
-                                    </td>
-
-                                    <td>{{ booking.created_at|date:"d M, h:i A" }}</td>
-                                    <td class="fw-bold text-success">{{ booking.total_amount }}</td>
                                     <td>
                                         {% if booking.status == 'CONFIRMED' %}
                                             <span class="badge bg-success">Confirmed</span>
+                                            {% if booking.payment_status == 'PAID' %}
+                                                <span class="badge bg-light text-dark border ms-1">Paid</span>
+                                            {% endif %}
                                         {% elif booking.status == 'PENDING' %}
                                             <span class="badge bg-warning text-dark">Pending</span>
+                                            <span class="badge bg-light text-danger border ms-1">Unpaid</span>
                                         {% else %}
                                             <span class="badge bg-danger">{{ booking.status }}</span>
                                         {% endif %}
                                     </td>
+
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             
+                                            {% if booking.status == 'PENDING' %}
+                                            <button type="button" 
+                                                    class="btn btn-xs btn-success px-2" 
+                                                    title="Mark as Paid & Confirm"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#confirmStatusModal"
+                                                    data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            {% endif %}
+
                                             {% if booking.status != 'CANCELLED' %}
                                             <button type="button" 
                                                     class="btn btn-xs btn-danger px-2" 
@@ -98,10 +100,6 @@
                                     </td>
                                 </tr>
                                 {% empty %}
-                                <tr>
-                                    <td colspan="8" class="text-center py-4"> <p class="text-muted mb-0">No bookings found yet.</p>
-                                    </td>
-                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -111,6 +109,27 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="confirmStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Confirm Booking</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to mark this booking as <strong>PAID</strong> and <strong>CONFIRMED</strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="btnConfirmStatus" class="btn btn-success">Yes, Confirm it</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
 <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -137,6 +156,23 @@
 <script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
 <script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+
+
+
+<script>
+    // Add logic for the new Confirm Modal
+    var confirmStatusModal = document.getElementById('confirmStatusModal');
+    if(confirmStatusModal){
+        confirmStatusModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var url = button.getAttribute('data-href');
+            var confirmBtn = confirmStatusModal.querySelector('#btnConfirmStatus');
+            confirmBtn.setAttribute('href', url);
+        });
+    }
+</script>
+
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {

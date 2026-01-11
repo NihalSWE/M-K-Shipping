@@ -1,221 +1,65 @@
 {% extends "portal/base.html" %}
+
 {% load static %}
 
 {% block custom_css %}
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-<style>
-    /* --- ISOLATION WRAPPER: #mk-about-page --- 
-       This prevents the global theme from shrinking your fonts.
-    */
-    #mk-about-page {
-        font-family: 'Manrope', sans-serif !important;
-        background-color: #f8fafc;
-        color: #334155;
-        overflow-x: hidden; /* Prevents scrollbar from offset elements */
-        padding-bottom: 80px;
-    }
 
-    /* Typography Overrides */
-    #mk-about-page .mk-subtitle {
-        color: #c5a059 !important; /* Gold */
-        font-size: 1.1rem !important;
-        font-weight: 800 !important;
-        letter-spacing: 4px !important;
-        text-transform: uppercase;
-        display: block;
-        margin-bottom: 15px;
-    }
-
-    #mk-about-page .mk-main-title {
-        color: #0f172a !important; /* Navy Dark */
-        font-size: 3.5rem !important; /* Big Impact */
-        font-weight: 800 !important;
-        line-height: 1.2 !important;
-        margin-bottom: 30px !important;
-    }
-
-    /* The Rich Text Description */
-    #mk-about-page .mk-rich-text {
-        font-size: 1.35rem !important; /* Large readable text */
-        line-height: 1.8 !important;
-        color: #475569 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Handle paragraphs inside the dynamic description */
-    #mk-about-page .mk-rich-text p {
-        margin-bottom: 25px !important;
-    }
-
-    /* --- Image Styling (The "Pro" Look) --- */
-    #mk-about-page .image-frame-wrapper {
-        position: relative;
-        padding: 20px;
-        z-index: 1;
-    }
-
-    /* The Main Image */
-    #mk-about-page .mk-about-img {
-        border-radius: 12px;
-        width: 100%;
-        height: auto;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-        position: relative;
-        z-index: 2;
-        display: block;
-    }
-
-    /* Gold Border Offset Effect */
-    #mk-about-page .image-frame-wrapper::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 90%;
-        height: 90%;
-        border: 3px solid #c5a059; /* Gold Border */
-        border-radius: 12px;
-        z-index: 0;
-        transform: translate(15px, -15px); /* Shift it up-right */
-        transition: transform 0.5s ease;
-    }
-
-    #mk-about-page .image-frame-wrapper:hover::before {
-        transform: translate(25px, -25px); /* More shift on hover */
-    }
-
-    /* Floating Badge (e.g., "Since 2016") */
-    #mk-about-page .mk-badge {
-        position: absolute;
-        bottom: 40px;
-        left: -30px;
-        background: #1c3d8d; /* Navy */
-        color: #fff;
-        padding: 25px 35px;
-        border-radius: 0 12px 12px 0;
-        box-shadow: 0 10px 20px rgba(28, 61, 141, 0.3);
-        z-index: 3;
-    }
-    
-    #mk-about-page .mk-badge-year {
-        display: block;
-        font-size: 2.5rem !important;
-        font-weight: 800;
-        line-height: 1;
-        color: #c5a059;
-    }
-    
-    #mk-about-page .mk-badge-txt {
-        font-size: 1rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 600;
-        opacity: 0.9;
-    }
-
-    /* Signature / Quote Line */
-    #mk-about-page .mk-quote-line {
-        border-left: 4px solid #c5a059;
-        padding-left: 25px;
-        margin-top: 40px;
-        margin-bottom: 40px;
-        font-style: italic;
-        color: #1c3d8d;
-        font-size: 1.4rem !important;
-        font-weight: 600;
-    }
-
-    @media (max-width: 991px) {
-        #mk-about-page .mk-main-title { font-size: 2.5rem !important; }
-        #mk-about-page .mk-badge { left: 0; bottom: 20px; padding: 15px 25px; }
-        #mk-about-page .image-frame-wrapper { margin-top: 50px; }
-        #mk-about-page .image-frame-wrapper::before { display: none; } /* Hide decorative border on mobile */
-    }
-</style>
 {% endblock custom_css %}
 
 {% block content %}
-
+    <!-- breadcrumb area start -->
+    <!-- rts breadcrumb area start -->
     <div class="rts-breadcrumb-area one" 
-         style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
-        <div class="container h-100">
-            <div class="breadcrumb-area-wrapper">
-                <div class="nav-bread-crumb">
-                    <a href="{% url 'home' %}">Home</a>
-                    <span><i class="fa-regular fa-chevron-right"></i></span>
-                    <a href="#" class="current">About Us</a>
-                </div>
-                <h1 class="title">{{ banner.title|default:"ABOUT MK SHIPPING" }}</h1>
+     style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
+    <div class="container h-100">
+        <div class="breadcrumb-area-wrapper">
+            <div class="nav-bread-crumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span><i class="fa-regular fa-chevron-right"></i></span>
+                <a href="#" class="current">About</a>
             </div>
+            <h1 class="title">{{ banner.title|default:"ABOUT US" }}</h1>
         </div>
     </div>
+</div>
+    <!-- rts breadcrumb area end -->
+    <!-- breadcrumb area end -->
 
-    <div id="mk-about-page">
-        {% if story %}
-        <section class="rts-section-gap">
-            <div class="container">
-                <div class="row align-items-center">
+
+    <!-- rts story area start -->
+    {% if story %}
+    <section class="rts-story-area rts-section-gap bg-white">
+        <div class="container">
+            <div class="row align-items-start">
+                
+                <div class="col-lg-6 col-md-12 mb-5 mb-lg-0">
+                    <h2 class="section-title mb-3" style="color: #2C3E50; font-weight: 800;">
+                        {{ story.title }}
+                    </h2>
                     
-                    <div class="col-lg-6 col-md-12">
-                        <div class="mk-content-wrapper fade-up">
-                            <span class="mk-subtitle">Who We Are</span>
-                            <h2 class="mk-main-title">{{ story.title }}</h2>
-                            
-                            <div class="mk-rich-text">
-                                {{ story.description|safe }}
-                            </div>
-
-                            <div class="mt-5">
-                                <a href="{% url 'contact' %}" class="rts-btn btn-primary" style="padding: 15px 40px; font-size: 1.1rem; border-radius: 6px;">
-                                    Contact Us
-                                </a>
-                            </div>
-                        </div>
+                    <div class="dynamic-content text-secondary" style="font-size: 16px; line-height: 1.8;">
+                        {{ story.description|safe }}
                     </div>
-
-                    <div class="col-lg-6 col-md-12">
-                        <div class="image-frame-wrapper fade-up" style="transition-delay: 0.2s;">
-                            {% if story.story_image %}
-                                <img src="{{ story.story_image.url }}" alt="{{ story.title }}" class="mk-about-img">
-                                
-                                <div class="mk-badge">
-                                    <span class="mk-badge-year">2016</span>
-                                    <span class="mk-badge-txt">Est. Since</span>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
                 </div>
+
+                <div class="col-lg-6 col-md-12">
+                    <div class="ps-lg-4">
+                        {% if story.story_image %}
+                            <img src="{{ story.story_image.url }}" class="img-fluid rounded shadow w-100" style="object-fit: cover; max-height: 600px;">
+                        {% endif %}
+                    </div>
+                </div>
+
             </div>
-        </section>
-        {% endif %}
-    </div>
+        </div>
+    </section>
+    {% endif %}
+    <!-- rts story area end -->
 
-{% endblock content %}
 
-{% block custom_js %}
-<script>
-    // Professional Fade-Up Animation
-    document.addEventListener("DOMContentLoaded", function() {
-        const elements = document.querySelectorAll('#mk-about-page .fade-up');
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = "1";
-                    entry.target.style.transform = "translateY(0)";
-                }
-            });
-        });
+    {% endblock content %}
 
-        elements.forEach((el) => {
-            el.style.opacity = "0";
-            el.style.transform = "translateY(30px)";
-            el.style.transition = "all 0.8s ease-out";
-            observer.observe(el);
-        });
-    });
-</script>
-{% endblock custom_js %}
+    {% block custom_js %}
+    
+    {% endblock custom_js %}

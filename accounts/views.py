@@ -6,7 +6,10 @@ from .models import User
 
 def signin(request):
     if request.user.is_authenticated:
-        return redirect('home') # Redirect if already logged in
+        # Logic for users who are already logged in and try to access sign-in page
+        if request.user.user_type in [0, 2]: # Admin or Staff
+            return redirect('admin_dashboard')
+        return redirect('home')
 
     if request.method == 'POST':
         form = CustomSignInForm(request.POST)
@@ -20,8 +23,15 @@ def signin(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, "Login Successful!")
-                # Redirect based on user type if needed, or just to home
-                return redirect('home')
+                
+                # --- Role-Based Redirection ---
+                # 0 = Admin, 2 = Staff
+                if user.user_type == 0 or user.user_type == 2:
+                    return redirect('admin_dashboard')
+                else:
+                    return redirect('home')
+                # ------------------------------
+                
             else:
                 messages.error(request, "Invalid email or password.")
     else:

@@ -1,0 +1,106 @@
+.vedio-icone {
+    .video-play-button {
+        position: relative;
+        z-index: 1;
+        box-sizing: content-box;
+        display: block;
+        width: 100px;
+        height: 100px;
+        line-height: 100px;
+        border-radius: 50%;
+        text-align: center;
+        display: block;
+        border: 1px solid var(--color-white);
+        color: var(--color-white);
+        span {
+            display: block;
+            position: relative;
+            z-index: 3;
+            width: 0;
+            height: 0;
+            border-left: 15px solid var(--color-primary);
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 47%;
+
+            &.outer-text {
+                border: none;
+                min-width: max-content;
+                margin-left: 75px;
+                position: relative;
+                margin-top: -12px;
+                color: var(--color-primary);
+                font-weight: 500;
+            }
+        }
+    }
+    .video-overlay {
+        position: fixed;
+        z-index: -1;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.8);
+        opacity: 0;
+        transition: all ease 500ms;
+        display: none;
+
+        iframe {
+            width: 70%;
+            height: 70%;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            top: 50%;
+            top: 50%;
+            position: relative;
+            transform: translateY(-50%);
+        }
+
+        &.open {
+            position: fixed;
+            z-index: 1000;
+            opacity: 1;
+            display: block;
+        }
+
+        .video-overlay-close {
+            position: absolute;
+            z-index: 1000;
+            top: 15px;
+            right: 20px;
+            font-size: 36px;
+            line-height: 1;
+            font-weight: 400;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 200ms;
+        }
+    }
+}
+
+@keyframes waves {
+    0% {
+        -webkit-transform: scale(0.2, 0.2);
+        transform: scale(0.2, 0.2);
+        opacity: 0;
+        -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+    }
+
+    50% {
+        opacity: 0.9;
+        -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=90)";
+    }
+
+    100% {
+        -webkit-transform: scale(0.9, 0.9);
+        transform: scale(0.9, 0.9);
+        opacity: 0;
+        -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+    }
+}

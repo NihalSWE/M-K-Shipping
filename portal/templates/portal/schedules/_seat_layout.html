@@ -107,7 +107,8 @@
                                         {% if obj.id in occupied_seats %}
                                             <span class="badge bg-secondary">Occupied</span>
                                         {% else %}
-                                            <span class="badge bg-success">৳{% get_segment_price trip obj.category from_stop to_stop %}</span>
+                                            {% get_segment_price trip obj.category from_stop to_stop as price %}
+                                            <span class="badge bg-success">৳{{ price|floatformat:2 }}</span>
                                         {% endif %}
                                     {% else %}
                                         <small class="text-info">Building Facility</small>

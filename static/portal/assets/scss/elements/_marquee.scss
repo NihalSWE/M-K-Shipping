@@ -1,0 +1,65 @@
+// marquee area
+
+.rts-marquee-area {
+    .marquee-wrapper {
+        background: var(--color-primary);
+        padding: 20px 0;
+
+        &.two {
+            background: var(--color-secondary);
+            position: relative;
+            bottom: 75px;
+            transform: rotate(-3deg);
+            z-index: -1;
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 40px;
+            white-space: nowrap;
+            align-items: center;
+            will-change: transform;
+            animation: marquees 20s linear infinite;
+            &.two {
+                animation: marquees2 20s linear infinite;
+            }
+        }
+
+        .marquee-item {
+            display: flex;
+            align-items: center;
+
+            .title {
+                color: var(--color-white);
+                margin-bottom: 0;
+            }
+
+
+            img {
+                margin: 0 40px;
+            }
+        }
+    }
+}
+
+/* marquee animation */
+@keyframes marquees {
+    0% {
+        transform: translateX(0%);
+    }
+
+    100% {
+        transform: translateX(-70%);
+    }
+}
+
+// left to right
+@keyframes marquees2 {
+    0% {
+        transform: translateX(-70%);
+    }
+
+    100% {
+        transform: translateX(0%);
+    }
+}
