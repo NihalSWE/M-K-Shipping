@@ -25,7 +25,7 @@ class TicketInline(admin.TabularInline):
     model = Ticket
     extra = 0
     readonly_fields = ['fare_amount', 'lock_expires_at']
-    can_delete = False
+    can_delete = False  # Admin will delete via Booking, not inline
 
 class TripPricingInline(admin.TabularInline):
     model = TripPricing
@@ -161,6 +161,22 @@ class BookingAdmin(admin.ModelAdmin):
     readonly_fields = ('booking_ref',)
     inlines = [TicketInline]
     autocomplete_fields = ('trip', 'user')
+
+    @transaction.atomic
+    def delete_model(self, request, obj):
+        # Delete all tickets first using raw query to bypass PROTECT constraints
+        Ticket.objects.filter(booking=obj).delete()
+        # Now delete the booking itself
+        obj.delete()
+
+    @transaction.atomic
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            Ticket.objects.filter(booking=obj).delete()
+        queryset.delete()
+
+    def has_delete_permission(self, request, obj=None):
+        return True  # Allow deleting any booking
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):

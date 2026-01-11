@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -1977,5 +1978,186 @@ def cancel_booking(request, booking_id):
 
     return redirect('admin_booking_list')
 
+
+
+
+from django.core.serializers.json import DjangoJSONEncoder
+import json
+from .models import Location, Trip, RouteStop, LayoutObject, Ticket  # Ensure imports are correct
+
+@login_required
+def pos_trip_select(request):
+    """
+    Step 1: Search for a Trip based on Source, Dest, and Date.
+    """
+    stops = Location.objects.all()
+
+    # 1. Get Search Params from the URL (HTML Form)
+    source_id = request.GET.get('source')      # e.g., "1" (Dhaka)
+    dest_id = request.GET.get('destination')   # e.g., "5" (Barisal)
+    date_str = request.GET.get('date')
+
+    search_results = []
+
+    # 2. Perform Logic (Find trips that actually connect these two stops)
+    if source_id and dest_id and date_str:
+        # A. Find routes having these stops
+        routes_with_source = RouteStop.objects.filter(location_id=source_id).values_list('route_id', 'stop_order')
+        routes_with_dest = RouteStop.objects.filter(location_id=dest_id).values_list('route_id', 'stop_order')
+        
+        source_map = {r_id: order for r_id, order in routes_with_source}
+        dest_map = {r_id: order for r_id, order in routes_with_dest}
+        
+        valid_route_ids = []
+        
+        # B. Ensure Source comes BEFORE Destination
+        for route_id, source_order in source_map.items():
+            if route_id in dest_map:
+                dest_order = dest_map[route_id]
+                if source_order < dest_order:
+                    valid_route_ids.append(route_id)
+        
+        # C. Query Trips
+        if valid_route_ids:
+            search_results = Trip.objects.filter(
+                route_id__in=valid_route_ids,
+                departure_datetime__date=date_str,
+                is_published=True
+            ).select_related('ship', 'route', 'route__source', 'route__destination')
+
+    # 3. Context - sending 'selected_source' to HTML to build the link correctly
+    context = {
+        'trips': search_results,
+        'stops': stops,
+        'selected_source': int(source_id) if source_id else '',
+        'selected_dest': int(dest_id) if dest_id else '',
+        'selected_date': date_str if date_str else '',
+    }
+
+    return render(request, 'admin_panel/pos/pos_trip_select.html', context)
+
+
+@login_required
+def pos_booking_interface(request, trip_id):
+    """
+    Step 2: Show Room Selection.
+    CRITICAL: Converts Location IDs (from search) to RouteStop IDs (for pricing).
+    """
+    trip = get_object_or_404(Trip, pk=trip_id)
+    
+    # 1. Get Location IDs passed from the previous page
+    loc_from_id = request.GET.get('from_loc')
+    loc_to_id = request.GET.get('to_loc')
+
+    from_stop = None
+    to_stop = None
+
+    # 2. THE TRANSLATOR: Convert "Location ID" -> "RouteStop ID" for THIS trip
+    if loc_from_id and loc_to_id:
+        from_stop = RouteStop.objects.filter(route=trip.route, location_id=loc_from_id).first()
+        to_stop = RouteStop.objects.filter(route=trip.route, location_id=loc_to_id).first()
+
+    # 3. Fallback: If conversion fails (or no params), use full route (A to Z)
+    if not from_stop or not to_stop:
+        from_stop = RouteStop.objects.filter(route=trip.route).order_by('stop_order').first()
+        to_stop = RouteStop.objects.filter(route=trip.route).order_by('stop_order').last()
+
+    # 4. Get Seats & Calculate Price
+    seats = LayoutObject.objects.filter(deck__ship=trip.ship).select_related('deck', 'category')
+    
+    booked_ids = Ticket.objects.filter(
+        booking__trip=trip,
+        booking__status__in=['CONFIRMED', 'PENDING']
+    ).values_list('seat_object_id', flat=True)
+
+    pos_data = []
+    for seat in seats:
+        try:
+            # Pricing now uses the SPECIFIC stops (e.g., Dhaka->Chandpur), not just A->Z
+            price = trip.get_price(seat.category, from_stop, to_stop)
+        except:
+            price = 0 
+
+        pos_data.append({
+            'id': seat.id,
+            'label': seat.label,
+            'deck_name': seat.deck.name,
+            # 🔑 CATEGORY (THIS IS THE KEY FIX)
+            "category_id": seat.category.id,
+            "category_name": seat.category.name,
+            "category_color": seat.category.color_code,
+            "category_icon": seat.category.icon.name if seat.category.icon else "fa-chair",
+            "is_bookable": seat.category.is_bookable,
+
+            # Optional logic
+            "is_bookable": seat.category.is_bookable,
+            "capacity": seat.category.capacity,
+
+            # FEATURES (AC / Non-AC etc)
+            "features": list(seat.features.values_list("name", flat=True)),
+            'price': float(price),
+            'is_booked': seat.id in booked_ids
+        })
+
+    # 5. Send RouteStop IDs (from_stop.id) to the template form
+    context = {
+        'trip': trip,
+        'from_id': from_stop.id,  # This is the RouteStop ID
+        'to_id': to_stop.id,      # This is the RouteStop ID
+        'pos_data_json': json.dumps(pos_data, cls=DjangoJSONEncoder)
+    }
+    return render(request, 'admin_panel/pos/pos_booking.html', context)
+
+
+# ==========================================
+# 3. CONFIRM: Saving the Ticket Correctly
+# ==========================================
+from .services import BookingService
+def pos_book_confirm(request):
+    if request.method != "POST":
+        return redirect('admin_home')
+
+    try:
+        # 1. Extract Data from POST
+        trip_id = request.POST.get('trip_id')
+        seat_ids_str = request.POST.get('selected_seats')
+        
+        # Route info
+        from_id = request.POST.get('from_id')
+        to_id = request.POST.get('to_id')
+        
+        # Customer Info
+        customer_data = {
+            'name': request.POST.get('passenger_name'),
+            'phone': request.POST.get('passenger_phone'),
+            'email': request.POST.get('passenger_email'), # Added email support
+        }
+
+        if not seat_ids_str:
+            messages.error(request, "No seats selected.")
+            return redirect(request.META.get('HTTP_REFERER'))
+
+        seat_ids_list = [int(s) for s in seat_ids_str.split(',') if s.isdigit()]
+
+        # 2. CALL THE SERVICE (The One Source of Truth)
+        booking = BookingService.create_booking(
+            admin_user=request.user,
+            trip_id=trip_id,
+            from_id=from_id,
+            to_id=to_id,
+            seat_ids_list=seat_ids_list,
+            customer_data=customer_data
+        )
+
+        # 3. Success!
+        messages.success(request, f"POS Booking Confirmed! Ref: {booking.booking_ref} - Total: {booking.total_amount:.0f}")
+        
+        # Redirect back to the seat selection page (maintaining the search params)
+        return redirect(f"{reverse('pos_booking_interface', args=[trip_id])}?from={from_id}&to={to_id}")
+
+    except Exception as e:
+        # Handles "Seat already booked" and other errors
+        messages.error(request, f"Error: {str(e)}")
+        return redirect(request.META.get('HTTP_REFERER'))
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------
