@@ -86,4 +86,13 @@ urlpatterns = [
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
     #tckt booking
+    
+    #pos
+    # 1. ADD THIS: The page to choose a ship (No ID needed here)
+    path('pos/select-trip/', views.pos_trip_select, name='pos_trip_select'),
+
+    # 2. YOUR EXISTING URL: The interface (Requires ID)
+    path('pos/booking/<int:trip_id>/', views.pos_booking_interface, name='pos_booking_interface'),
+    path('pos/booking/confirm/', views.pos_book_confirm, name='pos_book_confirm'),
+    #pos
 ]

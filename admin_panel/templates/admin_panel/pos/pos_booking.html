@@ -1,0 +1,537 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block custom_css %}
+<style>
+    /* --- POS MOBILE/SMALL SCREEN THEME --- */
+    :root { 
+        --pos-bg: #f8f9fa; 
+        --pos-primary: #2563eb; 
+        --pos-border: #e2e8f0;
+        --bottom-bar-height: 80px;
+    }
+    
+    body { 
+        background-color: var(--pos-bg); 
+        padding-bottom: var(--bottom-bar-height); /* Space for sticky footer */
+    }
+
+    /* MAIN CONTAINER */
+    .pos-container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    /* HEADER CARD */
+    .trip-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        border: 1px solid var(--pos-border);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* STEP NAVIGATION HEADER */
+    .step-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+
+    .btn-back {
+        background: #e2e8f0;
+        color: #475569;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-back:active { background: #cbd5e1; }
+
+    .current-path {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    /* LARGE BUTTONS (Double/Single/VIP) */
+    .grid-large-options {
+        display: grid;
+        grid-template-columns: 1fr; /* Stack vertically on very small screens or 1 col */
+        gap: 10px;
+    }
+    @media (min-width: 400px) {
+        .grid-large-options { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .option-card {
+        background: white;
+        border: 2px solid var(--pos-border);
+        border-radius: 12px;
+        padding: 20px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.1s, border-color 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .option-card:active {
+        transform: scale(0.98);
+        border-color: var(--pos-primary);
+        background-color: #eff6ff;
+    }
+
+    .option-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+    .option-subtitle { font-size: 0.8rem; color: #64748b; }
+
+    /* SECTION HEADERS IN ROOM VIEW */
+    .section-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 5px;
+    }
+
+    /* SEAT GRID */
+    .grid-seats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+    }
+
+    .seat-btn {
+        aspect-ratio: 1.2;
+        background: white;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: #334155;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .seat-btn small { font-size: 0.6rem; font-weight: normal; opacity: 0.7; }
+
+    .seat-btn:active { transform: scale(0.95); }
+    
+    .seat-btn.selected {
+        background: var(--pos-primary);
+        color: white;
+        border-color: var(--pos-primary);
+    }
+
+    .seat-btn.booked {
+        background: #f1f5f9;
+        color: #cbd5e1;
+        border-color: #e2e8f0;
+        pointer-events: none;
+        text-decoration: line-through;
+    }
+
+    /* STICKY BOTTOM CART BAR */
+    .sticky-cart-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--bottom-bar-height);
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        z-index: 1000;
+    }
+
+    .cart-info { display: flex; flex-direction: column; }
+    .cart-total { font-size: 1.2rem; font-weight: 900; color: var(--pos-primary); }
+    .cart-count { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+
+    .btn-checkout-pos {
+        background: var(--pos-primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 1rem;
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+    }
+    .btn-checkout-pos:disabled {
+        background: #cbd5e1;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+<div class="container-fluid px-2 mt-2">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0 p-2" role="alert">
+        <small>{{ message }}</small>
+        <button type="button" class="btn-close p-2" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="pos-container">
+
+    <div class="trip-info-card">
+        <div>
+            <h6 class="fw-bold m-0 text-dark">{{ trip.ship.name }}</h6>
+            <small class="text-muted" style="font-size: 0.75rem;">
+                {{ trip.route.source.name }} <i class="fa fa-arrow-right mx-1"></i> {{ trip.route.destination.name }}
+            </small>
+        </div>
+        <div class="text-end">
+            <small class="text-muted d-block" style="font-size: 0.7rem;">Date</small>
+            <span class="fw-bold text-dark" style="font-size: 0.85rem;">{{ trip.date }}</span>
+        </div>
+    </div>
+
+    <div class="step-header">
+        <button id="btn-back" class="btn-back d-none" onclick="goBack()">
+            <i class="fa fa-chevron-left"></i> Back
+        </button>
+        <div class="current-path text-truncate" id="breadcrumbs">
+            Select Room Type
+        </div>
+    </div>
+
+    <div id="pos-wizard-content">
+        
+        <div id="view-types" class="d-block">
+            <div class="grid-large-options" id="type-list-container">
+                </div>
+        </div>
+
+        <div id="view-rooms" class="d-none">
+            
+            <div id="section-ac" class="d-none">
+                <div class="section-title"><i class="fa fa-snowflake me-1"></i> AC Rooms</div>
+                <div class="grid-seats" id="list-ac"></div>
+            </div>
+
+            <div id="section-non-ac" class="d-none">
+                <div class="section-title"><i class="fa fa-wind me-1"></i> Non-AC Rooms</div>
+                <div class="grid-seats" id="list-non-ac"></div>
+            </div>
+
+            <div id="no-rooms-msg" class="text-center text-muted mt-5 d-none">
+                <p>No rooms available for this selection.</p>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="sticky-cart-bar">
+    <div class="cart-info">
+        <span class="cart-total">৳ <span id="bar-total-price">0</span></span>
+        <span class="cart-count"><span id="bar-total-count">0</span> Selected</span>
+    </div>
+    <button id="btn-checkout-bar" class="btn-checkout-pos" onclick="openCheckout()" disabled>
+        Checkout <i class="fa fa-arrow-right ms-2"></i>
+    </button>
+</div>
+
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm"> 
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title fw-bold">Confirm Booking</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'pos_book_confirm' %}">
+                {% csrf_token %}
+                <div class="modal-body p-3">
+                    
+                    <div class="mb-3" style="max-height: 100px; overflow-y: auto; border-bottom: 1px solid #eee;">
+                        <small class="text-muted fw-bold mb-1 d-block">Selected Seats:</small>
+                        <div id="modal-cart-preview" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+
+                    <div class="text-center mb-3">
+                        <h3 class="fw-bold text-primary m-0">৳ <span id="modal-display-total">0</span></h3>
+                    </div>
+
+                    <div class="form-check form-switch bg-light p-2 rounded border mb-3">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="toggleCustomer" onchange="toggleCustomerForm()">
+                        <label class="form-check-label small fw-bold" for="toggleCustomer" style="margin-left: 2.5em;">Customer Info?</label>
+                    </div>
+
+                    <div id="customer-form-container" class="d-none">
+                        <input type="text" name="passenger_phone" id="inp-phone" class="form-control form-control-sm mb-2" placeholder="Phone Number *">
+                        <input type="text" name="passenger_name" id="inp-name" class="form-control form-control-sm mb-2" placeholder="Passenger Name">
+                        <input type="email" name="passenger_email" id="inp-email" class="form-control form-control-sm" placeholder="Email (Optional)">
+                    </div>
+
+                    <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                    <input type="hidden" name="selected_seats" id="modal-seat-input">
+                    <input type="hidden" name="from_id" value="{{ from_id }}">
+                    <input type="hidden" name="to_id" value="{{ to_id }}">
+                </div>
+                <div class="modal-footer p-2 bg-light">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Confirm & Print</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %}
+<script>
+    // --- DATA ---
+    const allObjects = JSON.parse('{{ pos_data_json|escapejs }}');
+    let cart = [];
+
+    
+    
+    // --- STATE ---
+    let currentStep = 1; // 1 = Type Select, 2 = Room Select
+    let currentTypeFilter = ""; // "Double", "Single", or "VIP"
+
+    // --- ELEMENTS ---
+    const viewTypes = document.getElementById('view-types');
+    const viewRooms = document.getElementById('view-rooms');
+    const btnBack = document.getElementById('btn-back');
+    const breadcrumbs = document.getElementById('breadcrumbs');
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTypes();
+    });
+
+    // --- WIZARD NAVIGATION ---
+    function updateWizardUI() {
+        // Reset Views
+        viewTypes.classList.add('d-none');
+        viewRooms.classList.add('d-none');
+        btnBack.classList.add('d-none');
+
+        if (currentStep === 1) {
+            viewTypes.classList.remove('d-none');
+            breadcrumbs.innerText = "Select Room Type";
+        } 
+        else if (currentStep === 2) {
+            viewRooms.classList.remove('d-none');
+            btnBack.classList.remove('d-none');
+            breadcrumbs.innerText = currentTypeFilter + " Rooms";
+        }
+    }
+
+    window.goBack = function() {
+        if (currentStep === 2) {
+            currentStep = 1;
+            currentTypeFilter = "";
+        }
+        updateWizardUI();
+    }
+
+    // --- STEP 1: RENDER MAIN TYPES (Custom Grouping) ---
+    function renderTypes() {
+        const container = document.getElementById("type-list-container");
+        container.innerHTML = "";
+    
+        const categoriesMap = {};
+    
+        allObjects.forEach(o => {
+            // 🔥 SKIP NON-BOOKABLE CATEGORIES
+            if (!o.is_bookable) return;
+    
+            if (!categoriesMap[o.category_id]) {
+                categoriesMap[o.category_id] = {
+                    id: o.category_id,
+                    name: o.category_name,
+                    icon: o.category_icon,
+                    color: o.category_color,
+                };
+            }
+        });
+    
+        Object.values(categoriesMap).forEach(cat => {
+            const availableCount = allObjects.filter(
+                o => o.category_id === cat.id &&
+                     !o.is_booked &&
+                     o.is_bookable
+            ).length;
+    
+            if (availableCount === 0) return; // optional
+    
+            const div = document.createElement("div");
+            div.className = "option-card";
+            div.onclick = () => selectType(cat.id, cat.name);
+    
+            div.innerHTML = `
+                <i class="fa ${cat.icon} fa-2x mb-2" style="color:${cat.color}"></i>
+                <div class="option-title">${cat.name}</div>
+                <div class="option-subtitle text-success fw-bold">
+                    ${availableCount} Available
+                </div>
+            `;
+    
+            container.appendChild(div);
+        });
+    
+        currentStep = 1;
+        updateWizardUI();
+    }
+    
+    
+
+    function selectType(categoryId, categoryName) {
+        currentTypeFilter = categoryId;
+        breadcrumbs.innerText = categoryName;
+        renderRooms(categoryId);
+    }
+    
+
+    // --- STEP 2: RENDER ROOMS (SPLIT AC / NON-AC) ---
+    function renderRooms(categoryId) {
+        const filtered = allObjects.filter(
+            o => o.category_id === categoryId
+        );
+    
+        const acRooms = [];
+        const nonAcRooms = [];
+    
+        filtered.forEach(o => {
+            const features = o.features.map(f => f.toLowerCase());
+    
+            if (features.includes("ac")) acRooms.push(o);
+            else nonAcRooms.push(o);
+        });
+    
+        renderGrid(acRooms, "section-ac", "list-ac");
+        renderGrid(nonAcRooms, "section-non-ac", "list-non-ac");
+    
+        document.getElementById("no-rooms-msg")
+            .classList.toggle("d-none", filtered.length > 0);
+    
+        currentStep = 2;
+        updateWizardUI();
+    }
+    
+
+    function renderGrid(items, sectionId, listId) {
+        const section = document.getElementById(sectionId);
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+
+        if (items.length === 0) {
+            section.classList.add('d-none');
+            return;
+        }
+
+        section.classList.remove('d-none');
+
+        items.forEach(obj => {
+            const btn = document.createElement('div');
+            const isInCart = cart.some(c => c.id === obj.id);
+
+            let classes = 'seat-btn';
+            if (obj.is_booked) classes += ' booked';
+            if (isInCart) classes += ' selected';
+
+            btn.className = classes;
+            
+            // Cleanup Label (e.g. "Double Bed D-204" -> "D-204")
+            let shortLabel = obj.label;
+            if(shortLabel.includes('-')) shortLabel = shortLabel.split('-').pop();
+            // If strictly a number, add prefix based on category
+            if(!isNaN(shortLabel)) shortLabel = shortLabel; 
+
+            btn.innerHTML = `<span>${shortLabel}</span>`;
+            
+            if (!obj.is_booked) {
+                btn.onclick = () => toggleCart(obj);
+            }
+            list.appendChild(btn);
+        });
+    }
+
+    // --- CART SYSTEM ---
+    function toggleCart(obj) {
+        const index = cart.findIndex(c => c.id === obj.id);
+    
+        if (index > -1) {
+            cart.splice(index, 1);
+        } else {
+            cart.push(obj);
+        }
+    
+        // Re-render SAME category using ID
+        renderRooms(currentTypeFilter);
+        updateBottomBar();
+    }
+    
+
+    function updateBottomBar() {
+        let total = 0;
+        cart.forEach(item => total += item.price);
+        document.getElementById('bar-total-price').innerText = total.toFixed(0);
+        document.getElementById('bar-total-count').innerText = cart.length;
+        document.getElementById('btn-checkout-bar').disabled = (cart.length === 0);
+    }
+
+    // --- CHECKOUT ---
+    window.openCheckout = function() {
+        let total = 0;
+        cart.forEach(item => total += item.price);
+        document.getElementById('modal-display-total').innerText = total;
+
+        const previewContainer = document.getElementById('modal-cart-preview');
+        previewContainer.innerHTML = '';
+        cart.forEach(item => {
+            let label = item.label.includes('-') ? item.label.split('-').pop() : item.label;
+            const span = document.createElement('span');
+            span.className = 'badge bg-secondary';
+            span.innerText = label;
+            previewContainer.appendChild(span);
+        });
+
+        document.getElementById('modal-seat-input').value = cart.map(c => c.id).join(',');
+        new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+    }
+
+    window.toggleCustomerForm = function() {
+        const isChecked = document.getElementById('toggleCustomer').checked;
+        const formDiv = document.getElementById('customer-form-container');
+        document.getElementById('inp-phone').required = isChecked;
+        if (isChecked) formDiv.classList.remove('d-none');
+        else formDiv.classList.add('d-none');
+    }
+</script>
+{% endblock %}

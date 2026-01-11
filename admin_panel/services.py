@@ -140,3 +140,122 @@ def generate_smart_trips(ship_id, days_to_generate=10, override_time=None):
                 created_trips.append(new_trip)
 
     return f"Generated {len(created_trips)} new trips."
+
+
+
+
+#------------------------------------------------------------------------------------------------------------
+from django.db import transaction
+from django.utils import timezone
+from django.utils.crypto import get_random_string
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
+import uuid
+
+from .models import Trip, RouteStop, LayoutObject, Booking, Ticket
+
+User = get_user_model()
+
+class BookingService:
+    @staticmethod
+    def create_booking(admin_user, trip_id, from_id, to_id, seat_ids_list, customer_data):
+        """
+        Replicates the EXACT logic from 'admin_book_confirm'
+        """
+        # 1. Validate Inputs
+        trip = get_object_or_404(Trip, pk=trip_id)
+        from_stop = get_object_or_404(RouteStop, pk=from_id)
+        to_stop = get_object_or_404(RouteStop, pk=to_id)
+        
+        c_name = customer_data.get('name')
+        c_phone = customer_data.get('phone')
+        c_email = customer_data.get('email')
+
+        # 2. Start Atomic Transaction (Safety First)
+        with transaction.atomic():
+            
+            # --- A. User Handling (Copied from your Original View) ---
+            booking_user = None
+            
+            # If Admin is booking for themselves (rare in POS, but possible)
+            if not c_phone and not c_name:
+                booking_user = admin_user
+            else:
+                # Prioritize searching by Phone
+                if c_phone:
+                    booking_user = User.objects.filter(phone_number=c_phone).first()
+                
+                # If not found by phone, try email
+                if not booking_user and c_email:
+                    booking_user = User.objects.filter(email=c_email).first()
+
+                # If still not found, CREATE NEW
+                if not booking_user:
+                    final_email = c_email if c_email else f"{c_phone}@guest.com"
+                    random_pass = get_random_string(length=12)
+                    
+                    # Ensure username is unique
+                    username = c_phone if c_phone else final_email.split('@')[0]
+                    if User.objects.filter(username=username).exists():
+                         username = f"{username}_{get_random_string(4)}"
+
+                    booking_user = User.objects.create_user(
+                        email=final_email,
+                        username=username,
+                        phone_number=c_phone,
+                        first_name=c_name if c_name else "Guest",
+                        password=random_pass,
+                        user_type=1 # Customer
+                    )
+
+            # --- B. Create Booking (Copied from Original) ---
+            booking = Booking.objects.create(
+                user=booking_user,
+                trip=trip,
+                booking_ref=str(uuid.uuid4())[:12].upper(), # Matches your format
+                status='CONFIRMED',
+                sales_channel='COUNTER', # Explicitly POS
+                total_amount=0 # Will update later
+            )
+
+            # --- C. Create Tickets (Loop & Logic) ---
+            total_amount = 0
+            
+            # Retrieve all layout objects at once for efficiency
+            layout_objects = LayoutObject.objects.filter(id__in=seat_ids_list)
+
+            if len(layout_objects) != len(seat_ids_list):
+                raise Exception("Some seat IDs are invalid.")
+
+            for layout_obj in layout_objects:
+                # 1. CRITICAL: Re-check Availability
+                if not trip.is_seat_available(layout_obj, from_stop, to_stop):
+                    raise Exception(f"Seat {layout_obj.label} is already booked!")
+
+                # 2. Calculate Price (Using your exact Logic)
+                price = trip.get_price(layout_obj.category, from_stop, to_stop)
+                
+                # 3. Create Ticket
+                Ticket.objects.create(
+                    booking=booking,
+                    trip=trip,
+                    seat_object=layout_obj,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    passenger_name=c_name if c_name else "Walk-in Guest",
+                    fare_amount=price,
+                    status='BOOKED', # Matches your Model choices (LOCKED/BOOKED)
+                    lock_expires_at=timezone.now() # Satisfies NOT NULL constraint
+                )
+                
+                total_amount += price
+
+            # --- D. Finalize Booking ---
+            booking.total_amount = total_amount
+            booking.save()
+
+            return booking
+        
+        
+        
+        

@@ -127,6 +127,9 @@ class LayoutObject(models.Model):
         # This ensures '101' can exist on Deck 1 and Deck 2, 
         # but you can't have two '101's on the SAME deck.
         unique_together = (('deck', 'row_index', 'col_index'), ('deck', 'seat_identifier'))
+        
+    def __str__(self):
+        return self.label
 
 # --- 3. PRICING & TRIPS ---
 
@@ -179,7 +182,6 @@ class Counter(models.Model):
     name = models.CharField(max_length=100)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='counters')
     is_active = models.BooleanField(default=True)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
