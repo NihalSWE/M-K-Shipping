@@ -21,7 +21,7 @@ from .services import generate_smart_trips
 from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm
 from accounts.forms import AdminUserEditForm
 from django.urls import reverse
-
+from .utils import send_booking_sms
 
 
 
@@ -2007,8 +2007,6 @@ def admin_book_confirm(request):
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
     # --- LOGIC: DETERMINE STATUS ---
-    # If admin selects PAID, status is CONFIRMED.
-    # If admin selects UNPAID, status is PENDING.
     if payment_status_input == 'PAID':
         final_status = 'CONFIRMED'
         final_payment_status = 'PAID'
@@ -2040,19 +2038,20 @@ def admin_book_confirm(request):
                     )
                 booking_user = user
 
-            # B. Create Booking (With NEW Status)
+            # B. Create Booking
             booking = Booking.objects.create(
                 user=booking_user,
                 trip=trip,
                 booking_ref=str(uuid.uuid4())[:12].upper(),
-                status=final_status,          # <--- UPDATED
-                payment_status=final_payment_status, # <--- UPDATED (Ensure your model has this field)
+                status=final_status,
+                payment_status=final_payment_status,
                 sales_channel='COUNTER', 
                 total_amount=0 
             )
 
             # C. Create Tickets
             total_amount = 0
+            booked_seat_labels = [] # [NEW] List to collect seat names for SMS
             
             for seat_id in seat_ids:
                 layout_obj = get_object_or_404(LayoutObject, id=seat_id)
@@ -2075,10 +2074,20 @@ def admin_book_confirm(request):
                     lock_expires_at=timezone.now(),
                 )
                 total_amount += price
+                booked_seat_labels.append(layout_obj.label) # [NEW] Add to list
 
             # D. Update Total
             booking.total_amount = total_amount
             booking.save()
+
+            # --- [NEW] SEND SMS (Background Thread) ---
+            # This triggers the SMS based on status (CONFIRMED or PENDING)
+            # Wrapped in try/except so it NEVER breaks the booking if API fails
+            try:
+                send_booking_sms(booking, booked_seat_labels)
+            except Exception as e:
+                print(f"SMS Failed: {e}") 
+            # ------------------------------------------
 
             msg_type = "success" if final_status == 'CONFIRMED' else "warning"
             msg_text = f"Booking {final_status}! Ref: {booking.booking_ref}"
@@ -2092,23 +2101,37 @@ def admin_book_confirm(request):
         return redirect(request.META.get('HTTP_REFERER'))
 
 
-
-
 # --- 2. NEW VIEW: QUICK STATUS UPDATE (For the list page) ---
 @login_required
 def update_booking_status(request, booking_id, new_status):
-    """
-    Called when admin clicks the Checkmark on a PENDING booking.
-    """
     booking = get_object_or_404(Booking, id=booking_id)
     
+    # 1. Handle CONFIRM
     if new_status == 'CONFIRMED':
         booking.status = 'CONFIRMED'
-        booking.payment_status = 'PAID' # Auto-mark as paid if confirmed via this button
+        booking.payment_status = 'PAID'
         booking.save()
-        messages.success(request, f"Booking #{booking.id} has been Confirmed & Marked as Paid.")
-    
-    # You can add more status logic here if needed (e.g. CANCELLED)
+        messages.success(request, "Booking Confirmed.")
+
+    # 2. Handle CANCEL (Add this block)
+    elif new_status == 'CANCELLED':
+        booking.status = 'CANCELLED'
+        # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
+        booking.save() 
+        messages.warning(request, "Booking Cancelled.")
+
+    # --- SEND SMS FOR BOTH CASES ---
+    try:
+        # Get seat labels for the SMS
+        tickets = Ticket.objects.filter(booking=booking)
+        seat_labels = [t.seat_object.label for t in tickets]
+        
+        # This will now send the correct SMS based on the new status
+        send_booking_sms(booking, seat_labels)
+        
+    except Exception as e:
+        print(f"SMS Failed: {e}")
+    # -------------------------------
     
     return redirect('admin_booking_list')
 
@@ -2318,17 +2341,28 @@ def cancel_booking(request, booking_id):
             booking.status = 'CANCELLED'
             booking.save()
 
-            # 2. Update All Associated Tickets
-            # This effectively "Releases" the seats because your availability logic 
-            # only looks for 'BOOKED' or 'LOCKED' tickets.
+            # 2. Get Tickets & Extract Labels for SMS
             tickets = Ticket.objects.filter(booking=booking)
+            
+            # We grab the seat labels (e.g., ['A1', 'B2']) BEFORE updating them
+            # This assumes your Ticket model has a foreign key 'seat_object' with a 'label'
+            seat_labels = [t.seat_object.label for t in tickets]
+            
             count = tickets.count()
+            
+            # 3. Update Tickets to Cancelled
+            # This releases the seats back to the pool
             tickets.update(status='CANCELLED')
 
-            messages.success(request, f"Booking Cancelled. {count} seats have been released back to the pool.")
+            # 4. SEND SMS (The New Part)
+            # The booking status is now 'CANCELLED', so utils.py will send the specific cancel message
+            send_booking_sms(booking, seat_labels)
+
+            messages.success(request, f"Booking Cancelled. SMS Sent. {count} seats have been released.")
             
     except Exception as e:
         messages.error(request, f"Error cancelling booking: {e}")
+        print(f"Cancel Error: {e}") # Print error to terminal for debugging
 
     return redirect('admin_booking_list')
     

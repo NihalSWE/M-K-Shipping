@@ -247,9 +247,22 @@
 
                     <div class="bg-light p-3 rounded mb-3 border">
                         <h6 class="fw-bold small text-uppercase text-muted mb-3">Passenger Details</h6>
+                        
                         <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Full Name *" required>
-                        <input type="text" name="customer_phone" class="form-control form-control-sm mb-2" placeholder="Phone Number *" required>
-                        <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email (Optional)">
+                        
+                        <input 
+                            type="tel" 
+                            name="customer_phone" 
+                            class="form-control form-control-sm mb-2" 
+                            placeholder="Phone Number (01XXXXXXXXX) *" 
+                            pattern="01[3-9][0-9]{8}" 
+                            maxlength="11" 
+                            minlength="11"
+                            title="Must be a valid 11-digit BD number starting with 01 (e.g., 01712345678)"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            required>
+                    
+                        <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email">
                     </div>
 
                     <div class="bg-light p-3 rounded mb-4 border">
