@@ -36,7 +36,8 @@ User = get_user_model()
 def dashboard(request):
     return render(request, 'admin_panel/dashboard/dashboard.html')
 
-
+import base64
+from django.core.files.base import ContentFile
 
 @csrf_exempt
 def ships(request):
@@ -49,7 +50,21 @@ def ships(request):
                 name = data.get('name')
                 code = data.get('code')
                 total_capacity = data.get('total_capacity', 0)
-                Ship.objects.create(name=name, code=code, total_capacity=total_capacity)
+                
+                # Create ship
+                ship = Ship.objects.create(name=name, code=code, total_capacity=total_capacity)
+                
+                # Handle base64 image if provided
+                if 'image' in data and data['image']:
+                    # Decode base64 image
+                    format, imgstr = data['image'].split(';base64,') 
+                    ext = format.split('/')[-1] 
+                    image_data = ContentFile(
+                        base64.b64decode(imgstr), 
+                        name=f"{slugify(name)}.{ext}"
+                    )
+                    ship.image.save(f"{slugify(name)}.{ext}", image_data, save=True)
+                
                 return JsonResponse({'status': 'success', 'message': 'Ship added successfully!'})
             
             elif action == 'edit':
@@ -58,6 +73,18 @@ def ships(request):
                 ship.name = data.get('name')
                 ship.code = data.get('code')
                 ship.total_capacity = data.get('total_capacity', 0)
+                
+                # Handle base64 image if provided
+                if 'image' in data and data['image']:
+                    # Decode base64 image
+                    format, imgstr = data['image'].split(';base64,') 
+                    ext = format.split('/')[-1] 
+                    image_data = ContentFile(
+                        base64.b64decode(imgstr), 
+                        name=f"{slugify(ship.name)}.{ext}"
+                    )
+                    ship.image.save(f"{slugify(ship.name)}.{ext}", image_data, save=True)
+                
                 ship.save()
                 return JsonResponse({'status': 'success', 'message': 'Ship updated successfully!'})
             

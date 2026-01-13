@@ -296,6 +296,13 @@ def search_trips(request):
                     departure_time = trip.departure_datetime + timedelta(minutes=stop_from.time_offset_minutes)
                     arrival_time = trip.departure_datetime + timedelta(minutes=stop_to.time_offset_minutes)
 
+                    # GET SHIP FEATURES - NEW CODE
+                    ship_features = set()
+                    for deck in trip.ship.decks.all():
+                        for layout_obj in deck.layout_objects.all():
+                            for feature in layout_obj.features.all():
+                                ship_features.add(feature.name)
+                    
                     trips_found.append({
                         'trip': trip,
                         'stop_from': stop_from,

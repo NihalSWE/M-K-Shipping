@@ -18,6 +18,13 @@ class Ship(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
     total_capacity = models.IntegerField(default=0)
+    # ADD THIS FIELD - NOTHING ELSE CHANGED
+    image = models.ImageField(
+        upload_to='ships/',
+        null=True, 
+        blank=True,
+        help_text="Ship image (size: 275x145 pixels)"
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)

@@ -194,6 +194,16 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="image">Ship Image (275x145)</label>
+                                            <input class="form-control btn-pill" id="image" name="image" type="file" accept="image/*">
+                                            <small class="text-muted">Upload image with exact dimensions: 275px x 145px</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
                                 <div class="error-success-div p-6"></div>
@@ -251,6 +261,16 @@
                                             <label class="form-label" for="edit-capacity">Total Capacity</label>
                                             <input class="form-control btn-pill" id="edit-capacity" name="edit_capacity"
                                                 type="number" placeholder="Enter total capacity">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="edit-image">Ship Image (275x145)</label>
+                                            <input class="form-control btn-pill" id="edit-image" name="edit_image" type="file" accept="image/*">
+                                            <small class="text-muted">Upload new image (optional)</small>
                                         </div>
                                     </div>
                                 </div>
@@ -364,19 +384,48 @@
     // ADD
     $("#addModal form").on("submit", e => {
         e.preventDefault();
-        const name = $("#addModal #name").val();
-        const code = $("#addModal #code").val();
-        const total_capacity = $("#addModal #capacity").val();
-        fetch("{% url 'ships' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: JSON.stringify({ action: "add", name, code, total_capacity })
-        })
+        
+        const imageInput = $("#addModal #image")[0];
+        const imageFile = imageInput.files[0];
+        
+        if (imageFile) {
+            // Convert image to base64
+            convertImageToBase64(imageFile, function(base64Image) {
+                const payload = {
+                    action: "add",
+                    name: $("#addModal #name").val(),
+                    code: $("#addModal #code").val(),
+                    total_capacity: $("#addModal #capacity").val(),
+                    image: base64Image  // Add as base64 string
+                };
+                
+                fetch("{% url 'ships' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(d => showMessage(d.status, d.message));
+            });
+        } else {
+            // No image - use existing code
+            const name = $("#addModal #name").val();
+            const code = $("#addModal #code").val();
+            const total_capacity = $("#addModal #capacity").val();
+            fetch("{% url 'ships' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ action: "add", name, code, total_capacity })
+            })
             .then(r => r.json())
             .then(d => showMessage(d.status, d.message));
+        }
     });
 
     // EDIT: delegate to document in case rows are dynamic
@@ -390,19 +439,49 @@
 
     $("#editModal form").on("submit", e => {
         e.preventDefault();
-        const name = $("#edit-name").val();
-        const code = $("#edit-code").val();
-        const total_capacity = $("#edit-capacity").val();
-        fetch("{% url 'ships' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: JSON.stringify({ action: "edit", id: editId, name, code, total_capacity })
-        })
+        
+        const imageInput = $("#edit-image")[0];
+        const imageFile = imageInput.files[0];
+        
+        if (imageFile) {
+            // Convert image to base64
+            convertImageToBase64(imageFile, function(base64Image) {
+                const payload = {
+                    action: "edit",
+                    id: editId,
+                    name: $("#edit-name").val(),
+                    code: $("#edit-code").val(),
+                    total_capacity: $("#edit-capacity").val(),
+                    image: base64Image  // Add as base64 string
+                };
+                
+                fetch("{% url 'ships' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(d => showMessage(d.status, d.message));
+            });
+        } else {
+            // No image - use existing code
+            const name = $("#edit-name").val();
+            const code = $("#edit-code").val();
+            const total_capacity = $("#edit-capacity").val();
+            fetch("{% url 'ships' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ action: "edit", id: editId, name, code, total_capacity })
+            })
             .then(r => r.json())
             .then(d => showMessage(d.status, d.message));
+        }
     });
 
     // DELETE
@@ -451,6 +530,15 @@
         // In case backdrop sticks around, remove it:
         document.querySelectorAll(".modal-backdrop").forEach(bg => bg.remove());
     });
+
+    // ADD THIS HELPER FUNCTION (NEW)
+function convertImageToBase64(file, callback) {
+    const reader = new FileReader();
+    reader.onloadend = function() {
+        callback(reader.result);
+    };
+    reader.readAsDataURL(file);
+}
 </script>
 
 {% endblock %}

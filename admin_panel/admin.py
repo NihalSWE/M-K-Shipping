@@ -35,7 +35,7 @@ class TripPricingInline(admin.TabularInline):
 
 @admin.register(Ship)
 class ShipAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'total_capacity', 'created_at')
+    list_display = ('name', 'code', 'total_capacity', 'image','created_at')
     search_fields = ('name', 'code')
     inlines = [DeckInline]
 

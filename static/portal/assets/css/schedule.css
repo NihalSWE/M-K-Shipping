@@ -63,7 +63,7 @@
 }
 
 .trip-card:hover {
-    border-color: #2ECC71;
+    border-color: #21a2dc;
     transform: translateY(-5px);
     box-shadow: 0 15px 35px rgba(46, 204, 113, 0.15);
 }
