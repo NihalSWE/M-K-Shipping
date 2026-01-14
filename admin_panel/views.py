@@ -2284,49 +2284,60 @@ def trip_seat_report(request, trip_id):
 
 
 
+from django.db.models import Prefetch
 
 def booking_list(request):
-    # Get all bookings, newest first
-    bookings = Booking.objects.select_related('trip', 'user').all().order_by('-created_at')
+    # Optimizing the query to fetch Phone, Seats, and Route locations efficiently
+    bookings = Booking.objects.select_related(
+        'user',              # Gets phone_number
+        'trip__ship',        # Gets ship name
+        'trip__route__source',      # Fallback route source
+        'trip__route__destination'  # Fallback route dest
+    ).prefetch_related(
+        'tickets__seat_object',      # Gets Seat Label (e.g., "A1")
+        'tickets__from_stop__location', # Gets Boarding Station Name
+        'tickets__to_stop__location'    # Gets Dropping Station Name
+    ).order_by('-created_at')
     
     context = {
-        'bookings': bookings
+        'bookings': bookings,
+        'page_title': 'All Bookings'
     }
     return render(request, 'admin_panel/book/booking_list.html', context)
 
-
-
-
+# --- Apply this same query logic to your other views (issue_list, pending_list, etc.) ---
 @login_required
 def booking_issue_list(request):
-    # 1. ISSUE (Confirmed) Page
-    bookings = Booking.objects.filter(status='CONFIRMED').order_by('-created_at')
-    context = {
-        'bookings': bookings,
-        'page_title': 'Issued (Confirmed) Tickets' # <--- Custom Title
-    }
+    bookings = Booking.objects.filter(status='CONFIRMED').select_related(
+        'user', 'trip__ship', 'trip__route__source', 'trip__route__destination'
+    ).prefetch_related(
+        'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
+    ).order_by('-created_at')
+    
+    context = {'bookings': bookings, 'page_title': 'Issued (Confirmed) Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
 
 @login_required
 def booking_pending_list(request):
-    # 2. PENDING Page
-    bookings = Booking.objects.filter(status='PENDING').order_by('-created_at')
-    context = {
-        'bookings': bookings,
-        'page_title': 'Pending Payment Tickets'
-    }
+    bookings = Booking.objects.filter(status='PENDING').select_related(
+        'user', 'trip__ship', 'trip__route__source', 'trip__route__destination'
+    ).prefetch_related(
+        'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
+    ).order_by('-created_at')
+
+    context = {'bookings': bookings, 'page_title': 'Pending Payment Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
 
 @login_required
 def booking_cancel_list(request):
-    # 3. CANCELLED Page
-    bookings = Booking.objects.filter(status='CANCELLED').order_by('-created_at')
-    context = {
-        'bookings': bookings,
-        'page_title': 'Cancelled Tickets History'
-    }
-    return render(request, 'admin_panel/book/booking_list.html', context)
+    bookings = Booking.objects.filter(status='CANCELLED').select_related(
+        'user', 'trip__ship', 'trip__route__source', 'trip__route__destination'
+    ).prefetch_related(
+        'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
+    ).order_by('-created_at')
 
+    context = {'bookings': bookings, 'page_title': 'Cancelled Tickets History'}
+    return render(request, 'admin_panel/book/booking_list.html', context)
 
 
 
@@ -2564,5 +2575,183 @@ def pos_book_confirm(request):
         # Handles "Seat already booked" and other errors
         messages.error(request, f"Error: {str(e)}")
         return redirect(request.META.get('HTTP_REFERER'))
+    
+    
+    
+    
+# 1. The List View (The Cards)
+def trip_report_list(request):
+    # 1. Get Today's Date
+    today = timezone.now().date()
+
+    # 2. Start with ONLY Future & Today's trips (Sorted by soonest first)
+    trips = Trip.objects.filter(
+        departure_datetime__date__gte=today
+    ).order_by('departure_datetime')
+
+    # 3. Apply Search Filters (if user selects them)
+    from_loc_id = request.GET.get('from_location')
+    to_loc_id = request.GET.get('to_location')
+    journey_date = request.GET.get('journey_date')
+
+    if from_loc_id:
+        trips = trips.filter(route__source_id=from_loc_id)
+    
+    if to_loc_id:
+        trips = trips.filter(route__destination_id=to_loc_id)
+    
+    if journey_date:
+        trips = trips.filter(departure_datetime__date=journey_date)
+
+    # 4. Count Sold Tickets
+    trips = trips.select_related(
+        'ship', 'route__source', 'route__destination'
+    ).annotate(
+        sold_count=Count('tickets', filter=Q(tickets__status='BOOKED'))
+    )
+
+    locations = Location.objects.all().order_by('name')
+
+    context = {
+        'trips': trips,
+        'locations': locations,
+        'page_title': 'Upcoming Trip Reports'
+    }
+    return render(request, 'admin_panel/book/trip_list.html', context)
+
+# 2. The Detail View (The Report)
+from django.db.models import Sum
+
+def trip_passenger_manifest(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    # Fetch tickets
+    tickets = Ticket.objects.filter(
+        trip=trip, 
+        status='BOOKED'
+    ).select_related(
+        'booking__user',
+        'seat_object',
+        'from_stop__location',
+        'to_stop__location'
+    ).order_by('seat_object__label')
+
+    # Calculate Totals for the Footer
+    # (Assuming fare_amount is what they paid. If you have a separate 'paid' field, swap it here)
+    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
+    total_due = 0  # Set this logic if you have a 'due' field in your DB
+    
+    context = {
+        'trip': trip,
+        'tickets': tickets,
+        'total_tickets': tickets.count(),
+        'total_paid': total_paid,
+        'total_due': total_due,
+        'print_date': timezone.now()
+    }
+    return render(request, 'admin_panel/book/passenger_manifest.html', context)
+
+
+
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side
+from django.http import HttpResponse
+
+def export_manifest_xls(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    # 1. Fetch Data (Same logic as main view)
+    tickets = Ticket.objects.filter(trip=trip, status='BOOKED').select_related(
+        'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
+    ).order_by('seat_object__label')
+    
+    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
+    total_due = 0 # Implement your due logic here
+
+    # 2. Create Workbook & Sheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Trip-{trip.ship.name}"
+
+    # --- STYLES ---
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal='center', vertical='center')
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                         top=Side(style='thin'), bottom=Side(style='thin'))
+
+    # 3. Write TRIP INFO (Top Table)
+    # Headers
+    headers_top = ['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats']
+    ws.append(headers_top)
+    
+    # Data
+    row_top = [
+        trip.ship.name,
+        trip.route.name,
+        trip.route.source.name,
+        trip.departure_datetime.strftime("%Y-%m-%d %H:%M"),
+        tickets.count(),
+        tickets.count()
+    ]
+    ws.append(row_top)
+    ws.append([]) # Empty row for spacing
+
+    # 4. Write PASSENGER TABLE Headers
+    headers_main = [
+        'SL', 'Ticket No', 'Cabin', 'Pass. Name', 'Phone No', 
+        'Paid', 'Discount', 'Due', 'From', 'To', 
+        'Status', 'Booked By', 'Issued By', 'Remarks'
+    ]
+    ws.append(headers_main)
+
+    # Style the main header row (Row 4)
+    for cell in ws[4]:
+        cell.font = bold_font
+        cell.alignment = center_align
+        cell.border = thin_border
+
+    # 5. Write Passenger Rows
+    for index, ticket in enumerate(tickets, start=1):
+        row = [
+            index,
+            ticket.id,
+            ticket.seat_object.seat_identifier or ticket.seat_object.label,
+            ticket.booking.passenger_name or "-",
+            ticket.booking.user.phone_number or "0",
+            ticket.fare_amount,
+            0, # Discount
+            0, # Due
+            ticket.from_stop.location.name,
+            ticket.to_stop.location.name,
+            "Confirmed",
+            ticket.booking.user.first_name or "Admin",
+            ticket.booking.user.first_name or "Admin",
+            "N/A"
+        ]
+        ws.append(row)
+        
+        # Apply borders to data rows
+        for cell in ws[ws.max_row]:
+            cell.border = thin_border
+            cell.alignment = center_align
+
+    # 6. Write FOOTER (Totals)
+    # We construct a row with empty strings for alignment
+    footer_row = ['', '', '', '', '', f"Total: {total_paid}", '', f"Due: {total_due}", '', '', '', '', '', '']
+    ws.append(footer_row)
+    
+    # Style Footer
+    for cell in ws[ws.max_row]:
+        cell.font = bold_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    # 7. Response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"Manifest_{trip.ship.name}_{trip.departure_datetime.date()}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

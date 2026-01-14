@@ -95,6 +95,9 @@ urlpatterns = [
     path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
+    path('booking/trips/', views.trip_report_list, name='trip_report_list'),
+    path('booking/manifest/<int:trip_id>/', views.trip_passenger_manifest, name='trip_passenger_manifest'),
+    path('booking/manifest/<int:trip_id>/export/', views.export_manifest_xls, name='export_manifest_xls'),
     #tckt booking
     
     

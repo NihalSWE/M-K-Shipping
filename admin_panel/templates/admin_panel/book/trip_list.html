@@ -1,0 +1,149 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .search-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    .form-select, .form-control {
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="fw-bold text-dark mb-3">Upcoming Trip Reports</h3>
+            
+            <div class="search-card p-4">
+                <form method="GET" action="" class="row g-3 align-items-end">
+                    
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">From</label>
+                        <select name="from_location" class="form-select">
+                            <option value="">All Locations</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.id }}" {% if request.GET.from_location == loc.id|stringformat:"s" %}selected{% endif %}>
+                                {{ loc.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">To</label>
+                        <select name="to_location" class="form-select">
+                            <option value="">All Locations</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.id }}" {% if request.GET.to_location == loc.id|stringformat:"s" %}selected{% endif %}>
+                                {{ loc.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Date</label>
+                        <input type="text" id="journey_date" name="journey_date" class="form-control" 
+                               value="{{ request.GET.journey_date }}" placeholder="Select Date">
+                    </div>
+
+                    <div class="col-md-3 d-grid">
+                        <button type="submit" class="btn btn-dark fw-bold py-2">
+                            <i class="fa fa-filter me-2"></i> Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for trip in trips %}
+        <div class="col-12">
+            <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    <i class="fa-solid fa-ship"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold text-dark">{{ trip.ship.name }}</h5>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 mt-1">
+                                        {{ trip.ship.ship_type }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 text-center mb-3 mb-md-0">
+                            <div class="d-flex justify-content-between text-muted small fw-bold px-4">
+                                <span>{{ trip.route.source.name }}</span>
+                                <span>{{ trip.route.destination.name }}</span>
+                            </div>
+                            <div class="position-relative my-2">
+                                <hr class="m-0" style="border-top: 2px dashed #cbd5e0;">
+                                <i class="fa-solid fa-ship position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted"></i>
+                            </div>
+                            <div class="small text-muted">
+                                Tickets Sold: <strong class="text-success fs-6">{{ trip.sold_count }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2 text-center mb-3 mb-md-0 border-start border-end">
+                            <div class="text-muted small text-uppercase fw-bold">Departure</div>
+                            <h4 class="mb-0 fw-bold text-dark">{{ trip.departure_datetime|date:"h:i A" }}</h4>
+                            <div class="text-muted small">{{ trip.departure_datetime|date:"d M, Y" }}</div>
+                        </div>
+
+                        <div class="col-md-3 text-end">
+                            <a href="{% url 'trip_passenger_manifest' trip.id %}" 
+                               class="btn btn-primary w-100 py-2 fw-bold shadow-sm"
+                               style="border-radius: 10px;">
+                                <i class="fa-solid fa-clipboard-list me-2"></i> View Manifest
+                            </a>
+                            <div class="mt-2 small text-muted text-center">
+                                <i class="fa fa-circle text-success" style="font-size: 8px;"></i> Active
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h5 class="text-muted">No upcoming trips found.</h5>
+            <p class="text-muted small">Try changing your search filter or add a new schedule.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    flatpickr("#journey_date", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "F j, Y",
+        minDate: "today", // Prevents selecting past dates in the filter too
+        disableMobile: "true"
+    });
+</script>
+{% endblock %}

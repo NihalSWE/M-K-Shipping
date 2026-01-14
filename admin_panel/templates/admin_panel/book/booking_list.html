@@ -32,11 +32,12 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Passenger</th>
-                                    <th>Trip Info</th>
+                                    <th>Phone</th> <th>Route</th> <th>Seats</th> <th>Ship Info</th>
                                     <th>Journey Date</th>
                                     <th>Booked On</th> 
                                     <th>Total (৳)</th>
-                                    <th>Status</th> <th>Action</th>
+                                    <th>Status</th> 
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -45,14 +46,44 @@
                                     <td>#{{ booking.id }}</td>
                                     <td>
                                         <div class="fw-bold">{{ booking.passenger_name }}</div>
-                                        <small class="text-muted">{{ booking.customer_phone }}</small>
                                     </td>
+                                    
                                     <td>
-                                        {{ booking.trip.ship.name }}
+                                        {% if booking.user.phone_number %}
+                                            <a href="tel:{{ booking.user.phone_number }}" class="text-blue text-decoration-none fw-bold">
+                                                {{ booking.user.phone_number }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
                                     </td>
+                        
                                     <td>
-                                        {{ booking.trip.departure_datetime|date:"d M" }}
+                                        {% with first_ticket=booking.tickets.first %}
+                                            {% if first_ticket %}
+                                                {{ first_ticket.from_stop.location.name }} 
+                                                <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
+                                                {{ first_ticket.to_stop.location.name }}
+                                            {% else %}
+                                                {{ booking.trip.route.source.name }} 
+                                                <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
+                                                {{ booking.trip.route.destination.name }}
+                                            {% endif %}
+                                        {% endwith %}
                                     </td>
+                        
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                        {% for ticket in booking.tickets.all %}
+                                            <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
+                                        {% empty %}
+                                            <span class="text-muted small">No Seats</span>
+                                        {% endfor %}
+                                        </div>
+                                    </td>
+                        
+                                    <td>{{ booking.trip.ship.name }}</td>
+                                    <td>{{ booking.trip.departure_datetime|date:"d M" }}</td>
                                     <td>{{ booking.created_at|date:"d M" }}</td>
                                     <td class="fw-bold">{{ booking.total_amount }}</td>
                                     
@@ -64,12 +95,14 @@
                                             {% endif %}
                                         {% elif booking.status == 'PENDING' %}
                                             <span class="badge bg-warning text-dark">Pending</span>
-                                            <span class="badge bg-light text-danger border ms-1">Unpaid</span>
+                                            {% if booking.payment_status != 'PAID' %}
+                                                <span class="badge bg-light text-danger border ms-1">Unpaid</span>
+                                            {% endif %}
                                         {% else %}
                                             <span class="badge bg-danger">{{ booking.status }}</span>
                                         {% endif %}
                                     </td>
-
+                        
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
@@ -77,22 +110,13 @@
                                             </a>
                                             
                                             {% if booking.status == 'PENDING' %}
-                                            <button type="button" 
-                                                    class="btn btn-xs btn-success px-2" 
-                                                    title="Mark as Paid & Confirm"
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#confirmStatusModal"
-                                                    data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}">
+                                            <button type="button" class="btn btn-xs btn-success px-2" data-bs-toggle="modal" data-bs-target="#confirmStatusModal" data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}">
                                                 <i class="fa fa-check"></i>
                                             </button>
                                             {% endif %}
-
+                        
                                             {% if booking.status != 'CANCELLED' %}
-                                            <button type="button" 
-                                                    class="btn btn-xs btn-danger px-2" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#cancelModal"
-                                                    data-href="{% url 'cancel_booking' booking.id %}">
+                                            <button type="button" class="btn btn-xs btn-danger px-2" data-bs-toggle="modal" data-bs-target="#cancelModal" data-href="{% url 'cancel_booking' booking.id %}">
                                                 <i class="fa fa-times"></i>
                                             </button>
                                             {% endif %}
