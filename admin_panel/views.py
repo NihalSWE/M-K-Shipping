@@ -2578,18 +2578,18 @@ def pos_book_confirm(request):
     
     
     
-    
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger    
 # 1. The List View (The Cards)
 def trip_report_list(request):
     # 1. Get Today's Date
     today = timezone.now().date()
 
-    # 2. Start with ONLY Future & Today's trips (Sorted by soonest first)
+    # 2. Start with ONLY Future & Today's trips
     trips = Trip.objects.filter(
         departure_datetime__date__gte=today
     ).order_by('departure_datetime')
 
-    # 3. Apply Search Filters (if user selects them)
+    # 3. Apply Search Filters
     from_loc_id = request.GET.get('from_location')
     to_loc_id = request.GET.get('to_location')
     journey_date = request.GET.get('journey_date')
@@ -2610,12 +2610,38 @@ def trip_report_list(request):
         sold_count=Count('tickets', filter=Q(tickets__status='BOOKED'))
     )
 
+    # ========================================================
+    # 5. PAGINATION & SHOW ENTITIES LOGIC (ADDED)
+    # ========================================================
+    per_page = request.GET.get('per_page', '10')  # Default to 10
+    
+    # Handle 'all' case
+    if per_page == 'all':
+        # If 'all', show total count (or 1 if empty to avoid error)
+        paginator_limit = trips.count() if trips.count() > 0 else 1
+    else:
+        try:
+            paginator_limit = int(per_page)
+        except ValueError:
+            paginator_limit = 10
+
+    paginator = Paginator(trips, paginator_limit)
+    page = request.GET.get('page')
+
+    try:
+        trips_page = paginator.page(page)
+    except PageNotAnInteger:
+        trips_page = paginator.page(1)
+    except EmptyPage:
+        trips_page = paginator.page(paginator.num_pages)
+
     locations = Location.objects.all().order_by('name')
 
     context = {
-        'trips': trips,
+        'trips': trips_page, # Pass the Page object, not the QuerySet
         'locations': locations,
-        'page_title': 'Upcoming Trip Reports'
+        'page_title': 'Upcoming Trip Reports',
+        'per_page': per_page, # Pass this back so the dropdown remembers selection
     }
     return render(request, 'admin_panel/book/trip_list.html', context)
 

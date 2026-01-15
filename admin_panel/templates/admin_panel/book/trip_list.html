@@ -14,6 +14,16 @@
         border-radius: 10px;
         padding: 0.75rem 1rem;
     }
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 3px;
+        border: none;
+        color: #333;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        color: #fff;
+    }
 </style>
 {% endblock css %}
 
@@ -27,6 +37,8 @@
             <div class="search-card p-4">
                 <form method="GET" action="" class="row g-3 align-items-end">
                     
+                    <input type="hidden" name="per_page" value="{{ per_page }}">
+
                     <div class="col-md-3">
                         <label class="form-label fw-bold small text-muted">From</label>
                         <select name="from_location" class="form-select">
@@ -64,6 +76,30 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <form method="GET" action="" class="d-flex align-items-center">
+                <input type="hidden" name="from_location" value="{{ request.GET.from_location }}">
+                <input type="hidden" name="to_location" value="{{ request.GET.to_location }}">
+                <input type="hidden" name="journey_date" value="{{ request.GET.journey_date }}">
+                
+                <label class="me-2 text-muted small fw-bold">Show</label>
+                <select name="per_page" class="form-select form-select-sm" style="width: 80px;" onchange="this.form.submit()">
+                    <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
+                    <option value="all" {% if per_page == 'all' %}selected{% endif %}>All</option>
+                </select>
+                <label class="ms-2 text-muted small fw-bold">entries</label>
+            </form>
+
+            <span class="text-muted small">
+                Showing {{ trips.start_index }} to {{ trips.end_index }} of {{ trips.paginator.count }} entries
+            </span>
         </div>
     </div>
 
@@ -132,6 +168,46 @@
         {% endfor %}
     </div>
 
+    {% if trips.paginator.num_pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12 d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if trips.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link shadow-sm" href="?page={{ trips.previous_page_number }}&per_page={{ per_page }}&from_location={{ request.GET.from_location }}&to_location={{ request.GET.to_location }}&journey_date={{ request.GET.journey_date }}">
+                            <i class="fa fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in trips.paginator.page_range %}
+                        {% if trips.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link shadow-sm">{{ num }}</span>
+                        </li>
+                        {% elif num > trips.number|add:'-3' and num < trips.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link shadow-sm" href="?page={{ num }}&per_page={{ per_page }}&from_location={{ request.GET.from_location }}&to_location={{ request.GET.to_location }}&journey_date={{ request.GET.journey_date }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if trips.has_next %}
+                    <li class="page-item">
+                        <a class="page-link shadow-sm" href="?page={{ trips.next_page_number }}&per_page={{ per_page }}&from_location={{ request.GET.from_location }}&to_location={{ request.GET.to_location }}&journey_date={{ request.GET.journey_date }}">
+                            <i class="fa fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
@@ -142,7 +218,7 @@
         dateFormat: "Y-m-d",
         altInput: true,
         altFormat: "F j, Y",
-        minDate: "today", // Prevents selecting past dates in the filter too
+        minDate: "today", 
         disableMobile: "true"
     });
 </script>
