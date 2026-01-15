@@ -647,5 +647,56 @@
         });
     });
 </script>
-
+<script>
+    $(document).ready(function() {
+        let waitingToSetValue = null;
+        
+        $('#switch-location').on('click', function() {
+            const fromValue = $('#search-from').val();
+            const toValue = $('#search-to').val();
+            
+            // Only swap if both have values
+            if (fromValue && toValue) {
+                // Store the value we want to set in TO
+                waitingToSetValue = fromValue;
+                
+                // Change FROM (this will trigger AJAX load for TO dropdown)
+                $('#search-from').val(toValue).trigger('change');
+            }
+        });
+        
+        // Listen for when Select2 finishes loading results
+        $('#search-to').on('select2:select select2:unselect', function() {
+            // Reset after manual selection
+            waitingToSetValue = null;
+        });
+        
+        // After FROM changes, wait for TO to load, then set the value
+        $('#search-from').on('change', function() {
+            if (waitingToSetValue !== null) {
+                // Small delay to let AJAX complete
+                setTimeout(function() {
+                    // Create a new option if it doesn't exist (for preloading)
+                    const $toSelect = $('#search-to');
+                    
+                    // Check if option already exists
+                    if ($toSelect.find('option[value="' + waitingToSetValue + '"]').length === 0) {
+                        // Fetch the text for this option from the original FROM dropdown
+                        const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
+                        
+                        // Create and append the option
+                        const newOption = new Option(optionText, waitingToSetValue, true, true);
+                        $toSelect.append(newOption);
+                    }
+                    
+                    // Set the value
+                    $toSelect.val(waitingToSetValue).trigger('change');
+                    
+                    // Reset
+                    waitingToSetValue = null;
+                }, 800); // Increased delay for AJAX
+            }
+        });
+    });
+    </script>
 {% endblock custom_js %}
