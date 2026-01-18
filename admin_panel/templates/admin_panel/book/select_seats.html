@@ -1,6 +1,6 @@
 {% extends 'admin_panel/base.html' %}
 {% load static %}
-{% load custom_filters %} {# Ensure you created the templatetags/custom_filters.py file! #}
+{% load custom_filters %} 
 
 {% block content %}
 <style>
@@ -169,14 +169,25 @@
                     <i class="fa fa-ship me-2"></i> {{ trip.ship.name }}
                 </h5>
                 
-                <div>
-                    <button id="btn-report" class="btn btn-info text-white">
+                <div class="d-flex align-items-center gap-2">
+                    <button id="btn-report" class="btn btn-info text-white btn-sm">
                         <i class="fa fa-bar-chart"></i> Seat Report
                     </button>
+                
                     <button type="button" id="lock-toggle-btn" class="btn btn-outline-danger btn-sm fw-bold">
                         <i class="fa fa-lock me-1"></i> <span id="lock-btn-text">Lock Seats</span>
                     </button>
-                    <span class="badge bg-primary p-2 ms-2">
+                
+                    <div class="d-flex align-items-center bg-white border rounded px-2 py-1" style="height: 31px;">
+                        <div class="form-check form-switch m-0 d-flex align-items-center">
+                            <input class="form-check-input my-0 me-2" type="checkbox" id="adminLockSwitch" style="cursor: pointer; margin-top: 0 !important;">
+                            <label class="form-check-label fw-bold text-danger small m-0 lh-1" for="adminLockSwitch" style="cursor: pointer;">
+                                <i class="fa fa-lock"></i> Unlocked MODE
+                            </label>
+                        </div>
+                    </div>
+                
+                    <span class="badge bg-primary p-2">
                         {{ from_stop.location.name }} <i class="fa fa-arrow-right mx-1"></i> {{ to_stop.location.name }}
                     </span>
                 </div>
@@ -664,4 +675,70 @@
         window.location.reload();
     }
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const lockSwitch = document.getElementById('adminLockSwitch');
+        
+        if (!lockSwitch) return;
+    
+        // Listen for clicks on the document (Capture Phase)
+        document.addEventListener('click', function(e) {
+            
+            // 1. If Lock Mode is OFF, do nothing (Standard Booking works)
+            if (!lockSwitch.checked) return;
+    
+            const seat = e.target.closest('.layout-obj');
+            if (!seat) return;
+    
+            // 2. STOP STANDARD BOOKING (The Clash Fix)
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation(); 
+    
+            const seatId = seat.dataset.id;
+            const tripId = "{{ trip.id }}"; // Ensure this variable exists in your template
+    
+            // Visual Feedback
+            seat.style.opacity = '0.5';
+    
+            // 3. Call the New API
+            fetch("{% url 'toggle_single_seat_lock' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': "{{ csrf_token }}",
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ trip_id: tripId, seat_id: seatId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                seat.style.opacity = '1';
+                
+                if (data.success) {
+                    if (data.action === 'locked') {
+                        // Update UI: Make it look Locked
+                        seat.classList.remove('available', 'seat');
+                        seat.classList.add('booked'); 
+                        seat.style.backgroundColor = '#dc3545'; // Red
+                        seat.innerHTML += ' <i class="fa fa-lock text-white" style="font-size:10px"></i>';
+                    } else {
+                        // Update UI: Make it Available
+                        seat.classList.remove('booked', 'locked');
+                        seat.classList.add('available', 'seat');
+                        seat.style.backgroundColor = ''; 
+                        const icon = seat.querySelector('.fa-lock');
+                        if(icon) icon.remove();
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => {
+                seat.style.opacity = '1';
+                console.error(err);
+            });
+    
+        }, true); // <--- 'true' captures the event before your other scripts see it
+    });
+    </script>
 {% endblock %}

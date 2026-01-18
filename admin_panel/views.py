@@ -2306,6 +2306,85 @@ def toggle_trip_lock(request, trip_id):
 
 
 
+@require_POST
+@login_required
+def toggle_single_seat_lock(request):
+    try:
+        data = json.loads(request.body)
+        trip_id = data.get('trip_id')
+        seat_id = data.get('seat_id') # LayoutObject ID
+        
+        trip = get_object_or_404(Trip, id=trip_id)
+        seat_obj = get_object_or_404(LayoutObject, id=seat_id)
+
+        # 1. Check if this specific seat is ALREADY locked/booked
+        # We look for a TICKET, not just a booking
+        existing_ticket = Ticket.objects.filter(
+            trip=trip, 
+            seat_object=seat_obj
+        ).first()
+
+        # ==============================
+        # CASE A: UNLOCK (Remove Ticket)
+        # ==============================
+        if existing_ticket:
+            # ONLY delete if it's a "LOCKED" ticket. Don't touch real sales.
+            if existing_ticket.status == 'LOCKED':
+                existing_ticket.delete()
+                return JsonResponse({'success': True, 'action': 'unlocked'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Seat is sold to a customer!'})
+
+        # ==============================
+        # CASE B: LOCK (Add Ticket)
+        # ==============================
+        else:
+            with transaction.atomic():
+                # 1. Find or Create the Main "Blocker" Booking
+                # We reuse the existing one if it exists, or make a new one
+                booking = Booking.objects.filter(trip=trip, status='LOCKED').first()
+                
+                if not booking:
+                    booking = Booking.objects.create(
+                        user=request.user,
+                        trip=trip,
+                        booking_ref=f"LOCK-{str(uuid.uuid4())[:8].upper()}",
+                        status='LOCKED',
+                        payment_status='UNPAID',
+                        total_amount=0,
+                        sales_channel='COUNTER'
+                    )
+
+                # 2. Get Route Stops (Required for Ticket)
+                route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
+                if not route_stops.exists():
+                    return JsonResponse({'success': False, 'message': 'Route error'})
+                
+                start_stop = route_stops.first()
+                end_stop = route_stops.last()
+                long_expiry = timezone.now() + timedelta(days=3650)
+
+                # 3. Create the TICKET
+                Ticket.objects.create(
+                    booking=booking,
+                    trip=trip,
+                    seat_object=seat_obj,
+                    from_stop=start_stop,
+                    to_stop=end_stop,
+                    passenger_name="ADMIN_LOCK",
+                    fare_amount=0,
+                    status='LOCKED',
+                    lock_expires_at=long_expiry
+                )
+                
+                return JsonResponse({'success': True, 'action': 'locked'})
+
+    except Exception as e:
+        print(f"Single Lock Error: {e}")
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+
 from django.db.models import Sum, Count, Q
 
 @login_required

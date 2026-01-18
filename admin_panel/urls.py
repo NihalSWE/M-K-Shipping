@@ -88,6 +88,7 @@ urlpatterns = [
     path('book/confirm/', views.admin_book_confirm, name='admin_book_confirm'),
     path('booking/update-status/<int:booking_id>/<str:new_status>/', views.update_booking_status, name='update_booking_status'),
     path('trip/toggle-lock/<int:trip_id>/', views.toggle_trip_lock, name='toggle_trip_lock'),
+    path('trip/toggle-single-seat/', views.toggle_single_seat_lock, name='toggle_single_seat_lock'),
     path('trip/report/<int:trip_id>/', views.trip_seat_report, name='trip_seat_report'),
     path('bookings/list/', views.booking_list, name='admin_booking_list'),
     path('bookings/issued/', views.booking_issue_list, name='booking_issue_list'),
