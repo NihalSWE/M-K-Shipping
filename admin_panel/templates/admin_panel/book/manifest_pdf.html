@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0.5cm;
+        }
+
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            font-size: 9pt; /* Slightly larger */
+            color: #000;
+            margin: 0;
+            padding: 0;
+            line-height: 1.0;
+        }
+
+        /* Title */
+        .sheet-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16pt; /* Slightly larger */
+            margin: 0 0 12px 0;
+            padding: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* First table - Trip info */
+        .trip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            table-layout: fixed;
+            font-size: 9pt;
+        }
+
+        .trip-table th {
+            background-color: #e8e8e8;
+            border: 1px solid #000;
+            padding: 5px 4px; /* Slightly more padding */
+            font-weight: bold;
+            text-align: center;
+            font-size: 9pt;
+            height: 26px;
+            vertical-align: middle;
+        }
+
+        .trip-table td {
+            border: 1px solid #000;
+            padding: 5px 4px; /* Slightly more padding */
+            text-align: center;
+            vertical-align: middle;
+            font-size: 9pt;
+            height: 26px;
+            font-weight: normal;
+        }
+
+        /* Main table - Ticket details */
+        .main-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 9pt;
+        }
+
+        .main-table th {
+            background-color: #e8e8e8;
+            border: 1px solid #000;
+            padding: 4px 3px; /* Slightly more padding */
+            font-weight: bold;
+            text-align: center;
+            font-size: 8.5pt;
+            height: 30px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .main-table td {
+            border: 1px solid #000;
+            padding: 4px 3px; /* Slightly more padding */
+            text-align: center;
+            vertical-align: middle;
+            font-size: 9pt;
+            height: 26px;
+            word-wrap: break-word;
+            font-weight: normal;
+        }
+
+        /* EXACT COLUMN WIDTHS - WIDER */
+        /* Trip table: 6 columns */
+        .trip-col-1 { width: 16%; }
+        .trip-col-2 { width: 20%; }
+        .trip-col-3 { width: 16%; }
+        .trip-col-4 { width: 20%; }
+        .trip-col-5 { width: 14%; }
+        .trip-col-6 { width: 14%; }
+
+        /* Main table - WIDER proportions */
+        .col-sl { width: 3%; }
+        .col-ticket { width: 6.5%; }
+        .col-cabin { width: 5.5%; }
+        .col-name { width: 13%; }
+        .col-phone { width: 8.5%; }
+        .col-paid { width: 7%; }      /* Paid column */
+        .col-discount { width: 6.5%; }
+        .col-due { width: 7%; }       /* Due column */
+        .col-from { width: 7.5%; }
+        .col-to { width: 7.5%; }
+        .col-status { width: 8.5%; }
+        .col-booked { width: 8.5%; }
+        .col-issued { width: 8.5%; }
+        .col-remarks { width: 8.5%; }
+
+        /* Text alignment */
+        .text-left { 
+            text-align: left; 
+            padding-left: 5px !important;
+        }
+        
+        .text-right { 
+            text-align: right; 
+            padding-right: 5px !important;
+        }
+
+        /* Totals row - INSIDE TABLE, UNDER PAID AND DUE COLUMNS */
+        .totals-row td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            font-size: 9pt;
+            height: 26px;
+            vertical-align: middle;
+            font-weight: normal;
+        }
+
+        .total-paid-cell {
+            text-align: right !important;
+            padding-right: 5px !important;
+            font-weight: bold !important;
+        }
+
+        .total-due-cell {
+            text-align: right !important;
+            padding-right: 5px !important;
+            font-weight: bold !important;
+        }
+
+        .empty-cell {
+            border: none !important;
+            background-color: transparent !important;
+        }
+        
+        .border-cell {
+            border: 1px solid #000 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Title -->
+    <div class="sheet-title">TRIP SHEET</div>
+
+    <!-- Trip Information Table - 6 COLUMNS -->
+    <table class="trip-table">
+        <tr>
+            <th class="trip-col-1">Launch</th>
+            <th class="trip-col-2">Route</th>
+            <th class="trip-col-3">Starting Place</th>
+            <th class="trip-col-4">Journey Date Time</th>
+            <th class="trip-col-5">Ticket Sold</th>
+            <th class="trip-col-6">Seats Sold</th>
+        </tr>
+        <tr>
+            <td>{{ trip.ship.name }}</td>
+            <td>{{ trip.route.name }}</td>
+            <td>{{ trip.route.source.name }}</td>
+            <td>{{ trip.departure_datetime|date:"Y-m-d H:i" }}</td>
+            <td>{{ total_tickets }}</td>
+            <td>{{ total_tickets }}</td>
+        </tr>
+    </table>
+
+    <!-- Main Ticket Table -->
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th class="col-sl">SL</th>
+                <th class="col-ticket">Ticket No</th>
+                <th class="col-cabin">Cabin</th>
+                <th class="col-name">Pass. Name</th>
+                <th class="col-phone">Phone No</th>
+                <th class="col-paid">Paid</th>
+                <th class="col-discount">Discount</th>
+                <th class="col-due">Due</th>
+                <th class="col-from">From Station</th>
+                <th class="col-to">To Station</th>
+                <th class="col-status">Ticket Status</th>
+                <th class="col-booked">Booked By</th>
+                <th class="col-issued">Issued By</th>
+                <th class="col-remarks">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.seat_object.seat_identifier|default:ticket.seat_object.label }}</td>
+                <td class="text-left">{{ ticket.booking.passenger_name|default:"-" }}</td>
+                <td>{{ ticket.booking.user.phone_number|default:"0" }}</td>
+                <td class="text-right">{{ ticket.fare_amount|floatformat:0 }}</td>
+                <td>0</td>
+                <td>0</td>
+                <td>{{ ticket.from_stop.location.name }}</td>
+                <td>{{ ticket.to_stop.location.name }}</td>
+                <td>Confirmed</td>
+                <td>{{ current_user.first_name|default:"Admin" }}</td>
+                <td>{{ current_user.first_name|default:"Admin" }}</td>
+                <td>N/A</td>
+            </tr>
+            {% endfor %}
+
+            <!-- TOTALS ROW - INSIDE TABLE, UNDER PAID AND DUE COLUMNS -->
+            <tr class="totals-row">
+                <td colspan="5" class="empty-cell"></td>
+                <td class="total-paid-cell border-cell">
+                    Total Paid: {{ total_paid|floatformat:0 }}
+                </td>
+                <td class="empty-cell"></td>
+                <td class="total-due-cell border-cell">
+                    Total Due: {{ total_due }}
+                </td>
+                <td colspan="6" class="empty-cell"></td>
+            </tr>
+        </tbody>
+    </table>
+
+
+</body>
+</html>

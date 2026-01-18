@@ -83,8 +83,8 @@
         background-color: #e9ecef !important;
         border: 1px solid #dee2e6 !important;
         color: #adb5bd !important;
-        cursor: not-allowed;
-        pointer-events: none; /* Prevent clicking */
+        cursor: pointer; /* Change from not-allowed to pointer */
+        pointer-events: auto;
         background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #f1f1f1 5px, #f1f1f1 10px);
     }
 
@@ -197,7 +197,7 @@
                             {% with cat_name=obj.category.name %}
                             <div 
                                 class="layout-obj 
-                                    {% if cat_name == 'Space' or cat_name == 'Stairs' or cat_name == 'Washroom' or cat_name == 'Engine' %}
+                                    {% if cat_name == 'Space' or cat_name == 'Stairs' or cat_name == 'Washroom' or cat_name == 'Engine' or cat_name == 'River'%}
                                         non-seat {{ cat_name }}
                                     {% else %}
                                         seat available
@@ -267,11 +267,37 @@
 
                     <div class="bg-light p-3 rounded mb-4 border">
                         <h6 class="fw-bold small text-uppercase text-muted mb-2">Payment Info</h6>
-                        <label class="small text-muted mb-1">Payment Status</label>
-                        <select name="payment_status" class="form-select form-select-sm fw-bold">
-                            <option value="PAID">Paid (Confirmed)</option>
-                            <option value="UNPAID">Unpaid (Pending)</option>
-                        </select>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-muted mb-1">Status</label>
+                                <select name="payment_status" id="payment-status-select" class="form-select form-select-sm fw-bold">
+                                    <option value="UNPAID" selected>Unpaid (Pending)</option>
+                                    <option value="PAID">Paid (Confirmed)</option>
+                                </select>
+                            </div>
+                    
+                            <div class="col-6">
+                                <label class="small text-muted mb-1">Collected Amount</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">৳</span>
+                                    <input 
+                                        type="number" 
+                                        name="manual_amount" 
+                                        id="manual-amount-input" 
+                                        class="form-control fw-bold" 
+                                        placeholder="0" 
+                                        min="0"
+                                        step="0.01"
+                                        autocomplete="off"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="amount-helper-text" class="form-text small text-end mt-1 text-muted">
+                            Leave empty for 0.
+                        </div>
                     </div>
 
                     <button type="submit" id="btn-book" class="btn btn-secondary w-100 py-2 fw-bold text-uppercase" disabled>
@@ -338,89 +364,142 @@
     </div>
   </div>
 
-
+  <div class="modal fade" id="seatDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h6 class="modal-title fw-bold">Seat <span id="sd-number">--</span></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+              <small class="text-muted">Status</small><br>
+              <span id="sd-status" class="badge bg-secondary">--</span>
+          </div>
+          <div class="mb-2">
+              <small class="text-muted">Passenger</small><br>
+              <strong id="sd-name">--</strong>
+          </div>
+          <div class="mb-2">
+              <small class="text-muted">Phone</small><br>
+              <span id="sd-phone">--</span>
+          </div>
+          <div class="mb-2">
+            <small class="text-muted">Payment Status</small><br>
+            <span id="sd-payment" class="badge bg-light text-dark">--</span> </div>
+        
+        <div class="mb-0">
+            <small class="text-muted">Price</small><br>
+            <strong class="text-success">৳ <span id="sd-price">0</span></strong>
+        </div>
+        </div>
+        <div class="modal-footer p-1">
+          <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block scriptcontent %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("Seat Map Script Loaded (Database Lock Mode).");
+        console.log("System Loaded: Full Logic Restored.");
 
-        // --- 1. CONFIGURATION & SELECTORS ---
         const tripId = "{{ trip.id }}";
-        const csrfToken = "{{ csrf_token }}"; // Ensure this is available in template context
+        const csrfToken = "{{ csrf_token }}"; 
         
-        // Select only AVAILABLE seats (Locked/Booked seats are ignored automatically)
-        const seats = document.querySelectorAll('.layout-obj.seat.available');
+        // --- 1. SELECTORS ---
+        const availableSeats = document.querySelectorAll('.layout-obj.seat.available');
+        const bookedSeats = document.querySelectorAll('.layout-obj.booked'); 
         
         const selectedInput = document.getElementById('selected_seats_input');
         const totalAmountEl = document.getElementById('total-amount');
         const selectedListEl = document.getElementById('selected-list');
         const btnBook = document.getElementById('btn-book');
         
-        // Lock Button
-        const lockBtn = document.getElementById('lock-toggle-btn');
-        const lockBtnText = document.getElementById('lock-btn-text');
+        // Payment UI
+        const paymentSelect = document.getElementById('payment-status-select');
+        const manualAmountInput = document.getElementById('manual-amount-input');
+        const amountHelper = document.getElementById('amount-helper-text');
 
         // State
         let selectedSeatIds = [];
         let total = 0;
 
-        // --- 2. SMART LOCK LOGIC (Server-Side) ---
-        if(lockBtn) {
-            // OPTIONAL: If you passed 'is_locked' from Django, set button state on load
-            // const isLockedServerSide = "{{ is_locked|yesno:'true,false' }}" === "true";
-            // if(isLockedServerSide) { updateLockButtonUI(true); }
+        // --- 2. BOOKED SEAT CLICK (Show Details + Payment Status) ---
+        bookedSeats.forEach(seat => {
+            seat.addEventListener('click', function(e) {
+                // [SAFETY] Stop this click from triggering any selection/booking logic
+                e.preventDefault();
+                e.stopPropagation(); 
 
-            lockBtn.addEventListener('click', function() {
-                // A. UI Feedback (Prevent double clicks)
-                lockBtn.disabled = true;
-                const originalText = lockBtnText.textContent;
-                lockBtnText.textContent = "Processing...";
+                const seatId = this.dataset.id;
+                const modalEl = document.getElementById('seatDetailsModal');
+                const modal = new bootstrap.Modal(modalEl);
 
-                // B. Send Command to Django
-                fetch("{% url 'toggle_trip_lock' trip.id %}", { 
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
+                // Show Loading State inside modal
+                document.getElementById('sd-name').textContent = "Loading...";
+                modal.show();
+
+                // Generate URL dynamically
+                let url = "{% url 'get_seat_details' 0 0 %}".replace('0/0', `${tripId}/${seatId}`);
+
+                fetch(url)
+                .then(res => {
+                    if(!res.ok) throw new Error("Network Error");
+                    return res.json();
                 })
                 .then(data => {
-                    // C. Handle Success
-                    if(data.status === 'locked' || data.status === 'unlocked') {
-                        // RELOAD THE PAGE
-                        // This is the safest way to ensure all seats render correctly 
-                        // as "Booked" (Gray) or "Available" (Green) based on the DB.
-                        window.location.reload(); 
+                    // Update Basic Info
+                    document.getElementById('sd-number').textContent = data.seat_number;
+                    document.getElementById('sd-name').textContent = data.passenger_name;
+                    document.getElementById('sd-phone').textContent = data.passenger_phone;
+                    document.getElementById('sd-price').textContent = data.amount;
+                    
+                    // Update Status Badge
+                    const statusBadge = document.getElementById('sd-status');
+                    statusBadge.textContent = data.status;
+                    
+                    if(data.status === 'CONFIRMED') {
+                        statusBadge.className = 'badge bg-success';
+                    } else if (data.status === 'BOOKED' || data.status === 'LOCKED') {
+                        statusBadge.className = 'badge bg-warning text-dark';
                     } else {
-                        alert("Notice: " + data.message);
-                        resetLockButton(originalText);
+                        statusBadge.className = 'badge bg-secondary';
+                    }
+
+                    // [NEW] Update Payment Status Badge
+                    const payBadge = document.getElementById('sd-payment');
+                    // Handle case where data.payment_status might be null
+                    let payStatus = data.payment_status || "N/A";
+                    payBadge.textContent = payStatus;
+
+                    if(payStatus === 'PAID' || payStatus === 'Paid') {
+                        payBadge.className = 'badge bg-success'; // Green
+                    } else if (payStatus === 'UNPAID' || payStatus === 'Pending') {
+                        payBadge.className = 'badge bg-danger';  // Red
+                    } else {
+                        payBadge.className = 'badge bg-secondary'; // Gray
                     }
                 })
-                .catch(error => {
-                    console.error('Lock Error:', error);
-                    alert("Failed to toggle lock. Check console/network.");
-                    resetLockButton(originalText);
+                .catch(err => {
+                    document.getElementById('sd-name').textContent = "Error loading info";
+                    console.error(err);
                 });
             });
-        }
+        });
 
-        function resetLockButton(text) {
-            lockBtn.disabled = false;
-            lockBtnText.textContent = text;
-        }
+        // --- 3. AVAILABLE SEAT SELECTION (With Safety Check) ---
+        availableSeats.forEach(seat => {
+            seat.addEventListener('click', function(e) {
+                
+                // [SAFETY] Double check: If seat is visually booked/locked, DO NOT select it.
+                if (this.classList.contains('booked') || this.classList.contains('locked')) {
+                    console.log("Blocked selection of booked seat.");
+                    return; 
+                }
 
-        // --- 3. SEAT SELECTION LOGIC ---
-        // Note: We only attach listeners to 'available' seats. 
-        // If the trip is Locked, Django renders seats as 'booked', so this loop runs on 0 elements.
-        seats.forEach(seat => {
-            seat.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const price = parseFloat(this.dataset.price) || 0;
                 
@@ -443,6 +522,11 @@
             selectedInput.value = selectedSeatIds.join(',');
             totalAmountEl.textContent = total.toFixed(2);
 
+            // Auto-fill amount if PAID is selected
+            if(paymentSelect && paymentSelect.value === 'PAID') {
+                manualAmountInput.value = total.toFixed(2);
+            }
+
             if (selectedSeatIds.length > 0) {
                 selectedListEl.innerHTML = `<span class="text-success fw-bold">Selected ${selectedSeatIds.length} seat(s)</span>`;
                 btnBook.disabled = false;
@@ -455,66 +539,129 @@
                 btnBook.classList.remove('btn-success');
             }
         }
+
+        // --- 4. PAYMENT STATUS TOGGLE (Logic) ---
+        if(paymentSelect && manualAmountInput) {
+            paymentSelect.addEventListener('change', function() {
+                if(this.value === 'PAID') {
+                    manualAmountInput.required = true;
+                    manualAmountInput.classList.add('border-success');
+                    
+                    // Auto-fill with total if empty
+                    if(!manualAmountInput.value || manualAmountInput.value == 0) {
+                        manualAmountInput.value = total.toFixed(2);
+                    }
+                    amountHelper.textContent = "Required for Paid bookings.";
+                    amountHelper.classList.add('text-success');
+                } else {
+                    manualAmountInput.required = false;
+                    manualAmountInput.classList.remove('border-success');
+                    manualAmountInput.value = ""; 
+                    amountHelper.textContent = "Optional. Defaults to 0 if empty.";
+                    amountHelper.classList.remove('text-success');
+                }
+            });
+        }
+
+        // --- 5. REPORT LOGIC (Full Code Restored) ---
+        const reportBtn = document.getElementById('btn-report');
+        if(reportBtn) {
+            reportBtn.addEventListener('click', function() {
+                fetch("{% url 'trip_seat_report' trip.id %}")
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('report-table-body');
+                    tbody.innerHTML = ''; // Clear old data
+
+                    // Fill Table
+                    if(data.breakdown && data.breakdown.length > 0) {
+                        data.breakdown.forEach(item => {
+                            const row = `<tr>
+                                <td>${item.seat_object__category__name}</td>
+                                <td class="text-center">${item.count}</td>
+                                <td class="text-end">${parseFloat(item.total_revenue).toFixed(2)}</td>
+                            </tr>`;
+                            tbody.innerHTML += row;
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No sales yet.</td></tr>';
+                    }
+
+                    // Fill Summary Badges
+                    document.getElementById('rep-total-sold').textContent = data.summary.total_sold;
+                    document.getElementById('rep-total-rev').textContent = parseFloat(data.summary.total_revenue).toFixed(2);
+                    
+                    document.getElementById('rep-sold-badge').textContent = data.summary.total_sold;
+                    document.getElementById('rep-locked-badge').textContent = data.summary.total_locked;
+                    document.getElementById('rep-unsold-badge').textContent = data.summary.total_unsold;
+
+                    // Show Modal
+                    var myModal = new bootstrap.Modal(document.getElementById('reportModal'));
+                    myModal.show();
+                })
+                .catch(err => {
+                    console.error("Report Error:", err);
+                    alert("Failed to load report.");
+                });
+            });
+        }
+
+        // --- 6. LOCK LOGIC (Full Code Restored) ---
+        const lockBtn = document.getElementById('lock-toggle-btn');
+        if(lockBtn) {
+            lockBtn.addEventListener('click', function() {
+                if(!confirm("Are you sure you want to toggle the lock for this trip?")) return;
+                
+                // UI Feedback
+                lockBtn.disabled = true;
+                const originalText = lockBtn.textContent;
+                lockBtn.textContent = "Processing...";
+
+                fetch("{% url 'toggle_trip_lock' trip.id %}", { 
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'locked' || data.status === 'unlocked') {
+                        window.location.reload(); 
+                    } else {
+                        alert("Notice: " + data.message);
+                        lockBtn.disabled = false;
+                        lockBtn.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Lock Error:', error);
+                    alert("Failed to toggle lock.");
+                    lockBtn.disabled = false;
+                    lockBtn.textContent = originalText;
+                });
+            });
+        }
     });
 
-
-
-
-
-// --- REPORT LOGIC ---
-document.getElementById('btn-report').addEventListener('click', function() {
-    // 1. Fetch Data
-    fetch("{% url 'trip_seat_report' trip.id %}")
-    .then(response => response.json())
-    .then(data => {
-        const tbody = document.getElementById('report-table-body');
-        tbody.innerHTML = ''; // Clear old data
-
-        // 2. Fill Table (Categories)
-        data.breakdown.forEach(item => {
-            const row = `<tr>
-                <td>${item.seat_object__category__name}</td>
-                <td class="text-center">${item.count}</td>
-                <td class="text-end">${parseFloat(item.total_revenue).toFixed(2)}</td>
-            </tr>`;
-            tbody.innerHTML += row;
-        });
-
-        // 3. Fill Totals
-        document.getElementById('rep-total-sold').textContent = data.summary.total_sold;
-        document.getElementById('rep-total-rev').textContent = parseFloat(data.summary.total_revenue).toFixed(2);
+    // --- 7. GLOBAL PRINT FUNCTION ---
+    function printReport() {
+        var printContent = document.getElementById('print-area').innerHTML;
+        var originalContent = document.body.innerHTML;
         
-        // 4. Fill Badges
-        document.getElementById('rep-sold-badge').textContent = data.summary.total_sold;
-        document.getElementById('rep-locked-badge').textContent = data.summary.total_locked;
-        document.getElementById('rep-unsold-badge').textContent = data.summary.total_unsold;
-
-        // 5. Show Modal
-        var myModal = new bootstrap.Modal(document.getElementById('reportModal'));
-        myModal.show();
-    })
-    .catch(err => alert("Failed to load report."));
-});
-
-// --- SMART PRINT FUNCTION ---
-function printReport() {
-    // This prints ONLY the modal content nicely
-    var printContent = document.getElementById('print-area').innerHTML;
-    var originalContent = document.body.innerHTML;
-    
-    document.body.innerHTML = `
-        <h2 style="text-align:center; margin-bottom:20px;">Trip Report: {{ trip.route.name }}</h2>
-        <p style="text-align:center;">Date: {{ trip.departure_datetime|date:"d M Y, h:i A" }}</p>
-        <hr/>
-        ${printContent}
-    `;
-    
-    window.print();
-    
-    // Restore page after printing so user can keep working
-    document.body.innerHTML = originalContent;
-    window.location.reload(); // Reload to restore event listeners
-}
-
+        document.body.innerHTML = `
+            <h2 style="text-align:center; margin-bottom:20px;">Trip Report: {{ trip.route.name }}</h2>
+            <p style="text-align:center;">Date: {{ trip.departure_datetime|date:"d M Y, h:i A" }}</p>
+            <hr/>
+            ${printContent}
+        `;
+        
+        window.print();
+        
+        // Restore page
+        document.body.innerHTML = originalContent;
+        window.location.reload();
+    }
 </script>
 {% endblock %}

@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 # Your API Credentials
 API_KEY = "vsoTbO3dzegZfLpTzdbs"
-SENDER_ID = "8809604902861"
+SENDER_ID = "MK SHIPPING"
 API_URL = "http://bulksmsbd.net/api/smsapi"
 
 def send_sms_task(phone_number, message):

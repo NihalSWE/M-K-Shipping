@@ -88,6 +88,10 @@
         </div>
     
         <div>
+            <a href="{% url 'download_manifest_pdf' trip.id %}" class="btn btn-danger fw-bold me-2">
+                <i class="fa fa-file-pdf-o"></i> Download PDF
+            </a>
+
             <a href="{% url 'export_manifest_xls' trip.id %}" class="btn btn-success fw-bold me-2">
                 <i class="fa fa-file-excel"></i> Download Excel
             </a>
@@ -155,8 +159,8 @@
                     <td>0</td> <td>0</td> <td>{{ ticket.from_stop.location.name }}</td>
                     <td>{{ ticket.to_stop.location.name }}</td>
                     <td>Confirmed</td>
-                    <td>{{ ticket.booking.user.first_name|default:"Admin" }}</td>
-                    <td>{{ ticket.booking.user.first_name|default:"Admin" }}</td>
+                    <td>{{ request.user.first_name|default:"Admin" }}</td>
+                    <td>{{ request.user.first_name|default:"Admin" }}</td>
                     <td>N/A</td>
                 </tr>
                 {% endfor %}

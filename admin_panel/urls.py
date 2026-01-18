@@ -94,10 +94,13 @@ urlpatterns = [
     path('bookings/pending/', views.booking_pending_list, name='booking_pending_list'),
     path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
+    path('booking/visual-map/<int:booking_id>/', views.booking_visual_map, name='booking_visual_map'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
     path('booking/trips/', views.trip_report_list, name='trip_report_list'),
     path('booking/manifest/<int:trip_id>/', views.trip_passenger_manifest, name='trip_passenger_manifest'),
     path('booking/manifest/<int:trip_id>/export/', views.export_manifest_xls, name='export_manifest_xls'),
+    path('export-manifest-pdf/<int:trip_id>/', views.download_manifest_pdf, name='download_manifest_pdf'), 
+    path('get-seat-details/<int:trip_id>/<int:seat_id>/', views.get_seat_details, name='get_seat_details'),
     #tckt booking
     
     

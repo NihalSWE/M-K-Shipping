@@ -1981,7 +1981,7 @@ def select_seats(request, trip_id):
     # Logic: Ticket Start < Our End AND Ticket End > Our Start
     booked_tickets = Ticket.objects.filter(
         trip=trip,
-        status__in=['BOOKED', 'LOCKED']
+        status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
     ).filter(
         Q(from_stop__stop_order__lt=to_stop.stop_order) & 
         Q(to_stop__stop_order__gt=from_stop.stop_order)
@@ -2024,6 +2024,16 @@ def admin_book_confirm(request):
     # [NEW] Payment Status from Dropdown
     payment_status_input = request.POST.get('payment_status') # 'PAID' or 'UNPAID'
 
+    # [NEW] Get Manual Amount
+    manual_amount_str = request.POST.get('manual_amount')
+    manual_total = None
+    if manual_amount_str:
+        try:
+            manual_total = float(manual_amount_str)
+        except ValueError:
+            manual_total = 0.0
+    
+    
     if not seat_ids_str:
         messages.error(request, "No seats selected.")
         return redirect(request.META.get('HTTP_REFERER'))
@@ -2077,7 +2087,7 @@ def admin_book_confirm(request):
             )
 
             # C. Create Tickets
-            total_amount = 0
+            calculated_total = 0
             booked_seat_labels = [] # [NEW] List to collect seat names for SMS
             
             for seat_id in seat_ids:
@@ -2100,11 +2110,20 @@ def admin_book_confirm(request):
                     status='BOOKED',
                     lock_expires_at=timezone.now(),
                 )
-                total_amount += price
+                calculated_total += price
                 booked_seat_labels.append(layout_obj.label) # [NEW] Add to list
 
             # D. Update Total
-            booking.total_amount = total_amount
+            if manual_total is not None:
+                # If admin typed something, use it.
+                booking.total_amount = manual_total
+            elif final_payment_status == 'UNPAID':
+                # If Unpaid and empty input, default to 0
+                booking.total_amount = 0
+            else:
+                # Fallback: If Paid but empty input (shouldn't happen due to JS), use calculated
+                booking.total_amount = calculated_total
+            
             booking.save()
 
             # --- [NEW] SEND SMS (Background Thread) ---
@@ -2145,6 +2164,7 @@ def update_booking_status(request, booking_id, new_status):
         booking.status = 'CANCELLED'
         # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
         booking.save() 
+        Ticket.objects.filter(booking=booking).update(status='CANCELLED')
         messages.warning(request, "Booking Cancelled.")
 
     # --- SEND SMS FOR BOTH CASES ---
@@ -2158,9 +2178,56 @@ def update_booking_status(request, booking_id, new_status):
         
     except Exception as e:
         print(f"SMS Failed: {e}")
+        messages.error(request, "System error while updating status.")
     # -------------------------------
     
     return redirect('admin_booking_list')
+
+
+
+# --- NEW VIEW: HANDLE SEAT DETAILS MODAL ---
+def get_seat_details(request, trip_id, seat_id):
+    try:
+        trip = Trip.objects.get(id=trip_id)
+        seat = LayoutObject.objects.get(id=seat_id)
+        
+        data = {
+            'seat_number': seat.label,
+            'status': 'Available',
+            'passenger_name': 'N/A',
+            'passenger_phone': 'N/A',
+            'amount': 0,
+            'payment_status': 'N/A'  # <--- Default value
+        }
+
+        ticket = Ticket.objects.filter(
+            trip=trip, 
+            seat_object=seat,
+            status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+        ).first()
+
+        if ticket:
+            data['status'] = ticket.status
+            data['passenger_name'] = ticket.passenger_name or "Walk-in"
+            data['amount'] = ticket.fare_amount
+            
+            # Check Booking for Phone AND Payment Status
+            if ticket.booking:
+                if ticket.booking.user:
+                    data['passenger_phone'] = ticket.booking.user.phone_number
+                else:
+                    data['passenger_phone'] = "Guest / Counter"
+                
+                # <--- NEW: Get Payment Status (Ensure your model field name is correct)
+                data['payment_status'] = ticket.booking.payment_status 
+            else:
+                data['passenger_phone'] = "Counter Manual"
+                data['payment_status'] = "Paid (Counter)" # Assume counter sales are paid
+
+        return JsonResponse(data)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 
@@ -2221,7 +2288,7 @@ def toggle_trip_lock(request, trip_id):
                         seat_object=seat,
                         from_stop=start_stop,
                         to_stop=end_stop,
-                        passenger_name="ADMIN LOCKED",
+                        passenger_name="For Launch",
                         fare_amount=0,
                         status='LOCKED',
                         lock_expires_at=long_expiry 
@@ -2360,6 +2427,51 @@ def ticket_detail(request, pk):
     return render(request, 'admin_panel/book/ticket_detail.html', context)
 
 
+
+def booking_visual_map(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    trip = booking.trip
+    ship = trip.ship
+    
+    # 1. Ticket Overlay Map
+    tickets = booking.tickets.all()
+    booked_seats_map = {
+        t.seat_object.id: {
+            'passenger': t.passenger_name,
+            'phone': booking.user.phone_number if booking.user else "N/A",
+            'amount': t.fare_amount
+        } for t in tickets
+    }
+
+    # 2. Build Grid Data
+    decks_data = []
+    decks = ship.decks.all().order_by('level_order')
+
+    for deck in decks:
+        objects = LayoutObject.objects.filter(deck=deck)
+        
+        # --- AUTO-CALCULATE GRID DIMENSIONS ---
+        # We find the furthest item to the right (col_index + col_span)
+        # We assume data is clean. Default to 20 if no objects found.
+        max_col_obj = objects.annotate(
+            right_edge=F('col_index') + F('col_span')
+        ).aggregate(Max('right_edge'))['right_edge__max']
+        
+        calculated_cols = max_col_obj if max_col_obj else 20
+
+        decks_data.append({
+            'deck_name': deck.name,
+            'grid_cols': calculated_cols,  # <-- Calculated value
+            'objects': objects
+        })
+
+    context = {
+        'booking': booking,
+        'decks_data': decks_data,
+        'booked_seats_map': booked_seats_map,
+    }
+    
+    return render(request, 'admin_panel/book/booking_visual_map.html', context)
 
 def cancel_booking(request, booking_id):
     if not request.user.is_staff: # Security check
@@ -2778,6 +2890,46 @@ def export_manifest_xls(request, trip_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     wb.save(response)
+    return response
+
+
+
+from django.template.loader import get_template
+from xhtml2pdf import pisa  # Make sure you installed this: pip install xhtml2pdf
+import io
+# --- NEW PDF VIEW (Does not touch Excel view) ---
+@login_required
+def download_manifest_pdf(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    tickets = Ticket.objects.filter(trip=trip, status='BOOKED').select_related(
+        'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
+    ).order_by('seat_object__label')
+    
+    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
+    total_tickets = tickets.count()
+    
+    context = {
+        'trip': trip,
+        'tickets': tickets,
+        'total_tickets': total_tickets,
+        'total_paid': total_paid,
+        'total_due': 0,
+        'current_user': request.user,  # Add this line!
+    }
+
+    template = get_template('admin_panel/book/manifest_pdf.html')
+    html = template.render(context)
+    
+    response = HttpResponse(content_type='application/pdf')
+    filename = f"TripSheet_{trip.ship.name}_{trip.departure_datetime.date()}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse(f'PDF generation error: {pisa_status.err}')
+    
     return response
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

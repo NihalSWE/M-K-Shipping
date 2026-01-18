@@ -105,7 +105,10 @@
                         
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
+                                            {% comment %} <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
+                                                <i class="fa fa-eye"></i>
+                                            </a> {% endcomment %}
+                                            <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Visual Map">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             
