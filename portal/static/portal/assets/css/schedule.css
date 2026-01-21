@@ -63,7 +63,7 @@
 }
 
 .trip-card:hover {
-    border-color: #21a2dc;
+    border-color: #2ECC71;
     transform: translateY(-5px);
     box-shadow: 0 15px 35px rgba(46, 204, 113, 0.15);
 }
@@ -637,7 +637,7 @@
 .layout-item.occupied::after {
     content: "";
     position: absolute;
-    width: 100%;
+    width: 55px;
     height: 1px; 
     background: rgba(0,0,0,0.1); transform: rotate(-45deg);
 }
@@ -877,82 +877,164 @@
 
 /* Passenger Details Section Starts Here */
 #passengerDetailsSection {
-    flex: 0 0 auto;
     width: 100%;
-    display: none; /* Controlled by JS */
+    display: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* The card inside that holds the fields */
+/* --- 1. Compact Card Design --- */
 .passenger-row {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
-    width: 100%;
+    border: 1px solid #f1f5f9;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
 }
 
-/* FORCE REMOVE BOLD - No bold text anywhere */
-#passengerDetailsSection h5, 
-#passengerDetailsSection label, 
-#passengerDetailsSection span, 
-#passengerDetailsSection input,
+/* --- 2. Header & Badge --- */
 .seat-badge {
-    font-weight: 400 !important;
+    background: #334155; /* Original dark color */
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.form-label-sm {
-    font-size: 0.85rem;
+.passenger-label {
+    font-size: 13px;
+    font-weight: 600;
     color: #64748b;
-    margin-bottom: 0.5rem;
-    display: block;
 }
 
+/* --- 3. Grid Layout --- */
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- 4. Labels --- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0;
+}
+
+.optional-text {
+    font-weight: 400;
+    text-transform: none;
+    color: #94a3b8;
+}
+
+/* --- 5. Modern Inputs (Fixed Borders) --- */
 .modern-input {
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 0.7rem 1rem;
-    font-size: 1rem;
     width: 100%;
+    height: 40px;
+    background-color: #ffffff !important;
+    /* Light Slate Border - Visible but modern */
+    border: 1px solid #cbd5e1 !important; 
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 0.9rem;
+    color: #1e293b;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
+}
+
+.modern-input::placeholder {
+    color: #cbd5e1;
 }
 
 .modern-input:focus {
-    border-color: #10b981;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
 }
 
-/* Grid for fields */
-.field-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+/* --- 6. Select Dropdown --- */
+.select-wrapper {
+    position: relative;
 }
 
-/* Modern Checkbox/Switch */
+select.modern-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1em 1em;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+/* --- 7. RESTORED: Modern Checkbox (Switch) --- */
+/* Use this structure in HTML: 
+   <label class="custom-switch">
+       <input type="checkbox">
+       <span class="slider"></span>
+   </label> 
+*/
 .custom-switch {
     position: relative;
     display: inline-block;
-    width: 44px;
+    width: 40px;
     height: 22px;
 }
-.custom-switch input { opacity: 0; width: 0; height: 0; }
+
+.custom-switch input { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
+}
+
 .slider {
-    position: absolute; cursor: pointer;
+    position: absolute; 
+    cursor: pointer;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #e2e8f0;
-    transition: .3s; border-radius: 34px;
+    background-color: #cbd5e1; /* Gray when off */
+    transition: .3s; 
+    border-radius: 34px;
 }
+
 .slider:before {
-    position: absolute; content: "";
-    height: 16px; width: 16px;
-    left: 3px; bottom: 3px;
+    position: absolute; 
+    content: "";
+    height: 16px; 
+    width: 16px;
+    left: 3px; 
+    bottom: 3px;
     background-color: white;
-    transition: .3s; border-radius: 50%;
+    transition: .3s; 
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
-input:checked + .slider { background-color: #10b981; }
-input:checked + .slider:before { transform: translateX(22px); }
+
+input:checked + .slider { 
+    background-color: #10b981; /* Green when on */
+}
+
+input:checked + .slider:before { 
+    transform: translateX(18px); 
+}
 /* Passenger Details Section Ends Here */
 
 

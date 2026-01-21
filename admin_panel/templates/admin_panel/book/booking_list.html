@@ -76,8 +76,13 @@
                                         <div class="d-flex flex-wrap gap-1">
                                         {% for ticket in booking.tickets.all %}
                                             <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
+                                        
                                         {% empty %}
-                                            <span class="text-muted small">No Seats</span>
+                                            {% if booking.seat_snapshot %}
+                                                <span class="badge badge-secondary text-white">{{ booking.seat_snapshot }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">No Seats</span>
+                                            {% endif %}
                                         {% endfor %}
                                         </div>
                                     </td>
@@ -93,21 +98,28 @@
                                             {% if booking.payment_status == 'PAID' %}
                                                 <span class="badge bg-light text-dark border ms-1">Paid</span>
                                             {% endif %}
+
                                         {% elif booking.status == 'PENDING' %}
                                             <span class="badge bg-warning text-dark">Pending</span>
                                             {% if booking.payment_status != 'PAID' %}
                                                 <span class="badge bg-light text-danger border ms-1">Unpaid</span>
                                             {% endif %}
-                                        {% else %}
+
+                                            {% if booking.expiry_at %}
+                                                <div class="mt-1 small text-danger fw-bold countdown-timer" 
+                                                     data-expiry="{{ booking.expiry_at|date:'c' }}">
+                                                     Calculating...
+                                                </div>
+                                            {% endif %}
+                                        {% elif booking.status == 'EXPIRED' %}
+                                            <span class="badge bg-secondary text-white">Expired</span>
+                                            {% else %}
                                             <span class="badge bg-danger">{{ booking.status }}</span>
                                         {% endif %}
                                     </td>
                         
                                     <td>
                                         <div class="d-flex gap-2">
-                                            {% comment %} <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-xs btn-info px-2" title="View Ticket" target="_blank">
-                                                <i class="fa fa-eye"></i>
-                                            </a> {% endcomment %}
                                             <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Visual Map">
                                                 <i class="fa fa-eye"></i>
                                             </a>
@@ -155,9 +167,6 @@
     </div>
 </div>
 
-
-
-
 <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -184,8 +193,6 @@
 <script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
 
-
-
 <script>
     // Add logic for the new Confirm Modal
     var confirmStatusModal = document.getElementById('confirmStatusModal');
@@ -199,8 +206,6 @@
     }
 </script>
 
-
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var cancelModal = document.getElementById('cancelModal');
@@ -211,5 +216,33 @@
             confirmBtn.setAttribute('href', cancelUrl);
         });
     });
+</script>
+
+<script>
+    setInterval(function() {
+        var now = new Date().getTime();
+        document.querySelectorAll('.countdown-timer').forEach(function(timer) {
+            // Get expiry time from data attribute
+            var expiryAttr = timer.getAttribute('data-expiry');
+            if (expiryAttr) {
+                var expiry = new Date(expiryAttr).getTime();
+                var diff = expiry - now;
+
+                if (diff < 0) {
+                    timer.innerHTML = "EXPIRED";
+                    // Optional: fade out the row to show it's invalid
+                    timer.closest('tr').style.opacity = "0.5";
+                } else {
+                    // Calculate hours, minutes, seconds
+                    var h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    var s = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    // Display result
+                    timer.innerHTML = h + "h " + m + "m " + s + "s";
+                }
+            }
+        });
+    }, 1000); // Run every 1 second
 </script>
 {% endblock %}

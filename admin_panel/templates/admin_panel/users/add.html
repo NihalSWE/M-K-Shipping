@@ -1,11 +1,51 @@
 {% extends 'admin_panel/base.html' %}
 {% load static %}
 
+{% block custom_css %}
+<style>
+    /* Styling for the Permission Cards */
+    .permission-card {
+        transition: all 0.2s;
+        border: 1px solid #e9ecef;
+    }
+    .permission-card:hover {
+        border-color: #b0d4f1;
+        background-color: #f8fbff;
+    }
+
+    /* THE NEW SCROLLER STYLE */
+    .permission-scroll-container {
+        max-height: 350px;       /* Slightly shorter for Add Page */
+        overflow-y: auto;        /* Scroll vertical only */
+        overflow-x: hidden;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background-color: #fcfcfc;
+        padding: 10px;
+    }
+
+    /* Custom Slim Scrollbar */
+    .permission-scroll-container::-webkit-scrollbar { width: 8px; }
+    .permission-scroll-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .permission-scroll-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+    .permission-scroll-container::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+    /* Clickable Header Style */
+    .perm-toggle-header {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .perm-toggle-header:hover {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock custom_css %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mt-4">
+            <div class="card border-0 shadow-sm mt-4" style="border-radius: 12px;">
                 <div class="card-header bg-white py-3">
                     <h5 class="mb-0 fw-bold">Add New User</h5>
                 </div>
@@ -24,12 +64,18 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                                <div class="text-danger small">{{ form.email.errors }}</div>
-                            {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                {{ form.phone_number }}
+                            </div>
                         </div>
 
                         <div class="row mb-3">
@@ -60,8 +106,64 @@
                             </div>
                         </div>
 
+                        <div class="card mb-4 border shadow-sm">
+                            <div class="card-header bg-white py-2 perm-toggle-header" 
+                                 data-bs-toggle="collapse" 
+                                 data-bs-target="#permissionCollapse" 
+                                 aria-expanded="false">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-shield-alt text-primary me-2"></i>
+                                        <span class="fw-bold text-dark" style="font-size: 14px;">Assign Permissions (Optional)</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-muted small"></i>
+                                </div>
+                            </div>
+
+                            <div class="collapse" id="permissionCollapse">
+                                <div class="card-body p-2">
+                                    <div class="permission-scroll-container">
+                                        <div class="row g-3">
+                                            {% if perm_form.permissions_grouped %}
+                                                {% for model_name, permissions in perm_form.permissions_grouped.items %}
+                                                <div class="col-md-6">
+                                                    <div class="card permission-card h-100 bg-white">
+                                                        <div class="card-header bg-light py-1 border-bottom-0">
+                                                            <strong class="text-dark" style="font-size: 12px;">{{ model_name }}</strong>
+                                                        </div>
+                                                        <div class="card-body p-2">
+                                                            <div class="row g-1">
+                                                                {% for perm in permissions %}
+                                                                <div class="col-12">
+                                                                    <div class="form-check mb-1">
+                                                                        <input type="checkbox" 
+                                                                               class="form-check-input" 
+                                                                               id="perm_{{ perm.id }}" 
+                                                                               name="permissions[]" 
+                                                                               value="{{ perm.id }}">
+                                                                        <label class="form-check-label small text-secondary" for="perm_{{ perm.id }}" style="cursor: pointer; font-size: 11px;">
+                                                                            {{ perm.name|cut:"Can " }}
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="col-12 text-center py-4">
+                                                    <p class="text-muted small">No permissions available.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'admin_user_list' %}" class="btn btn-light">Cancel</a>
+                            <a href="{% url 'admin_user_list' %}" class="btn btn-light border">Cancel</a>
                             <button type="submit" class="btn btn-primary px-4">Create User</button>
                         </div>
                     </form>

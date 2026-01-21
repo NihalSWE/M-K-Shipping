@@ -1,7 +1,6 @@
 {% load static %}
 {% load sass_tags %}
 
-<!-- Page Sidebar Start-->
 <div class="sidebar-wrapper" data-sidebar-layout="stroke-svg">
     <div>
         <div class="logo-wrapper"><a href="/index"><img class="img-fluid for-light"
@@ -31,9 +30,9 @@
                             <h6 class="lan-1">General</h6>
                         </div>
                     </li>
+                    
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
-                    
                         <a class="sidebar-link sidebar-title" href="{% url 'admin_dashboard' %}">
                             <svg class="stroke-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-home"></use>
@@ -45,8 +44,8 @@
                         </a>
                     </li>
 
-                    <!--Ships-->
-                    <li li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i>
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
+                    <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title link-nav" href="{% url 'ships' %}">
                             <svg class="stroke-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-file"></use>
@@ -56,9 +55,9 @@
                             </svg><span>Ships</span>
                         </a>
                     </li>
-                    <!--Ships-->
-
-                    <!-- Seat Layout -->
+                    {% endif %}
+                    
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
                     <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
                             <svg class="stroke-icon">
@@ -75,9 +74,9 @@
                             <li><a class="" href="{% url 'ships' %}">Add/Edit Layout</a></li>
                         </ul>
                     </li>
-                    <!-- Seat Layout -->
+                    {% endif %}
 
-                    <!-- Route Management -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_route or perms.admin_panel.view_location %}
                     <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
                             <svg class="stroke-icon">
@@ -87,14 +86,22 @@
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
                             </svg><span class="">Route Management</span></a>
                         <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_location %}
                             <li><a class="" href="{% url 'locations' %}">Locations</a></li>
+                            {% endif %}
+                            
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_counter %}
                             <li><a class="" href="{% url 'counters' %}">Counters</a></li>
+                            {% endif %}
+                            
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_route %}
                             <li><a class="" href="{% url 'routes' %}">Route List</a></li>
+                            {% endif %}
                         </ul>
                     </li>
-                    <!-- Route Management -->
+                    {% endif %}
 
-                    <!-- Trips & Schedules -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_trip %}
                     <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
                             <svg class="stroke-icon">
@@ -108,10 +115,9 @@
                             <li><a class="" href="{% url 'trip_list' %}">Trips</a></li>
                         </ul>
                     </li>
-                    <!-- Trips & Schedules -->
+                    {% endif %}
 
-
-                    <!--Home-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_homebanner %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -121,17 +127,17 @@
                             <svg class="fill-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
                             </svg>
-                            <span>Home</span>
+                            <span>Home Settings</span>
                         </a>
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'site_identity' %}">Add Logo</a></li>
                             <li><a href="{% url 'banner' %}">Add Banner</a></li>
-                             <li><a href="{% url 'overview' %}">overview</a></li>
+                            <li><a href="{% url 'overview' %}">Overview</a></li>
                         </ul>
                     </li>
-                    <!--Home-->
+                    {% endif %}
                     
-                     <!--Team-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_teammember %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -145,13 +151,11 @@
                         </a>
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'manage_team' %}">Manage Profile</a></li>
-                            
-                            
                         </ul>
                     </li>
-                    <!--Team-->
+                    {% endif %}
 
-                    <!--User-->
+                    {% if request.user.user_type == 0 or perms.accounts.view_user %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -165,13 +169,12 @@
                         </a>
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'admin_user_list' %}">Users</a></li>
-
                         </ul>
                     </li>
-                    <!--User-->
+                    {% endif %}
 
-                     <!--Tckt-->
-                     <li class="sidebar-list">
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
+                    <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
                             <svg class="stroke-icon">
@@ -183,17 +186,21 @@
                             <span>Tickets Booking</span>
                         </a>
                         <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
                             <li><a href="{% url 'tcktbook' %}">Booking</a></li>
+                            {% endif %}
+                            
                             <li><a href="{% url 'admin_booking_list' %}">Booking List</a></li>
                             <li><a href="{% url 'booking_issue_list' %}">Issue List</a></li>
                             <li><a href="{% url 'booking_pending_list' %}">Pending List</a></li>
                             <li><a href="{% url 'booking_cancel_list' %}">Cancellation List</a></li>
+                            <li><a href="{% url 'booking_expired_list' %}">Expired List</a></li>
                             <li><a href="{% url 'trip_report_list' %}">Trip List</a></li>
                         </ul>
                     </li>
-                    <!--Tckt-->
+                    {% endif %}
                     
-                    <!--Tckt-pos-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -203,18 +210,16 @@
                             <svg class="fill-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
                             </svg>
-                            <span>POS(TB)</span>
+                            <span>POS (TB)</span>
                         </a>
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'pos_trip_select' %}">Booking</a></li>
-                            
-
                         </ul>
                     </li>
-                    <!--Tckt-pos-->
+                    {% endif %}
 
-                     <!--Contact-->
-                     <li class="sidebar-list">
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_contactmessage %}
+                    <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
                             <svg class="stroke-icon">
@@ -231,12 +236,11 @@
                             <li><a href="{% url 'contact_info_cards' %}">Info. Cards</a></li>
                             <li><a href="{% url 'contact_map' %}">Map</a></li>
                             <li><a href="{% url 'contact_faq' %}">The Faqs</a></li>
-                            
                         </ul>
                     </li>
-                    <!--Contact-->
+                    {% endif %}
 
-                    <!--Contact-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_aboutstory %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -251,13 +255,11 @@
                         <ul class="sidebar-submenu">
                             <li><a href="{% url 'about_banner' %}">Add Banner</a></li>
                             <li><a href="{% url 'about_story' %}">Our Story</a></li>
-                            
-                            
                         </ul>
                     </li>
-                    <!--Contact-->
+                    {% endif %}
 
-                    <!--Gellery-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_gallery %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -267,18 +269,16 @@
                             <svg class="fill-icon">
                                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-home"></use>
                             </svg>
-                            <span>Gellery</span>
+                            <span>Gallery</span>
                         </a>
                         <ul class="sidebar-submenu">
-                            <li><a href="{% url 'gallery_main' %}">Main Gellery</a></li>
-                            <li><a href="{% url 'gallery_seasonal' %}">Gellery with Title</a></li>
-                            
-                            
+                            <li><a href="{% url 'gallery_main' %}">Main Gallery</a></li>
+                            <li><a href="{% url 'gallery_seasonal' %}">Gallery with Title</a></li>
                         </ul>
                     </li>
-                    <!--Gellery-->
+                    {% endif %}
 
-                    <!--Blog-->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_blogpost %}
                     <li class="sidebar-list">
                         <i class="fa-solid fa-thumbtack"></i>
                         <a class="sidebar-link sidebar-title" href="#">
@@ -294,16 +294,13 @@
                             <li><a href="{% url 'admin_blog_banner' %}">Add Banner</a></li>
                             <li><a href="{% url 'admin_blog_list' %}">Blog List</a></li>
                             <li><a href="{% url 'admin_comment_list' %}">Blog Comments</a></li>
-                            
-                            
-                            
                         </ul>
                     </li>
-                    <!--Blog-->
+                    {% endif %}
+
                 </ul>
             </div>
             <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
         </nav>
     </div>
 </div>
-<!-- Page Sidebar Ends-->

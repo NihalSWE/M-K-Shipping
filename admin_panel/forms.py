@@ -63,11 +63,14 @@ class AdminUserAddForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'user_type', 'is_active']
+        # Added 'phone_number' to this list
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'user_type', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
+            # Added widget for phone number
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
             'user_type': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -172,7 +175,44 @@ class TeamMemberForm(forms.ModelForm):
             
             
             
+from django.contrib.auth.models import Permission, ContentType
+from accounts.models import User
+
+class AdminUserPermissionsForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = []  # We don't need standard fields, we are handling permissions manually
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 1. Get permissions for YOUR specific app only (replace 'your_app_name' with your actual app name)
+        #    We also exclude 'session', 'contenttype', etc. to keep it clean.
+        app_label = 'admin_panel' 
+        
+        self.permissions_grouped = {}
+        
+        # 2. Fetch all ContentTypes (Models) for your app
+        content_types = ContentType.objects.filter(app_label=app_label)
+        
+        for ct in content_types:
+            # Get all permissions for this specific model (add, change, delete, view)
+            perms = Permission.objects.filter(content_type=ct)
             
+            # Group them nicely: {'Trip': [perm1, perm2], 'Ship': [perm3, perm4]}
+            if perms.exists():
+                model_name = ct.model_class()._meta.verbose_name_plural.title()
+                self.permissions_grouped[model_name] = perms
+
+        # 3. Pre-check existing permissions for this user
+        if self.instance.pk:
+            self.current_permissions = set(self.instance.user_permissions.values_list('id', flat=True))
+        else:
+            self.current_permissions = set()
+
+    def save(self, commit=True):
+        # We handle saving manually in the view for maximum control, 
+        # or we can do it here. Let's do it in the view to keep this simple.
+        pass        
             
             
             

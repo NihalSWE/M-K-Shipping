@@ -296,13 +296,6 @@ def search_trips(request):
                     departure_time = trip.departure_datetime + timedelta(minutes=stop_from.time_offset_minutes)
                     arrival_time = trip.departure_datetime + timedelta(minutes=stop_to.time_offset_minutes)
 
-                    # GET SHIP FEATURES - NEW CODE
-                    ship_features = set()
-                    for deck in trip.ship.decks.all():
-                        for layout_obj in deck.layout_objects.all():
-                            for feature in layout_obj.features.all():
-                                ship_features.add(feature.name)
-                    
                     trips_found.append({
                         'trip': trip,
                         'stop_from': stop_from,
@@ -369,17 +362,22 @@ def get_seat_layout(request, trip_id):
     from_stop_id = request.GET.get('from_stop')
     to_stop_id = request.GET.get('to_stop')
     
+    print(f"DEBUG: Trip {trip_id} - From Stop: {from_stop_id}, To Stop: {to_stop_id}")
+    
     stop_from = get_object_or_404(RouteStop, id=from_stop_id)
     stop_to = get_object_or_404(RouteStop, id=to_stop_id)
 
     # Core logic: Find seats already booked for any part of this journey
-    occupied_seat_ids = Ticket.objects.filter(
+    occupied_seat_ids = list(Ticket.objects.filter(
         trip=trip,
         status__in=['BOOKED', 'LOCKED']
     ).filter(
         Q(from_stop__stop_order__lt=stop_to.stop_order) & 
         Q(to_stop__stop_order__gt=stop_from.stop_order)
-    ).values_list('seat_object_id', flat=True)
+    ).values_list('seat_object_id', flat=True).distinct())
+    
+    # Optional: Keep this here for 1 day to verify in your terminal that IDs are found
+    print(f"DEBUG: Trip {trip_id} has occupied seats: {occupied_seat_ids}")
 
     decks = trip.ship.decks.all().prefetch_related('layout_objects__category')
 
@@ -402,6 +400,8 @@ def save_booking_view(request):
         from_stop_id = data.get('from_stop')
         to_stop_id = data.get('to_stop')
         passengers_data = data.get('passengers', [])
+        
+        print('Received booking data for booking:', data)  # Debug log
 
         # 1. Server-side Validation
         if not all([trip_id, from_stop_id, to_stop_id, passengers_data]):

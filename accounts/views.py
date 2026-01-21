@@ -6,34 +6,33 @@ from .models import User
 
 def signin(request):
     if request.user.is_authenticated:
-        # Logic for users who are already logged in and try to access sign-in page
-        if request.user.user_type in [0, 2]: # Admin or Staff
+        if request.user.user_type in [0, 2]: 
             return redirect('admin_dashboard')
         return redirect('home')
 
     if request.method == 'POST':
         form = CustomSignInForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data['email']
+            # CHANGED: Get phone_number instead of email
+            phone_number = form.cleaned_data['phone_number']
             password = form.cleaned_data['password']
             
-            # Authenticate using Email
-            user = authenticate(request, email=email, password=password)
+            # CHANGED: Authenticate using phone_number
+            # Note: Because we set USERNAME_FIELD = 'phone_number' in models, 
+            # we pass it as a keyword argument here.
+            user = authenticate(request, phone_number=phone_number, password=password)
             
             if user is not None:
                 login(request, user)
                 messages.success(request, "Login Successful!")
                 
-                # --- Role-Based Redirection ---
-                # 0 = Admin, 2 = Staff
                 if user.user_type == 0 or user.user_type == 2:
                     return redirect('admin_dashboard')
                 else:
                     return redirect('home')
-                # ------------------------------
-                
             else:
-                messages.error(request, "Invalid email or password.")
+                # CHANGED: Error message
+                messages.error(request, "Invalid phone number or password.")
     else:
         form = CustomSignInForm()
 
@@ -47,23 +46,25 @@ def signup(request):
         form = CustomSignUpForm(request.POST)
         if form.is_valid():
             # Get data
-            email = form.cleaned_data['email']
+            phone_number = form.cleaned_data['phone_number'] # CHANGED
+            email = form.cleaned_data.get('email') # CHANGED: .get() because it's optional
             password = form.cleaned_data['password']
             first_name = form.cleaned_data['first_name']
             last_name = form.cleaned_data['last_name']
             
-            # Create User (Force user_type=1 for Customer)
             try:
+                # CHANGED: create_user now requires phone_number as first arg
                 user = User.objects.create_user(
+                    phone_number=phone_number, 
                     email=email, 
                     password=password, 
                     first_name=first_name, 
                     last_name=last_name,
                     user_type=1 # Customer
                 )
+                # User is saved inside create_user, but calling save() again is harmless
                 user.save()
                 
-                # Log them in immediately
                 login(request, user)
                 messages.success(request, "Account created successfully!")
                 return redirect('home')
@@ -71,7 +72,6 @@ def signup(request):
             except Exception as e:
                 messages.error(request, f"Error creating account: {e}")
         else:
-            # Show form errors
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field}: {error}")

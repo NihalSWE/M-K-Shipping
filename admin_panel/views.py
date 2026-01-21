@@ -18,7 +18,7 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from .services import sync_route_prices
 from .services import generate_smart_trips
-from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm
+from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm, AdminUserPermissionsForm
 from accounts.forms import AdminUserEditForm
 from django.urls import reverse
 from .utils import send_booking_sms
@@ -32,13 +32,13 @@ from .utils import send_booking_sms
 
 User = get_user_model()
 
-
+@login_required
 def dashboard(request):
     return render(request, 'admin_panel/dashboard/dashboard.html')
 
 import base64
 from django.core.files.base import ContentFile
-
+@login_required
 @csrf_exempt
 def ships(request):
     if request.method == 'POST':
@@ -100,7 +100,7 @@ def ships(request):
     ships = Ship.objects.all().order_by('-id')
     return render(request, 'admin_panel/ships/ship.html', {'ships': ships})
 
-
+@login_required
 @csrf_exempt
 def ship_details(request, ship_id):
     ship = get_object_or_404(Ship, id=ship_id)
@@ -156,6 +156,7 @@ def ship_details(request, ship_id):
     
     
 # @login_required
+@login_required
 def manage_structures(request):
     """
     Manages non-bookable layout structures (Corridors, Walls, Labels).
@@ -209,7 +210,7 @@ def manage_structures(request):
     return render(request, 'admin_panel/seat_layout/manage_structures.html', context)
 
 
-# @login_required
+@login_required
 def manage_bookable_categories(request):
     """
     Manages Bookable Seat Categories (Cabins, VIP Seats, Economy).
@@ -263,7 +264,7 @@ def manage_bookable_categories(request):
     }
     return render(request, 'admin_panel/seat_layout/manage_bookable_categories.html', context)
 
-
+@login_required
 def manage_seat_features(request):
     if request.method == "POST":
         try:
@@ -297,7 +298,7 @@ def manage_seat_features(request):
     }
     return render(request, "admin_panel/seat_layout/manage_seat_features.html", context)
 
-
+@login_required
 def seat_icon_management(request):
     if request.method == "POST":
         try:
@@ -329,7 +330,7 @@ def seat_icon_management(request):
     return render(request, 'admin_panel/seat_layout/seat_icons.html', {'icons': icons})
     
 
-
+@login_required
 def seat_plan_editor(request, deck_id):
     deck = get_object_or_404(Deck, id=deck_id)
     
@@ -406,6 +407,7 @@ def seat_plan_editor(request, deck_id):
 
 # @staff_member_required
 # @require_POST
+@login_required
 @csrf_exempt
 def update_deck_rows(request, deck_id):
     if request.method == 'POST':
@@ -436,7 +438,7 @@ def update_deck_rows(request, deck_id):
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error'}, status=400)
 
-
+@login_required
 @csrf_exempt
 def save_seat_layout(request, deck_id):
     if request.method != 'POST':
@@ -525,6 +527,7 @@ def save_seat_layout(request, deck_id):
     
 
 # @staff_member_required
+@login_required
 def view_seat_plan(request, deck_id):
     deck = get_object_or_404(Deck, id=deck_id)
     
@@ -538,7 +541,7 @@ def view_seat_plan(request, deck_id):
     return render(request, 'admin_panel/seat_layout/view_seat_plan.html', context)
 
 
-
+@login_required
 @csrf_exempt
 def locations(request):
     if request.method == 'POST':
@@ -594,7 +597,7 @@ def locations(request):
         'divisions': divisions
     })
 
-
+@login_required
 @csrf_exempt
 def counters(request):
     if request.method == 'POST':
@@ -634,7 +637,7 @@ def counters(request):
     }
     return render(request, 'admin_panel/routes/counters.html', context)
 
-
+@login_required
 def routes(request):
     if request.method == 'POST':
         try:
@@ -717,7 +720,7 @@ def routes(request):
         'locations': locations
     })
 
-
+@login_required
 def route_details(request, route_id):
     route = get_object_or_404(Route, id=route_id)
     
@@ -876,7 +879,7 @@ def route_details(request, route_id):
     })
     
     
-    
+@login_required    
 def trip_schedule_list(request):
     # Fetching all schedules with related ship and route data for performance
     schedules = TripSchedule.objects.select_related(
@@ -891,7 +894,7 @@ def trip_schedule_list(request):
     return render(request, 'admin_panel/trips/trip_schedule_list.html', context)
 
     
-    
+@login_required    
 def save_trip_schedule(request):
     if request.method == "POST":
         ship_id = request.POST.get('ship_id')
@@ -961,7 +964,7 @@ def save_trip_schedule(request):
     return render(request, 'admin_panel/trips/create_trip_schedule.html', context)
 
 
-
+@login_required
 def update_trip_schedule(request, schedule_id):
     schedule = get_object_or_404(TripSchedule, id=schedule_id)
     
@@ -1013,7 +1016,7 @@ def update_trip_schedule(request, schedule_id):
         'formatted_dates': formatted_dates,
     })
 
-
+@login_required
 @require_POST
 def delete_trip_schedule(request, pk):
     try:
@@ -1023,7 +1026,7 @@ def delete_trip_schedule(request, pk):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         
-
+@login_required
 def trip_list(request):
     # Optimizing to get Ship and Route names in one go
     trips = Trip.objects.select_related(
@@ -1035,7 +1038,7 @@ def trip_list(request):
     
     return render(request, 'admin_panel/trips/trip_list.html', {'trips': trips})
     
-
+@login_required
 def individual_trip_management(request):
     # Use select_related here too for performance
     trips = Trip.objects.select_related(
@@ -1060,7 +1063,7 @@ def individual_trip_management(request):
     # FIXED: Changed from 'your_app/trip_list.html' to the correct path below
     return render(request, 'admin_panel/trips/trip_list.html', context)
 
-
+@login_required
 def update_trip(request, trip_id):
     # Fetch trip with related data for optimization
     trip = get_object_or_404(Trip.objects.select_related('ship', 'route'), id=trip_id)
@@ -1202,7 +1205,7 @@ def update_trip(request, trip_id):
 
 
 
-
+@login_required
 def site_identity_view(request):
     identity = SiteIdentity.objects.first()
     
@@ -1221,7 +1224,7 @@ def site_identity_view(request):
     return render(request, 'admin_panel/home/identity.html', {'identity': identity})
 
 
-
+@login_required
 def banner(request):
     if request.method == 'POST':
         try:
@@ -1270,8 +1273,8 @@ def banner(request):
 
 
 
-
 from .forms import CompanyOverviewForm
+@login_required
 def overview(request):
     """
     Manages the 'Company Overview' section on the Home Page.
@@ -1310,7 +1313,7 @@ def overview(request):
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from .models import ContactBanner # Import the model created in Part 1
-
+@login_required
 def contact_banner_view(request):
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1377,7 +1380,7 @@ def contact_banner_view(request):
     return render(request, 'admin_panel/contactus/banner.html', context)
 
 
-
+@login_required
 def contact_messages_view(request):
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1410,6 +1413,7 @@ def contact_messages_view(request):
     }
     return render(request, 'admin_panel/contactus/messages.html', context)
 
+@login_required
 def contact_info_cards_view(request):
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1458,6 +1462,7 @@ def contact_info_cards_view(request):
     cards = ContactInfoCard.objects.all()
     return render(request, 'admin_panel/contactus/info_cards.html', {'cards': cards})
 
+@login_required
 def contact_map_view(request):
     # Fetch the existing map object (if any)
     map_obj = ContactMap.objects.first()
@@ -1481,7 +1486,7 @@ def contact_map_view(request):
 
     return render(request, 'admin_panel/contactus/map.html', {'map_obj': map_obj})
 
-
+@login_required
 def contact_faq_view(request):
     # Fetch Settings (Create if doesn't exist to avoid errors)
     section_settings = ContactFAQSection.objects.first()
@@ -1538,7 +1543,7 @@ def contact_faq_view(request):
         'faq_items': faq_items
     })
     
-    
+@login_required    
 def about_banner_view(request):
     banner = AboutBanner.objects.first()
     
@@ -1562,6 +1567,7 @@ def about_banner_view(request):
     return render(request, 'admin_panel/about/banner.html', {'banner': banner})
 
 from .forms import AboutStoryForm
+@login_required
 def about_story_view(request):
     story = AboutStory.objects.first()
 
@@ -1582,6 +1588,7 @@ def about_story_view(request):
 
 
 # --- 1. MAIN GALLERY ADMIN VIEW ---
+@login_required
 def gallery_main_view(request):
     settings = GallerySection.objects.first()
     if not settings:
@@ -1619,6 +1626,7 @@ def gallery_main_view(request):
 
 
 # --- 2. SEASONAL TOURS ADMIN VIEW ---
+@login_required
 def gallery_seasonal_view(request):
     settings = SeasonalSection.objects.first()
     if not settings:
@@ -1672,7 +1680,7 @@ def gallery_seasonal_view(request):
     return render(request, 'admin_panel/gallery/seasonal.html', {'settings': settings, 'tours': tours})
 
 
-
+@login_required
 def blog_banner_update(request):
     # Try to get the first existing banner, or create one if none exists
     banner = BlogBanner.objects.first()
@@ -1698,6 +1706,7 @@ def blog_banner_update(request):
 
 #team
 from .forms import TeamMemberForm
+@login_required
 def manage_team(request):
     """
     Allows the admin to:
@@ -1728,6 +1737,7 @@ def manage_team(request):
 # ==========================================
 # 3. DELETE VIEW (Admin Action)
 # ==========================================
+@login_required
 def delete_team_member(request, pk):
     """
     Deletes a specific team member by their ID (pk).
@@ -1744,11 +1754,13 @@ def delete_team_member(request, pk):
 
 
 # 1. LIST VIEW
+@login_required
 def blog_list(request):
     blogs = BlogPost.objects.all().order_by('-date')
     return render(request, 'admin_panel/blog/list.html', {'blogs': blogs})
 
 # 2. ADD VIEW
+@login_required
 def blog_add(request):
     if request.method == 'POST':
         form = BlogPostForm(request.POST, request.FILES)
@@ -1762,6 +1774,7 @@ def blog_add(request):
     return render(request, 'admin_panel/blog/form.html', {'form': form, 'title': 'Add New Blog'})
 
 # 3. EDIT VIEW
+@login_required
 def blog_edit(request, slug):
     blog = get_object_or_404(BlogPost, slug=slug)
     
@@ -1777,6 +1790,7 @@ def blog_edit(request, slug):
     return render(request, 'admin_panel/blog/form.html', {'form': form, 'title': 'Edit Blog', 'blog': blog})
 
 # 4. DELETE VIEW
+@login_required
 def blog_delete(request, slug):
     blog = get_object_or_404(BlogPost, slug=slug)
     blog.delete()
@@ -1784,6 +1798,7 @@ def blog_delete(request, slug):
     return redirect('admin_blog_list')
 
 from django.db.models import Count
+@login_required
 def admin_comment_list(request):
     posts = BlogPost.objects.annotate(
         total_comments=Count('comments')
@@ -1795,7 +1810,7 @@ def admin_comment_list(request):
     }
     return render(request, 'admin_panel/blog/comments.html', context)
 
-
+@login_required
 def admin_comment_delete(request, id):
     comment = get_object_or_404(BlogComment, id=id)
     comment.delete()
@@ -1803,13 +1818,13 @@ def admin_comment_delete(request, id):
     # Redirect back to the comments list
     return redirect('admin_comment_list')
 
-
+@login_required
 def get_search_locations(request):
     # Fetch all locations, selecting only necessary fields for speed
     locations = list(Location.objects.values('id', 'name', 'code'))
     return JsonResponse({'status': 'success', 'data': locations})
 
-
+@login_required
 def admin_user_list(request):
     # Fetch all users, newest first
     users = User.objects.all().order_by('-created_at')
@@ -1821,53 +1836,117 @@ def admin_user_list(request):
     return render(request, 'admin_panel/users/user_list.html', context)
 
 
+from django.contrib.auth.models import Permission
+from accounts.models import User
+@login_required
 def user_add(request):
     
-    # 3. SAFETY CHECK: Even if you are logged in, we make sure you have the 'user_type' attribute
-    # This prevents the crash if something goes wrong with the user object
+    # 3. SAFETY CHECK
     if not hasattr(request.user, 'user_type'):
          messages.error(request, "Error: Your account information is incomplete.")
          return redirect('home')
 
-    # 4. ADMIN CHECK: specific logic to ensure only admins enter
+    # 4. ADMIN CHECK
     if not request.user.is_superuser and request.user.user_type != 0:
          messages.error(request, "Access denied. Admins only.")
          return redirect('home')
 
     if request.method == 'POST':
         form = AdminUserAddForm(request.POST)
+        
         if form.is_valid():
-            form.save()
-            messages.success(request, "User created successfully!")
-            return redirect('admin_user_list') 
+            # 1. Save the new user first
+            new_user = form.save()
+            
+            # 2. Permission Saving Logic
+            # We look for the custom checkboxes named 'permissions[]'
+            selected_permission_ids = request.POST.getlist('permissions[]')
+            
+            # Convert strings to integers safely
+            selected_ids = [int(p_id) for p_id in selected_permission_ids if p_id.isdigit()]
+            
+            if selected_ids:
+                # Fetch permission objects and assign to the NEW user
+                permissions = Permission.objects.filter(id__in=selected_ids)
+                new_user.user_permissions.set(permissions)
+            
+            messages.success(request, f"User {new_user.email} created successfully!")
+            return redirect('admin_user_list')
+        else:
+            # If form is invalid, we need to reload the permission form
+            perm_form = AdminUserPermissionsForm(instance=User()) 
     else:
         form = AdminUserAddForm()
+        # Initialize permission form with an empty User instance (so no boxes are checked by default)
+        perm_form = AdminUserPermissionsForm(instance=User())
 
-    return render(request, 'admin_panel/users/add.html', {'form': form})
+    context = {
+        'form': form,
+        'perm_form': perm_form # Passing this to template is crucial
+    }
+
+    return render(request, 'admin_panel/users/add.html', context)
 
 
+
+
+from .decorators import admin_only
+
+@admin_only  # <--- Ensures only Admins can access this page
 def admin_user_edit(request, id):
     user_obj = get_object_or_404(User, id=id)
     
     if request.method == 'POST':
+        # 1. Standard Info Form (Existing logic)
         form = AdminUserEditForm(request.POST, instance=user_obj)
+        
+        # 2. We don't necessarily need to bind POST data to perm_form for saving 
+        # because we are manually reading the checkboxes below.
+        
         if form.is_valid():
-            form.save()
-            messages.success(request, f"User '{user_obj.email}' updated successfully.")
+            user = form.save()
+            
+            # --- START PERMISSION SAVING LOGIC ---
+            # We look for the custom checkboxes named 'permissions[]' from the HTML
+            selected_permission_ids = request.POST.getlist('permissions[]')
+            
+            # Convert the list of strings ['1', '5'] to integers [1, 5]
+            selected_ids = [int(p_id) for p_id in selected_permission_ids if p_id.isdigit()]
+            
+            if selected_ids:
+                # Fetch the actual Permission objects and assign them
+                permissions = Permission.objects.filter(id__in=selected_ids)
+                user.user_permissions.set(permissions)
+            else:
+                # If no boxes were checked, clear all permissions for this user
+                user.user_permissions.clear()
+            # --- END PERMISSION SAVING LOGIC ---
+
+            messages.success(request, f"User '{user.email}' and permissions updated successfully.")
             return redirect('admin_user_list')
         else:
             messages.error(request, "Please correct the errors below.")
+            
+            # If there's an error, we need to re-initialize the perm_form so the
+            # checkboxes still show up in the view
+            perm_form = AdminUserPermissionsForm(instance=user_obj)
+
     else:
-        # Pre-fill the form with existing user data
+        # GET Request: Load both forms
         form = AdminUserEditForm(instance=user_obj)
+        
+        # This triggers the "Smart Grouping" logic in your form's __init__
+        perm_form = AdminUserPermissionsForm(instance=user_obj)
 
     context = {
         'form': form,
-        'user_obj': user_obj, # We pass this so we can show the name in the title
+        'perm_form': perm_form,  # <--- PASS THIS TO TEMPLATE
+        'user_obj': user_obj,
+        'title': f'Edit User: {user_obj.first_name}'
     }
     return render(request, 'admin_panel/users/edit.html', context)
 
-
+@login_required
 def admin_user_delete(request, id):
     user_to_delete = get_object_or_404(User, id=id)
     
@@ -1882,7 +1961,7 @@ def admin_user_delete(request, id):
     return redirect('admin_user_list')
 
 
-
+@login_required
 def tcktbook(request):
     search_results = []
     form = TripSearchForm(request.GET or None) # Bind data if it exists in URL
@@ -1940,7 +2019,7 @@ def tcktbook(request):
 
 
 
-
+@login_required
 def select_seats(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     
@@ -2003,6 +2082,10 @@ def select_seats(request, trip_id):
     return render(request, 'admin_panel/book/select_seats.html', context)
 
 
+from django.utils import timezone            # <--- NEW IMPORT
+from .tasks import send_sms_task, auto_cancel_booking  # <--- NEW IMPORT
+
+
 @login_required
 def admin_book_confirm(request):
     if request.method != 'POST':
@@ -2012,7 +2095,7 @@ def admin_book_confirm(request):
     trip_id = request.POST.get('trip_id')
     seat_ids_str = request.POST.get('selected_seats')
     
-    # Customer Data (Now Mandatory)
+    # Customer Data
     c_phone = request.POST.get('customer_phone')
     c_email = request.POST.get('customer_email')
     c_name = request.POST.get('customer_name')
@@ -2021,10 +2104,10 @@ def admin_book_confirm(request):
     from_stop_id = request.POST.get('from_stop_id')
     to_stop_id = request.POST.get('to_stop_id')
     
-    # [NEW] Payment Status from Dropdown
+    # Payment Status
     payment_status_input = request.POST.get('payment_status') # 'PAID' or 'UNPAID'
 
-    # [NEW] Get Manual Amount
+    # Get Manual Amount
     manual_amount_str = request.POST.get('manual_amount')
     manual_total = None
     if manual_amount_str:
@@ -2032,7 +2115,6 @@ def admin_book_confirm(request):
             manual_total = float(manual_amount_str)
         except ValueError:
             manual_total = 0.0
-    
     
     if not seat_ids_str:
         messages.error(request, "No seats selected.")
@@ -2043,13 +2125,16 @@ def admin_book_confirm(request):
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
-    # --- LOGIC: DETERMINE STATUS ---
+    # --- LOGIC: DETERMINE STATUS & TIMER ---
     if payment_status_input == 'PAID':
         final_status = 'CONFIRMED'
         final_payment_status = 'PAID'
+        expiry_time = None
     else:
         final_status = 'PENDING'
         final_payment_status = 'UNPAID'
+        # Set Timer for 2 Hours from now
+        expiry_time = timezone.now() + timedelta(minutes=1)  # hours=2
 
     try:
         with transaction.atomic():
@@ -2082,13 +2167,14 @@ def admin_book_confirm(request):
                 booking_ref=str(uuid.uuid4())[:12].upper(),
                 status=final_status,
                 payment_status=final_payment_status,
+                expiry_at=expiry_time,
                 sales_channel='COUNTER', 
                 total_amount=0 
             )
 
             # C. Create Tickets
             calculated_total = 0
-            booked_seat_labels = [] # [NEW] List to collect seat names for SMS
+            booked_seat_labels = [] 
             
             for seat_id in seat_ids:
                 layout_obj = get_object_or_404(LayoutObject, id=seat_id)
@@ -2111,29 +2197,30 @@ def admin_book_confirm(request):
                     lock_expires_at=timezone.now(),
                 )
                 calculated_total += price
-                booked_seat_labels.append(layout_obj.label) # [NEW] Add to list
+                booked_seat_labels.append(layout_obj.label)
 
             # D. Update Total
             if manual_total is not None:
-                # If admin typed something, use it.
                 booking.total_amount = manual_total
             elif final_payment_status == 'UNPAID':
-                # If Unpaid and empty input, default to 0
                 booking.total_amount = 0
             else:
-                # Fallback: If Paid but empty input (shouldn't happen due to JS), use calculated
                 booking.total_amount = calculated_total
             
             booking.save()
 
-            # --- [NEW] SEND SMS (Background Thread) ---
-            # This triggers the SMS based on status (CONFIRMED or PENDING)
-            # Wrapped in try/except so it NEVER breaks the booking if API fails
-            try:
-                send_booking_sms(booking, booked_seat_labels)
-            except Exception as e:
-                print(f"SMS Failed: {e}") 
-            # ------------------------------------------
+            # --- [SMART FIX] USE UTILS.PY FOR SMS ---
+            # This calls the function in utils.py that has the nice templates.
+            if booking_user.phone_number:
+                try:
+                    # We pass the booking and the list of seat labels
+                    send_booking_sms(booking, booked_seat_labels)
+                except Exception as e:
+                    print(f"SMS Error (Non-blocking): {e}")
+
+            # Trigger Auto-Cancel Timer (Only if Pending)
+            if final_status == 'PENDING':
+                auto_cancel_booking.apply_async((booking.id,), countdown=60) #7200 = 2hrs
 
             msg_type = "success" if final_status == 'CONFIRMED' else "warning"
             msg_text = f"Booking {final_status}! Ref: {booking.booking_ref}"
@@ -2186,6 +2273,7 @@ def update_booking_status(request, booking_id, new_status):
 
 
 # --- NEW VIEW: HANDLE SEAT DETAILS MODAL ---
+@login_required
 def get_seat_details(request, trip_id, seat_id):
     try:
         trip = Trip.objects.get(id=trip_id)
@@ -2431,7 +2519,7 @@ def trip_seat_report(request, trip_id):
 
 
 from django.db.models import Prefetch
-
+@login_required
 def booking_list(request):
     # Optimizing the query to fetch Phone, Seats, and Route locations efficiently
     bookings = Booking.objects.select_related(
@@ -2485,8 +2573,23 @@ def booking_cancel_list(request):
     context = {'bookings': bookings, 'page_title': 'Cancelled Tickets History'}
     return render(request, 'admin_panel/book/booking_list.html', context)
 
+@login_required
+def booking_expired_list(request):
+    """
+    Shows a list of all bookings that were auto-cancelled (EXPIRED) due to timeout.
+    """
+    bookings = Booking.objects.filter(status='EXPIRED').select_related(
+        'user', 'trip__ship', 'trip__route__source', 'trip__route__destination'
+    ).prefetch_related(
+        'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
+    ).order_by('-created_at')
 
-
+    context = {
+        'bookings': bookings, 
+        'page_title': 'Expired (Unpaid) Tickets'
+    }
+    return render(request, 'admin_panel/book/booking_list.html', context)
+@login_required
 def ticket_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     
@@ -2506,7 +2609,7 @@ def ticket_detail(request, pk):
     return render(request, 'admin_panel/book/ticket_detail.html', context)
 
 
-
+@login_required
 def booking_visual_map(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     trip = booking.trip
@@ -2551,7 +2654,7 @@ def booking_visual_map(request, booking_id):
     }
     
     return render(request, 'admin_panel/book/booking_visual_map.html', context)
-
+@login_required
 def cancel_booking(request, booking_id):
     if not request.user.is_staff: # Security check
         messages.error(request, "Access Denied.")
@@ -2720,6 +2823,7 @@ def pos_booking_interface(request, trip_id):
 # 3. CONFIRM: Saving the Ticket Correctly
 # ==========================================
 from .services import BookingService
+@login_required
 def pos_book_confirm(request):
     if request.method != "POST":
         return redirect('admin_home')
@@ -2771,6 +2875,7 @@ def pos_book_confirm(request):
     
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger    
 # 1. The List View (The Cards)
+@login_required
 def trip_report_list(request):
     # 1. Get Today's Date
     today = timezone.now().date()
@@ -2838,7 +2943,7 @@ def trip_report_list(request):
 
 # 2. The Detail View (The Report)
 from django.db.models import Sum
-
+@login_required
 def trip_passenger_manifest(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     
@@ -2873,7 +2978,7 @@ def trip_passenger_manifest(request, trip_id):
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side
 from django.http import HttpResponse
-
+@login_required
 def export_manifest_xls(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     

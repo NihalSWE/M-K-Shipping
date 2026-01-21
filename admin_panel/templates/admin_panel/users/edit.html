@@ -3,8 +3,74 @@
 {% load sass_tags %}
 
 {% block custom_css %}
+<style>
+    /* Styling for the Permission Cards */
+    .permission-card {
+        transition: all 0.2s;
+        border: 1px solid #e9ecef;
+    }
+    .permission-card:hover {
+        border-color: #b0d4f1;
+        background-color: #f8fbff;
+    }
 
+    /* THE NEW SCROLLER STYLE */
+    .permission-scroll-container {
+        max-height: 450px;       /* Fixed height */
+        overflow-y: auto;        /* Scroll vertical only */
+        overflow-x: hidden;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background-color: #fcfcfc;
+        padding: 10px;
+    }
+
+    /* Custom Slim Scrollbar (Chrome/Safari/Edge) */
+    .permission-scroll-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    .permission-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1; 
+        border-radius: 4px;
+    }
+    .permission-scroll-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1; 
+        border-radius: 4px;
+    }
+    .permission-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8; 
+    }
+
+    /* Clickable Header Style */
+    .perm-toggle-header {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .perm-toggle-header:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Form Select Styling */
+    select {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        appearance: none;
+    }
+</style>
 {% endblock custom_css %}
+
 {% block content %}
 
 <div class="container-fluid">
@@ -51,7 +117,7 @@
                             <div class="col-md-4">
                                 <label class="form-label">User Type</label>
                                 {{ form.user_type }} 
-                                </div>
+                            </div>
                             <div class="col-md-4">
                                 <label class="form-label">User Status</label>
                                 {{ form.user_status }}
@@ -78,9 +144,78 @@
                             </div>
                         </div>
 
+                        <div class="card mt-5 border shadow-sm">
+                            
+                            <div class="card-header bg-white py-3 perm-toggle-header" 
+                                 data-bs-toggle="collapse" 
+                                 data-bs-target="#permissionCollapse" 
+                                 aria-expanded="false" 
+                                 aria-controls="permissionCollapse">
+                                
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary">
+                                            <i class="fas fa-shield-alt fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark">Access Permissions (Advanced)</h6>
+                                            <small class="text-muted">Click to view and edit user privileges</small>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-muted"></i>
+                                </div>
+                            </div>
+
+                            <div class="collapse" id="permissionCollapse">
+                                <div class="card-body p-2">
+                                    
+                                    <div class="permission-scroll-container">
+                                        <div class="row g-3">
+                                            {% if perm_form.permissions_grouped %}
+                                                {% for model_name, permissions in perm_form.permissions_grouped.items %}
+                                                <div class="col-md-6">
+                                                    <div class="card permission-card h-100 bg-white">
+                                                        <div class="card-header bg-light py-2 border-bottom-0">
+                                                            <strong class="text-dark" style="font-size: 13px;">{{ model_name }}</strong>
+                                                        </div>
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-2">
+                                                                {% for perm in permissions %}
+                                                                <div class="col-12">
+                                                                    <div class="form-check">
+                                                                        <input type="checkbox" 
+                                                                               class="form-check-input" 
+                                                                               id="perm_{{ perm.id }}" 
+                                                                               name="permissions[]" 
+                                                                               value="{{ perm.id }}"
+                                                                               {% if perm.id in perm_form.current_permissions %}checked{% endif %}>
+                                                                        
+                                                                        <label class="form-check-label small text-secondary" for="perm_{{ perm.id }}" style="cursor: pointer;">
+                                                                            {{ perm.name|cut:"Can " }}
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="col-12 text-center py-5">
+                                                    <p class="text-muted small">No permissions found.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div> </div>
+                                <div class="card-footer bg-light text-center py-2">
+                                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Scroll within the box to see all permissions</small>
+                                </div>
+                            </div>
+                        </div>
                         <div class="d-flex justify-content-end mt-5">
-                            <a href="{% url 'admin_user_list' %}" class="btn btn-light me-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                            <a href="{% url 'admin_user_list' %}" class="btn btn-light me-2 border">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">Save Changes</button>
                         </div>
 
                     </form>
@@ -89,25 +224,5 @@
         </div>
     </div>
 </div>
-
-<style>
-    select {
-        display: block;
-        width: 100%;
-        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
-        font-size: 1rem;
-        font-weight: 400;
-        line-height: 1.5;
-        color: #212529;
-        background-color: #fff;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 16px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        appearance: none;
-    }
-</style>
 
 {% endblock content %}

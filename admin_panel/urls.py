@@ -94,6 +94,7 @@ urlpatterns = [
     path('bookings/issued/', views.booking_issue_list, name='booking_issue_list'),
     path('bookings/pending/', views.booking_pending_list, name='booking_pending_list'),
     path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
+    path('bookings/expired/', views.booking_expired_list, name='booking_expired_list'),
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('booking/visual-map/<int:booking_id>/', views.booking_visual_map, name='booking_visual_map'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),

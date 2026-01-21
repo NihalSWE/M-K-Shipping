@@ -406,6 +406,16 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
+    expiry_at = models.DateTimeField(null=True, blank=True, help_text="Auto-cancel time for unpaid bookings")
+    seat_snapshot = models.CharField(max_length=255, blank=True, null=True, help_text="Stores seat numbers for expired bookings")
+    
+    def save(self, *args, **kwargs):
+        # Auto-set expiry if PENDING and not set
+        if self.status == 'PENDING' and not self.expiry_at:
+            self.expiry_at = timezone.now() + timezone.timedelta(hours=2)
+        super().save(*args, **kwargs)
+    
+    
     def __str__(self):
         return f"{self.booking_ref} - {self.passenger_name}"
 

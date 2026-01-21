@@ -8,19 +8,25 @@ from django.conf import settings
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, username=None, password=None, user_id=None, user_type=1, **extra_fields):
-        if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
+    # CHANGED: 'phone_number' is now the first required argument. 'email' is optional (None).
+    def create_user(self, phone_number, email=None, username=None, password=None, user_type=1, **extra_fields):
+        
+        # CHANGED: Check for phone_number instead of email
+        if not phone_number:
+            raise ValueError('The Phone Number field must be set')
+            
+        # CHANGED: Only normalize email if it is provided
+        if email:
+            email = self.normalize_email(email)
+            
         extra_fields['user_type'] = user_type
         
-        # Check if a username is provided, otherwise generate one from the email
+        # CHANGED: Username generation logic
+        # If no username provided, we use the phone_number as the default username
         username = extra_fields.get('username')
         if not username:
-            # Generates a unique username from the email
-            # Example: 'john.doe@example.com' -> 'john.doe'
-            username = email.split('@')[0]
-            # Ensure uniqueness, append a number if necessary
+            username = phone_number
+            # Ensure uniqueness just in case (though phone is usually unique)
             original_username = username
             counter = 1
             while self.model.objects.filter(username=username).exists():
@@ -28,22 +34,32 @@ class UserManager(BaseUserManager):
                 counter += 1
             extra_fields['username'] = username
 
-        user = self.model(email=email, **extra_fields)
+        # CHANGED: Passed phone_number to the model
+        user = self.model(phone_number=phone_number, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, username, password=None, user_id=None, **extra_fields):
+    # CHANGED: create_superuser now expects phone_number
+    def create_superuser(self, phone_number, username=None, email=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('user_type', 0)
 
-        # Let create_user handle user_id generation
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        # If username is not provided for superuser, default to phone_number
+        if not username:
+            username = phone_number
+
         return self.create_user(
+            phone_number=phone_number,
             email=email,
             username=username,
             password=password,
-            user_id=user_id,  # Can be None
             **extra_fields
         )
 
@@ -63,8 +79,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     user_id = models.CharField(unique=True, max_length=15, blank=True, null=True)
     username = models.CharField(unique=True, max_length=150, blank=True, null=True)
-    email = models.EmailField(unique=True, max_length=100)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    
+    # CHANGED: Email is now optional (blank=True, null=True). 
+    # specific 'unique=True' is kept so if they DO provide an email, it must be unique.
+    email = models.EmailField(unique=True, max_length=100, blank=True, null=True)
+    
+    # CHANGED: Phone number is now strictly required (removed blank=True, null=True) and UNIQUE
+    phone_number = models.CharField(max_length=20, unique=True)
+    
     first_name = models.CharField(max_length=30, blank=True, null=True)
     last_name = models.CharField(max_length=30, blank=True, null=True)
     address = models.CharField(max_length=250, blank=True, null=True)
@@ -72,7 +94,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     state = models.CharField(max_length=250, blank=True, null=True)
     postal_code = models.CharField(max_length=50, blank=True, null=True)
     company_name = models.CharField(max_length=150, blank=True, null=True) 
-    # package = models.ForeignKey('Package', on_delete=models.SET_NULL, null=True, blank=True)
 
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, default=2)
     user_status = models.IntegerField(choices=STATUS_CHOICES, default=1)
@@ -107,17 +128,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
-    # Add unique related_name arguments to avoid clashes
     groups = models.ManyToManyField(
         'auth.Group',
-        related_name='razer_users_groups', # A unique name
+        related_name='razer_users_groups',
         blank=True,
-        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        help_text='The groups this user belongs to.',
         related_query_name='razer_user',
     )
     user_permissions = models.ManyToManyField(
         'auth.Permission',
-        related_name='razer_users_permissions', # A unique name
+        related_name='razer_users_permissions',
         blank=True,
         help_text='Specific permissions for this user.',
         related_query_name='razer_user',
@@ -128,15 +148,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    # CHANGED: This tells Django to use phone_number for login
+    USERNAME_FIELD = 'phone_number'
+    
+    # CHANGED: Fields asked when running 'createsuperuser' (besides phone_number and password)
+    # We add email here so you can still set it for admins if you want, but it's not strictly required by the db
+    REQUIRED_FIELDS = ['email']
 
     def __str__(self):
-        return self.username or self.email or f"User {self.pk}"
+        # CHANGED: Prefer phone number for display
+        return self.phone_number or self.username or self.email or f"User {self.pk}"
     
     def get_display_name(self):
-        """Return the best available name for displaying the user."""
-        return self.first_name or self.last_name or self.username or self.email
+        return self.first_name or self.last_name or self.username or self.phone_number
+    
     
     
 class UserProfile(models.Model):
