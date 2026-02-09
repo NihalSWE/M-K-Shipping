@@ -27,7 +27,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive custom-scrollbar">
-                        <table class="display table-striped border" id="basic-1">
+                        <table class="display table-striped border" id="basic-1" data-order='[[ 0, "desc" ]]'>
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -74,16 +74,27 @@
                         
                                     <td>
                                         <div class="d-flex flex-wrap gap-1">
-                                        {% for ticket in booking.tickets.all %}
-                                            <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
-                                        
-                                        {% empty %}
-                                            {% if booking.seat_snapshot %}
-                                                <span class="badge badge-secondary text-white">{{ booking.seat_snapshot }}</span>
-                                            {% else %}
+                                            {% for ticket in booking.tickets.all %}
+                                                
+                                                {% if is_cancel_page %}
+                                                    {# --- MODE A: CANCELLED HISTORY PAGE --- #}
+                                                    {# This will ONLY show tickets marked as CANCELLED #}
+                                                    {% if ticket.status == 'CANCELLED' %}
+                                                        <span class="badge badge-danger">{{ ticket.seat_object.label }}</span>
+                                                    {% endif %}
+                                    
+                                                {% else %}
+                                                    {# --- MODE B: NORMAL BOOKING LIST --- #}
+                                                    {# This will ONLY show tickets that are ACTIVE #}
+                                                    {% if ticket.status != 'CANCELLED' %}
+                                                        <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
+                                                    {% endif %}
+                                    
+                                                {% endif %}
+                                    
+                                            {% empty %}
                                                 <span class="text-muted small">No Seats</span>
-                                            {% endif %}
-                                        {% endfor %}
+                                            {% endfor %}
                                         </div>
                                     </td>
                         
@@ -93,34 +104,65 @@
                                     <td class="fw-bold">{{ booking.total_amount }}</td>
                                     
                                     <td>
-                                        {% if booking.status == 'CONFIRMED' %}
-                                            <span class="badge bg-success">Confirmed</span>
-                                            {% if booking.payment_status == 'PAID' %}
-                                                <span class="badge bg-light text-dark border ms-1">Paid</span>
-                                            {% endif %}
-
-                                        {% elif booking.status == 'PENDING' %}
-                                            <span class="badge bg-warning text-dark">Pending</span>
-                                            {% if booking.payment_status != 'PAID' %}
-                                                <span class="badge bg-light text-danger border ms-1">Unpaid</span>
-                                            {% endif %}
-
-                                            {% if booking.expiry_at %}
-                                                <div class="mt-1 small text-danger fw-bold countdown-timer" 
-                                                     data-expiry="{{ booking.expiry_at|date:'c' }}">
-                                                     Calculating...
-                                                </div>
-                                            {% endif %}
-                                        {% elif booking.status == 'EXPIRED' %}
-                                            <span class="badge bg-secondary text-white">Expired</span>
+                                        {# --- SPECIAL CASE: CANCEL PAGE + CONFIRMED STATUS --- #}
+                                        {% if is_cancel_page and booking.status == 'CONFIRMED' %}
+                                            <span class="badge bg-warning text-dark">Partial Cancel</span>
+                                            <div class="small text-muted mt-1">Booking Active</div>
+                                    
+                                        {# --- STANDARD STATUS DISPLAY --- #}
+                                        {% else %}
+                                            {% if booking.status == 'CONFIRMED' %}
+                                                <span class="badge bg-success">Confirmed</span>
+                                                
+                                                {# Show Paid Badge if applicable #}
+                                                {% if booking.payment_status == 'PAID' or booking.paid_amount >= booking.total_amount %}
+                                                    <span class="badge bg-light text-dark border ms-1">Paid</span>
+                                                {% endif %}
+                                    
+                                                {% elif booking.status == 'PENDING' %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                                
+                                                {% if booking.payment_status != 'PAID' %}
+                                                    <span class="badge bg-light text-danger border ms-1">Unpaid</span>
+                                                {% endif %}
+                                            
+                                                {# --- COUNTDOWN TIMER WITH EDIT BUTTON --- #}
+                                                {% if booking.expiry_at %}
+                                                    <div class="d-flex align-items-center mt-1 gap-2">
+                                                        <div class="small text-danger fw-bold countdown-timer" 
+                                                             id="timer-{{ booking.id }}"
+                                                             data-expiry="{{ booking.expiry_at|date:'c' }}">
+                                                             Calculating...
+                                                        </div>
+                                            
+                                                        <button type="button" 
+                                                                class="btn btn-xs btn-outline-secondary py-0 px-1 border-0" 
+                                                                title="Extend Time"
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#extendTimeModal"
+                                                                data-booking-id="{{ booking.id }}"
+                                                                data-current-expiry="{{ booking.expiry_at|date:'c' }}">
+                                                            <i class="fa fa-clock-o"></i> <span class="small">+Add</span>
+                                                        </button>
+                                                    </div>
+                                                {% endif %}
+                                    
+                                            {% elif booking.status == 'EXPIRED' %}
+                                                <span class="badge bg-secondary text-white">Expired</span>
+                                    
+                                            {% elif booking.status == 'CANCELLED' %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                    
                                             {% else %}
-                                            <span class="badge bg-danger">{{ booking.status }}</span>
+                                                {# Fallback for any other status #}
+                                                <span class="badge bg-secondary">{{ booking.status }}</span>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                         
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Visual Map">
+                                            <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Map">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                             
@@ -129,11 +171,27 @@
                                                 <i class="fa fa-check"></i>
                                             </button>
                                             {% endif %}
-                        
-                                            {% if booking.status != 'CANCELLED' %}
-                                            <button type="button" class="btn btn-xs btn-danger px-2" data-bs-toggle="modal" data-bs-target="#cancelModal" data-href="{% url 'cancel_booking' booking.id %}">
-                                                <i class="fa fa-times"></i>
-                                            </button>
+                                    
+                                            {% if booking.status != 'CANCELLED' and booking.status != 'EXPIRED' %}
+                                                
+                                                {% for ticket in booking.tickets.all %}
+                                                    {% if ticket.status != 'CANCELLED' %}
+                                                        <span class="d-none ticket-info" 
+                                                              data-id="{{ ticket.id }}" 
+                                                              data-label="{{ ticket.seat_object.label }}" 
+                                                              data-price="{{ ticket.fare_amount }}">
+                                                        </span>
+                                                    {% endif %}
+                                                {% endfor %}
+
+                                                <button type="button" 
+                                                        class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#seatCancelModal"
+                                                        data-booking-id="{{ booking.id }}"
+                                                        data-booking-ref="{{ booking.booking_ref }}">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -181,6 +239,75 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
                 <a href="#" id="confirmCancelBtn" class="btn btn-danger">Yes, Cancel Booking</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="seatCancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{% url 'admin_cancel_seats' %}" method="POST" id="seatCancelForm">
+                {% csrf_token %}
+                <input type="hidden" name="booking_id" id="modalBookingId">
+                
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Cancel Seats</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <p class="fw-bold mb-2">Booking Ref: <span id="modalBookingRef"></span></p>
+                    <p class="text-muted small">Select the seats you want to <span class="text-danger fw-bold">CANCEL</span>:</p>
+                    
+                    <div class="p-3 bg-light border rounded" id="ticketListContainer" style="
+                    background-color: #ebacac !important;
+                ">
+                        </div>
+
+                    <div class="mt-3 alert alert-warning small">
+                        <i class="fa fa-info-circle"></i> 
+                        If you select all seats, the booking status will update to <strong>CANCELLED</strong>.
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="extendTimeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title fs-6">Extend Booking Time</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="extendTimeForm">
+                    <input type="hidden" id="extendBookingId" name="booking_id">
+                    
+                    <label class="form-label small text-muted">Add time (minutes):</label>
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100 quick-add" data-val="30">+30m</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100 quick-add" data-val="60">+1h</button>
+                    </div>
+
+                    <div class="input-group input-group-sm mb-3">
+                        <input type="number" class="form-control" id="extendMinutes" name="minutes" placeholder="Custom" value="30">
+                        <span class="input-group-text">mins</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100" id="btnSaveExtension">
+                        Confirm Extension
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -244,5 +371,125 @@
             }
         });
     }, 1000); // Run every 1 second
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var seatCancelModal = document.getElementById('seatCancelModal');
+        
+        seatCancelModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            
+            // 1. Get Booking Info
+            var bookingId = button.getAttribute('data-booking-id');
+            var bookingRef = button.getAttribute('data-booking-ref');
+            
+            // 2. Set Hidden Inputs
+            document.getElementById('modalBookingId').value = bookingId;
+            document.getElementById('modalBookingRef').innerText = bookingRef;
+            
+            // 3. Find the ticket data stored in the hidden spans next to the button
+            // We look inside the parent <td> of the clicked button
+            var parentTd = button.closest('td');
+            var ticketSpans = parentTd.querySelectorAll('.ticket-info');
+            
+            var container = document.getElementById('ticketListContainer');
+            container.innerHTML = ''; // Clear previous
+            
+            if(ticketSpans.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No active seats found.</p>';
+            }
+
+            // 4. Generate Checkboxes
+            ticketSpans.forEach(function(span) {
+                var tId = span.getAttribute('data-id');
+                var tLabel = span.getAttribute('data-label');
+                var tPrice = span.getAttribute('data-price');
+                
+                var html = `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="ticket_ids" value="${tId}" id="t_${tId}">
+                        <label class="form-check-label w-100 d-flex justify-content-between" for="t_${tId}">
+                            <span>Seat <strong>${tLabel}</strong></span>
+                            <span class="text-muted">৳${tPrice}</span>
+                        </label>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        });
+    });
+</script>
+<script>
+    // 1. Handle Modal Opening
+    var extendTimeModal = document.getElementById('extendTimeModal');
+    if (extendTimeModal) {
+        extendTimeModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var bookingId = button.getAttribute('data-booking-id');
+            document.getElementById('extendBookingId').value = bookingId;
+            document.getElementById('extendMinutes').value = '30'; // Default
+        });
+    }
+
+    // 2. Quick Add Buttons
+    document.querySelectorAll('.quick-add').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('extendMinutes').value = this.getAttribute('data-val');
+        });
+    });
+
+    // 3. Handle Form Submission (AJAX)
+    var extendForm = document.getElementById('extendTimeForm');
+    if (extendForm) {
+        extendForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var bookingId = document.getElementById('extendBookingId').value;
+            var minutes = document.getElementById('extendMinutes').value;
+            var btn = document.getElementById('btnSaveExtension');
+            var originalText = btn.innerHTML;
+
+            btn.innerHTML = 'Updating...';
+            btn.disabled = true;
+
+            // CHANGE THIS URL TO MATCH YOUR URLS.PY
+            fetch("{% url 'extend_booking_time' %}", { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    booking_id: bookingId,
+                    minutes: minutes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    var modalInstance = bootstrap.Modal.getInstance(extendTimeModal);
+                    modalInstance.hide();
+                    
+                    // Update Timer Data Attribute
+                    var timerElement = document.getElementById('timer-' + bookingId);
+                    if(timerElement) {
+                        timerElement.setAttribute('data-expiry', data.new_expiry);
+                        timerElement.innerHTML = "Updating..."; // Will be refreshed by your existing setInterval
+                        timerElement.style.color = "green";
+                    }
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Something went wrong.");
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        });
+    }
 </script>
 {% endblock %}

@@ -80,12 +80,12 @@
 
     /* 3. BOOKED (Gray/Locked) */
     .layout-obj.booked {
-        background-color: #e9ecef !important;
-        border: 1px solid #dee2e6 !important;
-        color: #adb5bd !important;
-        cursor: pointer; /* Change from not-allowed to pointer */
-        pointer-events: auto;
-        background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #f1f1f1 5px, #f1f1f1 10px);
+    background-color: #fc564a !important;
+    border: 1px solid #fc564a !important;
+    color: #1d1e26 !important;
+    cursor: pointer;
+    pointer-events: auto;
+    
     }
 
     /* 4. NON-SEATS (Space, Walls, Washroom) */
@@ -201,36 +201,69 @@
                 <div class="deck-section">
                     <div class="deck-title">{{ deck.name }}</div>
                     <div class="deck-grid" style="
-                        grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
-                        grid-template-rows: repeat({{ deck.total_rows }}, 45px);
-                    ">
-                        {% for obj in deck.layout_objects.all %}
-                            {% with cat_name=obj.category.name %}
-                            <div 
-                                class="layout-obj 
-                                    {% if cat_name == 'Space' or cat_name == 'Stairs' or cat_name == 'Washroom' or cat_name == 'Engine' or cat_name == 'River'%}
-                                        non-seat {{ cat_name }}
-                                    {% else %}
-                                        seat available
-                                    {% endif %}
-                                    {% if obj.id in booked_seat_ids %}booked{% endif %}"
-                                style="
-                                    grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
-                                    grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
-                                "
-                                data-id="{{ obj.id }}"
-                                data-label="{{ obj.label }}"
-                                data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
-                                data-category="{{ obj.category.name }}"
-                            >
-                                {{ obj.label }}
-                                {% if obj.id in booked_seat_ids %}
-                                    <i class="fa fa-lock ms-1" style="font-size:9px"></i>
-                                {% endif %}
-                            </div>
-                            {% endwith %}
-                        {% endfor %}
+                    grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
+                    grid-template-rows: repeat({{ deck.total_rows }}, 45px);
+                ">
+                {% for obj in deck.layout_objects.all %}
+                    {% with cat_name=obj.category.name %}
+                    <div 
+                        class="layout-obj 
+                            {% if not obj.category.is_bookable %}
+                                non-seat {{ obj.category.name|slugify }}
+                            {% else %}
+                                seat available
+                            {% endif %}
+                            {% if obj.id in booked_seat_ids %}booked{% endif %}"
+                        
+                        style="
+                            /* 1. Grid Positioning (Existing) */
+                            grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
+                            grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
+            
+                            /* 2. NEW: Flex Layout to center Icons & Text */
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 2px;
+                            line-height: 1.2;
+            
+                            /* 3. NEW: Dynamic Colors */
+                            /* If NOT bookable (like River/Wall), use the Category Color as background */
+                            {% if not obj.category.is_bookable and obj.category.color_code %}
+                                background-color: {{ obj.category.color_code }};
+                                color: #000; /* Text color for non-seats */
+                                border: none;
+                            {% endif %}
+                        "
+            
+                        data-id="{{ obj.id }}"
+                        data-label="{{ obj.label }}"
+                        data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
+                        data-category="{{ obj.category.name }}"
+                    >
+                        {# --- A. RENDER ICON (Only for bookable seats like Single Bed) --- #}
+                        {% if obj.category.is_bookable and obj.category.icon %}
+                            <iconify-icon 
+                                icon="{{ obj.category.icon.iconify_code }}" 
+                                style="font-size: 16px; margin-bottom: 2px; color: {{ obj.category.color_code|default:'#666' }};">
+                            </iconify-icon>
+                        {% endif %}
+            
+                        {# --- B. RENDER LABEL --- #}
+                        <span style="font-size: 10px; font-weight: 600;">
+                            {{ obj.label }}
+                        </span>
+            
+                        {# --- C. RENDER LOCK ICON (If Booked) --- #}
+                        {% if obj.id in booked_seat_ids %}
+                            <i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>
+                        {% endif %}
+            
                     </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
                 </div>
                 {% endfor %}
             </div>
@@ -309,6 +342,12 @@
                         <div id="amount-helper-text" class="form-text small text-end mt-1 text-muted">
                             Leave empty for 0.
                         </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hold Time (Minutes)</label>
+                        <input type="number" name="hold_duration" class="form-control" value="120" placeholder="e.g. 60">
+                        <small class="text-muted">Default is 2 hours (120 mins)</small>
                     </div>
 
                     <button type="submit" id="btn-book" class="btn btn-secondary w-100 py-2 fw-bold text-uppercase" disabled>
@@ -413,6 +452,7 @@
 {% endblock %}
 
 {% block scriptcontent %}
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log("System Loaded: Full Logic Restored.");

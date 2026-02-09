@@ -291,7 +291,7 @@ class Trip(models.Model):
         default=1.00,
         help_text="Global multiplier for this trip (e.g., 1.5 for Eid holiday)"
     )
-    
+     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     

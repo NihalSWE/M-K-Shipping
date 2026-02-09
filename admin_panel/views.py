@@ -2091,7 +2091,7 @@ def admin_book_confirm(request):
     if request.method != 'POST':
         return redirect('admin_home')
 
-    # --- GET DATA ---
+    # --- 1. GET BASIC DATA ---
     trip_id = request.POST.get('trip_id')
     seat_ids_str = request.POST.get('selected_seats')
     
@@ -2104,11 +2104,18 @@ def admin_book_confirm(request):
     from_stop_id = request.POST.get('from_stop_id')
     to_stop_id = request.POST.get('to_stop_id')
     
-    # Payment Status
+    # Payment & Amounts
     payment_status_input = request.POST.get('payment_status') # 'PAID' or 'UNPAID'
-
-    # Get Manual Amount
     manual_amount_str = request.POST.get('manual_amount')
+    
+    # --- 2. GET DYNAMIC DURATION (KEY FIX) ---
+    # We grab the input from your HTML form. Default to 120 mins only if input is missing.
+    try:
+        hold_duration_minutes = int(request.POST.get('hold_duration', 120))
+    except (ValueError, TypeError):
+        hold_duration_minutes = 120
+
+    # Handle Manual Amount
     manual_total = None
     if manual_amount_str:
         try:
@@ -2125,7 +2132,7 @@ def admin_book_confirm(request):
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
-    # --- LOGIC: DETERMINE STATUS & TIMER ---
+    # --- 3. DETERMINE STATUS & EXPIRY ---
     if payment_status_input == 'PAID':
         final_status = 'CONFIRMED'
         final_payment_status = 'PAID'
@@ -2133,13 +2140,13 @@ def admin_book_confirm(request):
     else:
         final_status = 'PENDING'
         final_payment_status = 'UNPAID'
-        # Set Timer for 2 Hours from now
-        expiry_time = timezone.now() + timedelta(minutes=1)  # hours=2
+        # DYNAMIC CALCULATION: Now + The minutes you entered
+        expiry_time = timezone.now() + timedelta(minutes=hold_duration_minutes)
 
     try:
         with transaction.atomic():
             
-            # A. Handle User (Find or Create)
+            # A. Handle User
             booking_user = request.user 
             if c_name and c_phone:
                 user = User.objects.filter(phone_number=c_phone).first()
@@ -2149,7 +2156,6 @@ def admin_book_confirm(request):
                 if not user:
                     final_email = c_email if c_email else f"{c_phone}@guest.com"
                     random_pass = get_random_string(length=12)
-                    
                     user = User.objects.create_user(
                         email=final_email,
                         username=c_phone,
@@ -2167,7 +2173,7 @@ def admin_book_confirm(request):
                 booking_ref=str(uuid.uuid4())[:12].upper(),
                 status=final_status,
                 payment_status=final_payment_status,
-                expiry_at=expiry_time,
+                expiry_at=expiry_time, # SAVED CORRECTLY HERE
                 sales_channel='COUNTER', 
                 total_amount=0 
             )
@@ -2209,18 +2215,20 @@ def admin_book_confirm(request):
             
             booking.save()
 
-            # --- [SMART FIX] USE UTILS.PY FOR SMS ---
-            # This calls the function in utils.py that has the nice templates.
+            # E. Send SMS (Non-blocking)
             if booking_user.phone_number:
                 try:
-                    # We pass the booking and the list of seat labels
                     send_booking_sms(booking, booked_seat_labels)
                 except Exception as e:
-                    print(f"SMS Error (Non-blocking): {e}")
+                    print(f"SMS Error: {e}")
 
-            # Trigger Auto-Cancel Timer (Only if Pending)
+            # F. TRIGGER AUTO-CANCEL (DYNAMIC TIMER)
             if final_status == 'PENDING':
-                auto_cancel_booking.apply_async((booking.id,), countdown=60) #7200 = 2hrs
+                # Convert minutes to seconds for Celery
+                countdown_seconds = hold_duration_minutes * 60 
+                
+                # Apply the dynamic countdown
+                auto_cancel_booking.apply_async((booking.id,), countdown=countdown_seconds)
 
             msg_type = "success" if final_status == 'CONFIRMED' else "warning"
             msg_text = f"Booking {final_status}! Ref: {booking.booking_ref}"
@@ -2232,6 +2240,50 @@ def admin_book_confirm(request):
         print(f"Booking Failed: {e}")
         messages.error(request, f"Booking Failed: {e}")
         return redirect(request.META.get('HTTP_REFERER'))
+
+
+
+@require_POST
+def extend_booking_time_api(request):
+    """
+    New API specifically for the 'Add Time' button in the booking list.
+    """
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        minutes_to_add = int(data.get('minutes', 30))
+
+        booking = Booking.objects.get(id=booking_id)
+
+        # Safety Check: Can only extend Pending or Expired
+        if booking.status not in ['PENDING', 'EXPIRED']:
+             return JsonResponse({'success': False, 'message': 'Cannot extend a Confirmed or Cancelled booking.'})
+
+        now = timezone.now()
+
+        # Logic: 
+        # 1. If currently valid: Add to existing expiry
+        # 2. If already expired: Reset to NOW + minutes
+        if booking.expiry_at and booking.expiry_at > now:
+            booking.expiry_at += timedelta(minutes=minutes_to_add)
+        else:
+            booking.expiry_at = now + timedelta(minutes=minutes_to_add)
+            # If it was marked EXPIRED, revive it to PENDING
+            if booking.status == 'EXPIRED':
+                booking.status = 'PENDING'
+        
+        booking.save()
+
+        return JsonResponse({
+            'success': True,
+            'new_expiry': booking.expiry_at.isoformat(),
+            'message': 'Time extended successfully'
+        })
+
+    except Booking.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Booking ID not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
 
 
 # --- 2. NEW VIEW: QUICK STATUS UPDATE (For the list page) ---
@@ -2564,13 +2616,22 @@ def booking_pending_list(request):
 
 @login_required
 def booking_cancel_list(request):
-    bookings = Booking.objects.filter(status='CANCELLED').select_related(
+    # 1. The Query: Find bookings that are Cancelled OR have Cancelled tickets
+    bookings = Booking.objects.filter(
+        Q(status='CANCELLED') | Q(tickets__status='CANCELLED')
+    ).select_related(
         'user', 'trip__ship', 'trip__route__source', 'trip__route__destination'
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
-    ).order_by('-created_at')
+    ).distinct().order_by('-created_at')
 
-    context = {'bookings': bookings, 'page_title': 'Cancelled Tickets History'}
+    # 2. The Context: YOU MUST INCLUDE 'is_cancel_page': True HERE
+    context = {
+        'bookings': bookings, 
+        'page_title': 'Cancelled Tickets History',
+        'is_cancel_page': True  # <--- THIS IS THE MISSING KEY!
+    }
+    
     return render(request, 'admin_panel/book/booking_list.html', context)
 
 @login_required
@@ -2698,7 +2759,78 @@ def cancel_booking(request, booking_id):
 
     return redirect('admin_booking_list')
     
-    
+
+
+from .utils import send_booking_sms, send_partial_cancel_sms  # <--- Make sure to import these
+
+@login_required
+def cancel_seats(request):
+    if request.method != 'POST':
+        return redirect('admin_booking_list')
+
+    booking_id = request.POST.get('booking_id')
+    selected_ticket_ids = request.POST.getlist('ticket_ids') 
+
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    if not selected_ticket_ids:
+        messages.warning(request, "No seats were selected for cancellation.")
+        return redirect('admin_booking_list')
+
+    try:
+        with transaction.atomic():
+            # 1. Fetch the specific tickets
+            tickets_to_cancel = Ticket.objects.filter(
+                id__in=selected_ticket_ids, 
+                booking=booking,
+                status__in=['BOOKED', 'CONFIRMED'] 
+            )
+            
+            if not tickets_to_cancel.exists():
+                messages.error(request, "Selected tickets are already cancelled or invalid.")
+                return redirect('admin_booking_list')
+
+            # 2. Extract info for SMS/Logs
+            cancelled_labels = [t.seat_object.label for t in tickets_to_cancel]
+            # cancel_amount = sum(t.fare_amount for t in tickets_to_cancel) # Available if you need it later
+
+            # 3. Update Tickets to CANCELLED
+            tickets_to_cancel.update(status='CANCELLED')
+
+            # 4. Check if ANY active tickets remain
+            remaining_tickets = booking.tickets.filter(status__in=['BOOKED', 'CONFIRMED'])
+            
+            is_full_cancel = False
+
+            if not remaining_tickets.exists():
+                # CASE A: Full Cancellation
+                booking.status = 'CANCELLED'
+                booking.total_amount = 0
+                is_full_cancel = True
+            else:
+                # CASE B: Partial Cancellation
+                new_total = remaining_tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
+                booking.total_amount = new_total
+                is_full_cancel = False
+
+            booking.save()
+
+            # 5. Send SMS (Non-blocking because utils.py uses threading)
+            try:
+                if is_full_cancel:
+                    send_booking_sms(booking, cancelled_labels)
+                else:
+                    send_partial_cancel_sms(booking, cancelled_labels, booking.total_amount)
+            except Exception as e:
+                print(f"SMS Error: {e}")
+
+            messages.success(request, f"Cancelled {len(cancelled_labels)} seat(s). New Total: {booking.total_amount}")
+
+    except Exception as e:
+        print(f"Cancel Error: {e}")
+        messages.error(request, "Error processing cancellation.")
+
+    return redirect('admin_booking_list')
     
 
 
@@ -3115,5 +3247,6 @@ def download_manifest_pdf(request, trip_id):
         return HttpResponse(f'PDF generation error: {pisa_status.err}')
     
     return response
+
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

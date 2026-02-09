@@ -258,35 +258,3 @@ class BookingService:
 
             return booking
         
-        
-        
-        
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

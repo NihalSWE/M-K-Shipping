@@ -64,3 +64,5 @@ def auto_cancel_booking(booking_id):
             
     except Booking.DoesNotExist:
         return "Booking not found"
+    
+    
