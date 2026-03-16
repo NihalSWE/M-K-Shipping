@@ -1,0 +1,245 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+
+    .summary-card-lite {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        background: #fff;
+        padding: 16px;
+        height: 100%;
+    }
+
+    .summary-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .summary-value {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .filter-card {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        background: #fff;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .badge-soft {
+        background: #f1f5f9;
+        color: #334155;
+        border-radius: 10px;
+        padding: 4px 8px;
+        font-size: 11px;
+        display: inline-block;
+        margin: 2px 2px 0 0;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid datatable-init">
+    <div class="row">
+        <div class="col-sm-12">
+
+            <!-- Header -->
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h1>Counter Sales Report</h1>
+                            <p class="mb-0 text-muted">
+                                {{ counter.name }} <span class="mx-1">•</span> {{ counter.location.name }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'counters' %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fa-solid fa-arrow-left me-1"></i> Back
+                                </a>
+
+                                <a href="{% url 'counter_sales_report_csv' counter.id %}?date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&status={{ filters.status }}&issued_by={{ filters.issued_by }}"
+                                   class="btn btn-pill btn-primary btn-lg custom-large-btn">
+                                    <i class="fa-solid fa-download me-1"></i> Download CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- Summary cards -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <div class="summary-card-lite">
+                                <div class="summary-label">Total Bookings</div>
+                                <p class="summary-value">{{ total_bookings }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-card-lite">
+                                <div class="summary-label">Total Sales</div>
+                                <p class="summary-value text-primary">৳ {{ total_sales|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-card-lite">
+                                <div class="summary-label">Total Paid</div>
+                                <p class="summary-value text-success">৳ {{ total_paid|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-card-lite">
+                                <div class="summary-label">Total Due</div>
+                                <p class="summary-value {% if total_due > 0 %}text-danger{% endif %}">৳ {{ total_due|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filter-card">
+                        <form method="GET">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-2">
+                                    <label class="form-label">From Date</label>
+                                    <input type="date" name="date_from" class="form-control" value="{{ filters.date_from }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">To Date</label>
+                                    <input type="date" name="date_to" class="form-control" value="{{ filters.date_to }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="">All</option>
+                                        <option value="PENDING" {% if filters.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                        <option value="CONFIRMED" {% if filters.status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                                        <option value="CANCELLED" {% if filters.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                                        <option value="EXPIRED" {% if filters.status == 'EXPIRED' %}selected{% endif %}>Expired</option>
+                                        <option value="LOCKED" {% if filters.status == 'LOCKED' %}selected{% endif %}>Locked</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Issued By</label>
+                                    <select name="issued_by" class="form-select">
+                                        <option value="">All</option>
+                                        {% for u in issued_by_users %}
+                                            <option value="{{ u.id }}" {% if filters.issued_by == u.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ u.get_display_name|default:u.phone_number }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fa-solid fa-filter me-1"></i> Filter
+                                    </button>
+                                    <a href="{% url 'counter_sales_report' counter.id %}" class="btn btn-outline-secondary w-100">
+                                        Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- DataTable -->
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Booking Ref</th>
+                                    <th>Date</th>
+                                    <th>Passenger</th>
+                                    <th>Phone</th>
+                                    <th>Trip</th>
+                                    <th>Route</th>
+                                    <th>Seats</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Paid</th>
+                                    <th>Due</th>
+                                    <th>Issued By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in report_rows %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ row.booking.booking_ref }}</td>
+                                    <td>{{ row.booking.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ row.passenger_name }}</td>
+                                    <td>{{ row.passenger_phone|default:"-" }}</td>
+                                    <td>{{ row.booking.trip.ship.name }}</td>
+                                    <td>{{ row.booking.trip.route.name }}</td>
+                                    <td>
+                                        {% if row.seat_labels and row.seat_labels != "-" %}
+                                            {% for seat in row.seat_labels.split|default:'' %}
+                                                <span class="badge-soft">{{ seat }}</span>
+                                            {% endfor %}
+                                            {{ row.seat_labels }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if row.booking.status == 'CONFIRMED' %}
+                                            <span class="badge badge-light-success">{{ row.booking.status }}</span>
+                                        {% elif row.booking.status == 'PENDING' %}
+                                            <span class="badge badge-light-warning">{{ row.booking.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-light-secondary">{{ row.booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>৳ {{ row.booking.total_amount|floatformat:2 }}</td>
+                                    <td class="text-success fw-bold">৳ {{ row.booking.paid_amount|floatformat:2 }}</td>
+                                    <td class="{% if row.due_amount > 0 %}text-danger fw-bold{% endif %}">
+                                        ৳ {{ row.due_amount|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        {% if row.booking.issued_by %}
+                                            {{ row.booking.issued_by.get_display_name|default:row.booking.issued_by.phone_number }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+{% endblock %}

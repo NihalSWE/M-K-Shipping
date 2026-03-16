@@ -35,7 +35,7 @@
     /* Grid Setup */
     .deck-grid {
         display: grid;
-        gap: 6px; 
+        gap: 6px;
         justify-content: center;
         margin: 0 auto;
     }
@@ -52,40 +52,87 @@
         text-align: center;
         position: relative;
         overflow: hidden;
-        min-height: 40px; 
+        min-height: 40px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         user-select: none;
     }
 
-    /* 1. SEAT (Clickable) */
+    /* 1. SEAT (Clickable) -> FRONTEND "available" colors */
     .layout-obj.seat {
         cursor: pointer;
-        background-color: #ffffff;
-        border: 2px solid #28a745; /* Green Border */
+        background: rgba(16, 185, 129, 0.10) !important;
+        border: 1px solid rgba(16, 185, 129, 0.85) !important;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.18);
         color: #333;
     }
+
     .layout-obj.seat:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        background-color: #f1f8e9;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        z-index: 10;
+        background: rgba(16, 185, 129, 0.10) !important;
     }
 
-    /* 2. SELECTED (Green Fill) */
+    /* 2. SELECTED -> FRONTEND "selected" colors */
     .layout-obj.seat.selected {
-        background-color: #28a745 !important;
-        color: white !important;
-        border-color: #1e7e34 !important;
-        box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        background: rgba(148, 163, 184, 0.18) !important;
+        border: 2px solid rgba(100, 116, 139, 0.90) !important;
+        box-shadow: 0 0 12px rgba(100, 116, 139, 0.22) !important;
+        color: #333 !important;
+        z-index: 5;
     }
 
-    /* 3. BOOKED (Gray/Locked) */
+    /* 3. BOOKED base */
     .layout-obj.booked {
-    background-color: #fc564a !important;
-    border: 1px solid #fc564a !important;
-    color: #1d1e26 !important;
-    cursor: pointer;
-    pointer-events: auto;
-    
+        cursor: pointer;
+        pointer-events: auto;
+        color: #1d1e26 !important;
+    }
+
+    /* 3a. BOOKED MALE -> FRONTEND occupied-male colors */
+    .layout-obj.booked-male {
+        background: rgba(239, 68, 68, 0.30) !important;
+        border: 1px solid rgba(239, 68, 68, 0.45) !important;
+        color: rgba(255, 0, 0, 1) !important;
+    }
+
+    /* 3b. BOOKED FEMALE -> FRONTEND occupied-female colors */
+    .layout-obj.booked-female {
+        background: rgba(236, 72, 153, 0.30) !important;
+        border: 1px solid rgba(236, 72, 153, 0.45) !important;
+        color: rgb(255, 0, 106) !important;
+    }
+
+    /* 3c. BOOKED OTHER -> keep your cyan, softened like frontend style */
+    .layout-obj.booked-other {
+        background: rgba(23, 162, 184, 0.25) !important;
+        border: 1px solid rgba(23, 162, 184, 0.45) !important;
+        color: #117a8b !important;
+    }
+
+    /* 3d. Generic booked fallback (if gender class missing) */
+    .layout-obj.booked:not(.booked-male):not(.booked-female):not(.booked-other) {
+        background-color: rgba(148, 163, 184, 0.18) !important;
+        border: 1px solid rgba(148, 163, 184, 0.45) !important;
+        color: rgba(100, 116, 139, 0.85) !important;
+    }
+
+    /* Optional diagonal strike for booked seats (matches frontend look) */
+    .layout-obj.booked::after {
+        content: "";
+        position: absolute;
+        width: 55px;
+        height: 2px;
+        background: rgba(100, 116, 139, 0.35);
+        transform: rotate(-45deg);
+    }
+
+    .layout-obj.booked-male::after {
+        background: rgba(239, 68, 68, 0.6);
+    }
+
+    .layout-obj.booked-female::after {
+        background: rgba(236, 72, 153, 0.6);
     }
 
     /* 4. NON-SEATS (Space, Walls, Washroom) */
@@ -98,8 +145,14 @@
         font-weight: normal;
         pointer-events: none;
     }
-    .layout-obj.non-seat.Space { opacity: 0; } /* Hide empty space labels if you want */
-    .layout-obj.non-seat.Washroom { background: #fce4ec; color: #c2185b; border: 1px solid #f8bbd0; }
+    .layout-obj.non-seat.Space {
+        opacity: 0;
+    }
+    .layout-obj.non-seat.Washroom {
+        background: #fce4ec;
+        color: #c2185b;
+        border: 1px solid #f8bbd0;
+    }
 
     /* Summary Panel */
     .summary-card {
@@ -124,7 +177,9 @@
         color: #065f46;
         border-left: 5px solid #10b981 !important;
     }
-    .alert-success-modern .btn-close { filter: invert(29%) sepia(91%) saturate(464%) hue-rotate(119deg) brightness(91%) contrast(92%); }
+    .alert-success-modern .btn-close {
+        filter: invert(29%) sepia(91%) saturate(464%) hue-rotate(119deg) brightness(91%) contrast(92%);
+    }
 
     /* Error: Rose/Red Theme */
     .alert-danger-modern {
@@ -132,7 +187,9 @@
         color: #991b1b;
         border-left: 5px solid #ef4444 !important;
     }
-    .alert-danger-modern .btn-close { filter: invert(15%) sepia(85%) saturate(3015%) hue-rotate(352deg) brightness(89%) contrast(98%); }
+    .alert-danger-modern .btn-close {
+        filter: invert(15%) sepia(85%) saturate(3015%) hue-rotate(352deg) brightness(89%) contrast(98%);
+    }
 
     /* NEW: Locked Mode Styles */
     .seat-map-wrapper.locked-mode {
@@ -158,8 +215,74 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
+    /* =========================
+    HOLD STATES (backend)
+    ========================= */
 
+    /* Base held */
+    .layout-obj.seat.held {
+        cursor: not-allowed;
+    }
+
+    /* Held by OTHER -> amber */
+    .layout-obj.seat.held-by-other {
+        background-color: #fff3cd !important;
+        border: 1px solid #f59e0b !important;
+        color: #000 !important;
+    }
+
+    /* Held by ME -> MUST match SELECTED color exactly */
+    .layout-obj.seat.held-by-me {
+        background: rgba(148, 163, 184, 0.18) !important;
+        border: 2px solid rgba(100, 116, 139, 0.90) !important;
+        box-shadow: 0 0 12px rgba(100, 116, 139, 0.22) !important;
+        color: #333 !important;
+        cursor: pointer !important; /* important so I can click/release */
+    }
+
+    /* If seat is both held-by-me and selected, keep same exact color */
+    .layout-obj.seat.held-by-me.selected {
+        background: rgba(148, 163, 184, 0.18) !important;
+        border: 2px solid rgba(100, 116, 139, 0.90) !important;
+        box-shadow: 0 0 12px rgba(100, 116, 139, 0.22) !important;
+        color: #333 !important;
+    }
+
+        
 </style>
+
+<!-- Legend Section -->
+<div class="legend-container" style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid #e0e0e0; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(16, 185, 129, 0.10); border: 1px solid rgba(16, 185, 129, 0.85); box-shadow: 0 0 12px rgba(16, 185, 129, 0.18);"></div>
+        <span>Available</span>
+    </div>
+
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(148, 163, 184, 0.18); border: 2px solid rgba(100, 116, 139, 0.90); box-shadow: 0 0 12px rgba(100, 116, 139, 0.22);"></div>
+        <span>Selected / Held by Me</span>
+    </div>
+
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(239, 68, 68, 0.30); border: 1px solid rgba(239, 68, 68, 0.45);"></div>
+        <span>Booked (Male)</span>
+    </div>
+
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(236, 72, 153, 0.30); border: 1px solid rgba(236, 72, 153, 0.45);"></div>
+        <span>Booked (Female)</span>
+    </div>
+
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background-color: #fff3cd; border: 1px solid #f59e0b;"></div>
+        <span>Held by Other</span>
+    </div>
+
+    <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;">
+        <div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(23, 162, 184, 0.25); border: 1px solid rgba(23, 162, 184, 0.45);"></div>
+        <span>Admin Lock / Other</span>
+    </div>
+</div>
 
 <div class="container-fluid py-4">
     <div class="row">
@@ -211,9 +334,21 @@
                             {% if not obj.category.is_bookable %}
                                 non-seat {{ obj.category.name|slugify }}
                             {% else %}
-                                seat available
-                            {% endif %}
-                            {% if obj.id in booked_seat_ids %}booked{% endif %}"
+                                seat
+                                {% if obj.id in booked_seat_ids %}
+                                    booked
+                                    {% with gender=seat_gender_map|get_item:obj.id %}
+                                        {% if gender == 0 %}booked-male{% elif gender == 1 %}booked-female{% else %}booked-other{% endif %}
+                                    {% endwith %}
+                                {% elif obj.id in held_seat_ids %}
+                                    held
+                                    {% with seat_holder=held_by_map|get_item:obj.id %}
+                                        {% if seat_holder == holder_id %}held-by-me{% else %}held-by-other{% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    available
+                                {% endif %}
+                            {% endif %}"
                         
                         style="
                             /* 1. Grid Positioning (Existing) */
@@ -259,6 +394,16 @@
                         {% if obj.id in booked_seat_ids %}
                             <i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>
                         {% endif %}
+
+                        {% if obj.id in held_seat_ids and obj.id not in booked_seat_ids %}
+                            {% with seat_holder=held_by_map|get_item:obj.id %}
+                                {% if seat_holder == holder_id %}
+                                    <i class="fa fa-clock ms-1" style="font-size:9px; color: #0d6efd;"></i>
+                                {% else %}
+                                    <i class="fa fa-clock ms-1" style="font-size:9px; color: #f59e0b;"></i>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
             
                     </div>
                     {% endwith %}
@@ -294,19 +439,18 @@
                         
                         <input type="text" name="customer_name" class="form-control form-control-sm mb-2" placeholder="Full Name *" required>
                         
-                        <input 
-                            type="tel" 
-                            name="customer_phone" 
-                            class="form-control form-control-sm mb-2" 
-                            placeholder="Phone Number (01XXXXXXXXX) *" 
-                            pattern="01[3-9][0-9]{8}" 
-                            maxlength="11" 
-                            minlength="11"
-                            title="Must be a valid 11-digit BD number starting with 01 (e.g., 01712345678)"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                            required>
-                    
+                        <input type="tel" name="customer_phone" class="form-control form-control-sm mb-2" placeholder="Phone Number (01XXXXXXXXX) *" pattern="01[3-9][0-9]{8}" maxlength="11" minlength="11" title="Must be a valid 11-digit BD number starting with 01 (e.g., 01712345678)" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+
+                        <!-- NEW: Gender dropdown -->
+                        <select name="passenger_gender" class="form-select form-select-sm mb-2">
+                            <option value="0" selected>Male</option>
+                            <option value="1">Female</option>
+                            {% comment %} <option value="2">Other</option> {% endcomment %}
+                        </select>
+
                         <input type="email" name="customer_email" class="form-control form-control-sm" placeholder="Email">
+
+                        
                     </div>
 
                     <div class="bg-light p-3 rounded mb-4 border">
@@ -358,6 +502,7 @@
         </div>
     </div>
 </div>
+
 
 
 <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
@@ -453,15 +598,123 @@
 
 {% block scriptcontent %}
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+
+<style>
+    /* Styles for seats held by OTHER admins via WebSocket */
+    .layout-obj.remote-held {
+        background-color: #ffc107 !important; /* Yellow */
+        border: 2px dashed #d39e00 !important;
+        cursor: not-allowed !important;
+        opacity: 0.8;
+        pointer-events: none; /* Prevent clicking */
+        transition: all 0.3s ease;
+    }
+    .layout-obj.remote-held::after {
+        content: '\f254'; /* FontAwesome Hourglass */
+        font-family: FontAwesome;
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+        color: #856404;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("System Loaded: Full Logic Restored.");
+        console.log("🚀 System Loaded: Real-time Seat Logic + Full Reporting Restored.");
 
         const tripId = "{{ trip.id }}";
         const csrfToken = "{{ csrf_token }}"; 
+        // Use a default name if user.username isn't available
+        const currentUserName = "{{ request.user.username|default:'Admin' }}";
+
+        // --- ADD THESE 3 LINES ---
+        const USER_ID = "{{ request.user.id }}";      // Needed to identify YOU in the DB
+        const FROM_STOP_ID = "{{ from_stop.id }}";    // Needed for Route logic
+        const TO_STOP_ID = "{{ to_stop.id }}";        // Needed for Route logic
+        // -------------------------
+
+        // ============================================================
+        // 1. WEBSOCKET SETUP (REAL-TIME)
+        // ============================================================
+        /*const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = wsScheme + '://' + window.location.host + '/ws/seats/' + tripId + '/';
         
-        // --- 1. SELECTORS ---
-        const availableSeats = document.querySelectorAll('.layout-obj.seat.available');
+        let seatSocket = null;
+
+        try {
+            seatSocket = new WebSocket(wsUrl);
+ 
+            seatSocket.onopen = function(e) {
+                console.log("✅ WebSocket Connected");
+            };
+
+            seatSocket.onclose = function(e) {
+                console.warn("⚠️ WebSocket Disconnected");
+            };
+
+            seatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                
+                // --- NEW: Handle Initial State (The "Sticky Note") ---
+                if (data.type === 'initial_state') {
+                    const holds = data.holds; // This is { seat_id: user_name, ... }
+                    
+                    Object.keys(holds).forEach(seatId => {
+                        // Find the seat
+                        const seatEl = document.querySelector(`.layout-obj[data-id="${seatId}"]`);
+                        
+                        // Only mark it if I don't already have it selected (sanity check)
+                        if (seatEl && !selectedSeatIds.includes(seatId)) {
+                            seatEl.classList.add('remote-held');
+                            seatEl.title = `Being viewed by ${holds[seatId]}`;
+                        }
+                    });
+                } 
+                // --- Standard Update ---
+                else {
+                    handleRemoteUpdate(data);
+                }
+            };
+        } catch (error) {
+            console.error("WebSocket failed to initialize:", error);
+        }*/
+
+        // --- Handle Incoming Messages from Other Admins ---
+        /*function handleRemoteUpdate(data) {
+            const seatEl = document.querySelector(`.layout-obj[data-id="${data.seat_id}"]`);
+            if (!seatEl) return;
+
+            // Prevent messing with seats I have currently selected
+            if (selectedSeatIds.includes(data.seat_id) && data.user_name !== currentUserName) {
+                 // If someone else grabs it, force deselect mine or warn me
+                 // For now, we just let the visual update happen
+            }
+
+            if (data.action === 'select') {
+                // Someone else selected this. Mark it as visually held.
+                seatEl.classList.add('remote-held');
+                seatEl.title = `Being viewed by ${data.user_name}`;
+            } 
+            else if (data.action === 'unselect') {
+                // They let go. Make it available again.
+                seatEl.classList.remove('remote-held');
+                seatEl.title = '';
+            }
+            else if (data.action === 'booked') {
+                // It was officially booked. Turn it Red/Booked.
+                seatEl.classList.remove('available', 'seat', 'remote-held', 'selected');
+                seatEl.classList.add('booked');
+                seatEl.style.backgroundColor = '#fc564a'; // Red
+            }
+        }*/
+
+
+        // ============================================================
+        // 2. STANDARD SEAT SELECTION LOGIC
+        // ============================================================
+        const availableSeats = document.querySelectorAll('.layout-obj.seat.available, .layout-obj.seat.held-by-me');
         const bookedSeats = document.querySelectorAll('.layout-obj.booked'); 
         
         const selectedInput = document.getElementById('selected_seats_input');
@@ -478,96 +731,162 @@
         let selectedSeatIds = [];
         let total = 0;
 
-        // --- 2. BOOKED SEAT CLICK (Show Details + Payment Status) ---
-        bookedSeats.forEach(seat => {
-            seat.addEventListener('click', function(e) {
-                // [SAFETY] Stop this click from triggering any selection/booking logic
-                e.preventDefault();
-                e.stopPropagation(); 
+        document.querySelectorAll('.layout-obj.seat.held-by-me').forEach(seat => {
+            const id = seat.dataset.id;
+            const price = parseFloat(seat.dataset.price) || 0;
 
-                const seatId = this.dataset.id;
-                const modalEl = document.getElementById('seatDetailsModal');
-                const modal = new bootstrap.Modal(modalEl);
+            seat.classList.add('selected'); // make it behave like selected after reload
 
-                // Show Loading State inside modal
-                document.getElementById('sd-name').textContent = "Loading...";
-                modal.show();
-
-                // Generate URL dynamically
-                let url = "{% url 'get_seat_details' 0 0 %}".replace('0/0', `${tripId}/${seatId}`);
-
-                fetch(url)
-                .then(res => {
-                    if(!res.ok) throw new Error("Network Error");
-                    return res.json();
-                })
-                .then(data => {
-                    // Update Basic Info
-                    document.getElementById('sd-number').textContent = data.seat_number;
-                    document.getElementById('sd-name').textContent = data.passenger_name;
-                    document.getElementById('sd-phone').textContent = data.passenger_phone;
-                    document.getElementById('sd-price').textContent = data.amount;
-                    
-                    // Update Status Badge
-                    const statusBadge = document.getElementById('sd-status');
-                    statusBadge.textContent = data.status;
-                    
-                    if(data.status === 'CONFIRMED') {
-                        statusBadge.className = 'badge bg-success';
-                    } else if (data.status === 'BOOKED' || data.status === 'LOCKED') {
-                        statusBadge.className = 'badge bg-warning text-dark';
-                    } else {
-                        statusBadge.className = 'badge bg-secondary';
-                    }
-
-                    // [NEW] Update Payment Status Badge
-                    const payBadge = document.getElementById('sd-payment');
-                    // Handle case where data.payment_status might be null
-                    let payStatus = data.payment_status || "N/A";
-                    payBadge.textContent = payStatus;
-
-                    if(payStatus === 'PAID' || payStatus === 'Paid') {
-                        payBadge.className = 'badge bg-success'; // Green
-                    } else if (payStatus === 'UNPAID' || payStatus === 'Pending') {
-                        payBadge.className = 'badge bg-danger';  // Red
-                    } else {
-                        payBadge.className = 'badge bg-secondary'; // Gray
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('sd-name').textContent = "Error loading info";
-                    console.error(err);
-                });
-            });
+            if (!selectedSeatIds.includes(id)) {
+                selectedSeatIds.push(id);
+                total += price;
+            }
         });
 
-        // --- 3. AVAILABLE SEAT SELECTION (With Safety Check) ---
+        updateUI();
+
+        // --- Available Seat Click ---
         availableSeats.forEach(seat => {
             seat.addEventListener('click', function(e) {
-                
-                // [SAFETY] Double check: If seat is visually booked/locked, DO NOT select it.
-                if (this.classList.contains('booked') || this.classList.contains('locked')) {
-                    console.log("Blocked selection of booked seat.");
+                // [SAFETY] Double check visual state
+                if (
+                    this.classList.contains('booked') ||
+                    this.classList.contains('locked') ||
+                    this.classList.contains('remote-held') ||
+                    this.classList.contains('held-by-other')
+                ) {
+                    console.log("Blocked selection of unavailable/held seat.");
                     return; 
                 }
 
-                const id = this.dataset.id;
-                const price = parseFloat(this.dataset.price) || 0;
-                
-                if (this.classList.contains('selected')) {
-                    // DESELECT
-                    this.classList.remove('selected');
-                    selectedSeatIds = selectedSeatIds.filter(itemId => itemId !== id);
-                    total -= price;
-                } else {
-                    // SELECT
-                    this.classList.add('selected');
-                    selectedSeatIds.push(id);
-                    total += price;
-                }
-                updateUI();
+                toggleLocalSelection(this, true); // True = broadcast to WebSocket
             });
         });
+
+        /*function toggleLocalSelection(seatEl, shouldBroadcast) {
+            const id = seatEl.dataset.id;
+            const price = parseFloat(seatEl.dataset.price) || 0;
+            let action = "";
+
+            if (seatEl.classList.contains('selected')) {
+                // DESELECT
+                seatEl.classList.remove('selected');
+                selectedSeatIds = selectedSeatIds.filter(itemId => itemId !== id);
+                total -= price;
+                action = "unselect";
+            } else {
+                // SELECT
+                seatEl.classList.add('selected');
+                selectedSeatIds.push(id);
+                total += price;
+                action = "select";
+            }
+            
+            updateUI();
+
+            // Broadcast to WebSocket
+            if (shouldBroadcast && seatSocket && seatSocket.readyState === WebSocket.OPEN) {
+                seatSocket.send(JSON.stringify({
+                    'action': action,
+                    'seat_id': id,
+                    'user_name': currentUserName,
+                    // --- ADD THESE LINES ---
+                    'user_id': USER_ID,
+                    'from_stop': FROM_STOP_ID,
+                    'to_stop': TO_STOP_ID
+                    // -----------------------
+                }));
+            }
+        }*/
+        function toggleLocalSelection(seatEl, shouldBroadcast) {
+            const id = seatEl.dataset.id;
+            const price = parseFloat(seatEl.dataset.price) || 0;
+            
+            if (seatEl.classList.contains('selected') || seatEl.classList.contains('held-by-me')) {
+                // DESELECT
+                seatEl.classList.remove('selected', 'held', 'held-by-me');
+                seatEl.classList.add('available');
+
+                selectedSeatIds = selectedSeatIds.filter(itemId => itemId !== id);
+                total -= price;
+                if (total < 0) total = 0;
+
+                updateUI();
+                
+                // RELEASE HOLD - using Django URL tag
+                fetch("{% url 'release_seat_hold' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        trip_id: tripId,
+                        seat_id: id,
+                        from_stop: FROM_STOP_ID,
+                        to_stop: TO_STOP_ID
+                    })
+                }).catch(err => console.error("Error releasing hold:", err));
+                
+            } else {
+                // CHECK AVAILABILITY - using Django URL tag
+                fetch("{% url 'check_seat_availability' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        trip_id: tripId,
+                        seat_id: id,
+                        from_stop: FROM_STOP_ID,
+                        to_stop: TO_STOP_ID
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available) {
+                        // Seat is free - select it
+                        seatEl.classList.remove('available', 'held', 'held-by-me', 'held-by-other');
+                        seatEl.classList.add('selected');
+
+                        if (!selectedSeatIds.includes(id)) {
+                            selectedSeatIds.push(id);
+                            total += price;
+                        }
+                        updateUI();
+                        
+                        // CREATE HOLD - using Django URL tag
+                        return fetch("{% url 'create_seat_hold' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({
+                                trip_id: tripId,
+                                seat_id: id,
+                                from_stop: FROM_STOP_ID,
+                                to_stop: TO_STOP_ID
+                            })
+                        });
+                    } else {
+                        // Seat is held by someone else - show alert
+                        alert("This seat is already held by someone else");
+                        
+                        // Visual feedback
+                        seatEl.style.backgroundColor = '#ffcccc';
+                        setTimeout(() => {
+                            seatEl.style.backgroundColor = '';
+                        }, 500);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error checking availability:", err);
+                    alert("Error checking seat availability. Please try again.");
+                });
+            }
+        }
 
         function updateUI() {
             selectedInput.value = selectedSeatIds.join(',');
@@ -591,14 +910,70 @@
             }
         }
 
-        // --- 4. PAYMENT STATUS TOGGLE (Logic) ---
+
+        // ============================================================
+        // 3. BOOKED SEAT DETAILS (MODAL)
+        // ============================================================
+        bookedSeats.forEach(seat => {
+            seat.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation(); 
+
+                const seatId = this.dataset.id;
+                const modalEl = document.getElementById('seatDetailsModal');
+                const modal = new bootstrap.Modal(modalEl);
+
+                // Show Loading State
+                document.getElementById('sd-name').textContent = "Loading...";
+                modal.show();
+
+                // Fetch Details
+                let url = "{% url 'get_seat_details' 0 0 %}".replace('0/0', `${tripId}/${seatId}`);
+
+                fetch(url)
+                .then(res => {
+                    if(!res.ok) throw new Error("Network Error");
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById('sd-number').textContent = data.seat_number;
+                    document.getElementById('sd-name').textContent = data.passenger_name;
+                    document.getElementById('sd-phone').textContent = data.passenger_phone;
+                    document.getElementById('sd-price').textContent = data.amount;
+                    
+                    // Status Badge
+                    const statusBadge = document.getElementById('sd-status');
+                    statusBadge.textContent = data.status;
+                    if(data.status === 'CONFIRMED') statusBadge.className = 'badge bg-success';
+                    else if (data.status === 'BOOKED' || data.status === 'LOCKED') statusBadge.className = 'badge bg-warning text-dark';
+                    else statusBadge.className = 'badge bg-secondary';
+
+                    // Payment Badge
+                    const payBadge = document.getElementById('sd-payment');
+                    let payStatus = data.payment_status || "N/A";
+                    payBadge.textContent = payStatus;
+
+                    if(payStatus === 'PAID' || payStatus === 'Paid') payBadge.className = 'badge bg-success';
+                    else if (payStatus === 'UNPAID' || payStatus === 'Pending') payBadge.className = 'badge bg-danger';
+                    else payBadge.className = 'badge bg-secondary';
+                })
+                .catch(err => {
+                    document.getElementById('sd-name').textContent = "Error loading info";
+                    console.error(err);
+                });
+            });
+        });
+
+
+        // ============================================================
+        // 4. PAYMENT STATUS TOGGLE
+        // ============================================================
         if(paymentSelect && manualAmountInput) {
             paymentSelect.addEventListener('change', function() {
                 if(this.value === 'PAID') {
                     manualAmountInput.required = true;
                     manualAmountInput.classList.add('border-success');
                     
-                    // Auto-fill with total if empty
                     if(!manualAmountInput.value || manualAmountInput.value == 0) {
                         manualAmountInput.value = total.toFixed(2);
                     }
@@ -614,7 +989,10 @@
             });
         }
 
-        // --- 5. REPORT LOGIC (Full Code Restored) ---
+
+        // ============================================================
+        // 5. TRIP REPORT LOGIC (RESTORED)
+        // ============================================================
         const reportBtn = document.getElementById('btn-report');
         if(reportBtn) {
             reportBtn.addEventListener('click', function() {
@@ -622,9 +1000,8 @@
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('report-table-body');
-                    tbody.innerHTML = ''; // Clear old data
+                    tbody.innerHTML = ''; 
 
-                    // Fill Table
                     if(data.breakdown && data.breakdown.length > 0) {
                         data.breakdown.forEach(item => {
                             const row = `<tr>
@@ -638,7 +1015,6 @@
                         tbody.innerHTML = '<tr><td colspan="3" class="text-center">No sales yet.</td></tr>';
                     }
 
-                    // Fill Summary Badges
                     document.getElementById('rep-total-sold').textContent = data.summary.total_sold;
                     document.getElementById('rep-total-rev').textContent = parseFloat(data.summary.total_revenue).toFixed(2);
                     
@@ -646,7 +1022,6 @@
                     document.getElementById('rep-locked-badge').textContent = data.summary.total_locked;
                     document.getElementById('rep-unsold-badge').textContent = data.summary.total_unsold;
 
-                    // Show Modal
                     var myModal = new bootstrap.Modal(document.getElementById('reportModal'));
                     myModal.show();
                 })
@@ -657,13 +1032,15 @@
             });
         }
 
-        // --- 6. LOCK LOGIC (Full Code Restored) ---
+
+        // ============================================================
+        // 6. TRIP-WIDE LOCK LOGIC (RESTORED)
+        // ============================================================
         const lockBtn = document.getElementById('lock-toggle-btn');
         if(lockBtn) {
             lockBtn.addEventListener('click', function() {
                 if(!confirm("Are you sure you want to toggle the lock for this trip?")) return;
                 
-                // UI Feedback
                 lockBtn.disabled = true;
                 const originalText = lockBtn.textContent;
                 lockBtn.textContent = "Processing...";
@@ -694,9 +1071,91 @@
                 });
             });
         }
-    });
 
-    // --- 7. GLOBAL PRINT FUNCTION ---
+
+        // ============================================================
+        // 7. SINGLE SEAT ADMIN LOCK SWITCH (INTEGRATED)
+        // ============================================================
+        const lockSwitch = document.getElementById('adminLockSwitch');
+        
+        if (lockSwitch) {
+            // Using Capture Phase (true) to intercept before other listeners
+            document.addEventListener('click', function(e) {
+                
+                // 1. Check if Switch is ON
+                if (!lockSwitch.checked) return;
+
+                // 2. Check if clicked element is a seat
+                const seat = e.target.closest('.layout-obj');
+                if (!seat) return;
+
+                // 3. STOP STANDARD BOOKING
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation(); 
+
+                const seatId = seat.dataset.id;
+                
+                // Visual Feedback
+                seat.style.opacity = '0.5';
+
+                // 4. Call API
+                fetch("{% url 'toggle_single_seat_lock' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ trip_id: tripId, seat_id: seatId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    seat.style.opacity = '1';
+                    
+                    if (data.success) {
+                        // Determine action for WebSocket
+                        const wsAction = data.action === 'locked' ? 'booked' : 'unselect'; 
+
+                        // Update Local UI
+                        if (data.action === 'locked') {
+                            seat.classList.remove('available', 'seat');
+                            seat.classList.add('booked'); 
+                            seat.style.backgroundColor = '#dc3545'; // Red
+                            seat.innerHTML += ' <i class="fa fa-lock text-white" style="font-size:10px"></i>';
+                        } else {
+                            seat.classList.remove('booked', 'locked');
+                            seat.classList.add('available', 'seat');
+                            seat.style.backgroundColor = ''; 
+                            const icon = seat.querySelector('.fa-lock');
+                            if(icon) icon.remove();
+                        }
+
+                        // Broadcast to WebSocket
+                        /*if (seatSocket && seatSocket.readyState === WebSocket.OPEN) {
+                            seatSocket.send(JSON.stringify({
+                                'action': wsAction,
+                                'seat_id': seatId,
+                                'user_name': "Admin Lock"
+                            }));
+                        }*/
+
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => {
+                    seat.style.opacity = '1';
+                    console.error(err);
+                });
+
+            }, true); // <--- Capture Phase
+        }
+
+    }); // End DOMContentLoaded
+
+    // ============================================================
+    // 8. GLOBAL PRINT FUNCTION (OUTSIDE DOMContentLoaded)
+    // ============================================================
     function printReport() {
         var printContent = document.getElementById('print-area').innerHTML;
         var originalContent = document.body.innerHTML;
@@ -715,70 +1174,4 @@
         window.location.reload();
     }
 </script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const lockSwitch = document.getElementById('adminLockSwitch');
-        
-        if (!lockSwitch) return;
-    
-        // Listen for clicks on the document (Capture Phase)
-        document.addEventListener('click', function(e) {
-            
-            // 1. If Lock Mode is OFF, do nothing (Standard Booking works)
-            if (!lockSwitch.checked) return;
-    
-            const seat = e.target.closest('.layout-obj');
-            if (!seat) return;
-    
-            // 2. STOP STANDARD BOOKING (The Clash Fix)
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation(); 
-    
-            const seatId = seat.dataset.id;
-            const tripId = "{{ trip.id }}"; // Ensure this variable exists in your template
-    
-            // Visual Feedback
-            seat.style.opacity = '0.5';
-    
-            // 3. Call the New API
-            fetch("{% url 'toggle_single_seat_lock' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': "{{ csrf_token }}",
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ trip_id: tripId, seat_id: seatId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                seat.style.opacity = '1';
-                
-                if (data.success) {
-                    if (data.action === 'locked') {
-                        // Update UI: Make it look Locked
-                        seat.classList.remove('available', 'seat');
-                        seat.classList.add('booked'); 
-                        seat.style.backgroundColor = '#dc3545'; // Red
-                        seat.innerHTML += ' <i class="fa fa-lock text-white" style="font-size:10px"></i>';
-                    } else {
-                        // Update UI: Make it Available
-                        seat.classList.remove('booked', 'locked');
-                        seat.classList.add('available', 'seat');
-                        seat.style.backgroundColor = ''; 
-                        const icon = seat.querySelector('.fa-lock');
-                        if(icon) icon.remove();
-                    }
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(err => {
-                seat.style.opacity = '1';
-                console.error(err);
-            });
-    
-        }, true); // <--- 'true' captures the event before your other scripts see it
-    });
-    </script>
 {% endblock %}

@@ -47,320 +47,858 @@
     letter-spacing: 0.5px;
 }
 
-/* 3. The Trip Card (Grid-Based Stability) */
-.trip-card {
+/* =========================
+   MODERN OCEAN THEME (NO GRADIENTS)
+========================= */
+:root{
+    --heading-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    --ocean:#167fca;
+    --ocean-dark:#0b4a78;
+    --ink:#0b1220;
+    --muted:#607387;
+
+    --card:#ffffff;
+    --surface:#f6fbff;
+    --border:rgba(10, 60, 95, 0.12);
+
+    --shadow-sm: 0 6px 18px rgba(11, 18, 32, 0.06);
+    --shadow-md: 0 14px 30px rgba(11, 18, 32, 0.10);
+}
+
+/* Bootstrap + standard heading selectors */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6{
+    font-family: var(--heading-font) !important;
+    letter-spacing: 0 !important;     /* remove bad spacing */
+    font-weight: 600 !important;      /* not too heavy */
+    color: #0b1220;                   /* same ink as your cards */
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+    text-transform: none !important;  /* avoid forced uppercase */
+}
+
+/* Optional: slightly softer for smaller headings */
+h5, h6, .h5, .h6{
+    font-weight: 600 !important;
+    color: rgba(11, 18, 32, 0.88);
+}
+
+/* If some theme is applying tracking only to titles */
+[class*="title"], [class*="heading"]{
+    letter-spacing: 0 !important;
+}
+
+.breadcrumb-area-wrapper{
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.rts-breadcrumb-area.one .breadcrumb-area-wrapper{
+    padding: 0 !important;
+}
+
+/* =========================
+   MODERN SEARCH BAR (Select2 + Flatpickr)
+   - Ocean blue theme
+   - Fixes narrow select2 + group widths
+========================= */
+
+:root{
+    --ocean:#21a2dc;
+    --ocean-dark:#0b4a78;
+    --ink:#0b1220;
+    --muted:#607387;
+    --surface:#ffffff;
+    --surface-2:#f7fbff;
+    --border:rgba(10, 60, 95, 0.14);
+    --shadow: 0 18px 45px rgba(11, 18, 32, 0.10);
+}
+
+/* Ensure container/form can stretch */
+.form-area-v2{
+    width: 100% !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    background: var(--surface) !important;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+}
+
+/* each input group stretches properly */
+.search-input-group{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex: 1 1 0 !important;     /* ✅ critical: let it grow */
+    min-width: 0 !important;    /* ✅ critical: allow shrink */
+    width: 100% !important;
+
+    background: var(--surface-2);
+    border: 1px solid rgba(10, 60, 95, 0.12);
+    border-radius: 14px;
+    padding: 10px 12px;
+    min-height: 64px;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.search-input-group:hover{
+    border-color: rgba(33, 162, 220, 0.25);
+}
+
+.search-input-group:focus-within{
+    background: #fff;
+    border-color: rgba(33, 162, 220, 0.45);
+    box-shadow: 0 0 0 4px rgba(33, 162, 220, 0.12);
+}
+
+/* left icon area */
+.icon-box{
+    min-width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(33, 162, 220, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* content wrapper MUST stretch */
+.search-input-group .input-content{
+    flex: 1 1 auto !important;  /* ✅ critical */
+    width: 100% !important;     /* ✅ critical */
+    min-width: 0 !important;    /* ✅ critical */
+    display: flex;
+    flex-direction: column;
+}
+
+/* label */
+.label-tag{
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0 !important;
+    color: rgba(11, 74, 120, 0.75) !important;
+    margin: 0 0 2px 0;
+}
+
+/* input text */
+.search-field{
+    font-size: 15px !important;
+    font-weight: 650;
+    color: var(--ink);
+    width: 100%;
+}
+
+.search-field::placeholder{
+    color: rgba(96, 115, 135, 0.75);
+}
+
+/* Switch button */
+.exchange-icon{
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(33, 162, 220, 0.10);
+    border: 1px solid rgba(33, 162, 220, 0.18);
     display: grid;
-    /* Changed to percentages to ensure it fills 100% of the container width */
-    grid-template-columns: 25% 50% 25%; 
-    width: 100% !important; 
-    background: #ffffff;
-    border: 2px solid #e2e8f0; /* Thicker border for better visibility */
-    border-radius: 20px; /* Large rounded corners */
-    margin-bottom: 30px;
-    overflow: hidden; /* CRITICAL: This clips the children so corners don't look broken */
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    place-items: center;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
 }
 
-.trip-card:hover {
-    border-color: #2ECC71;
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(46, 204, 113, 0.15);
+.exchange-icon:hover{
+    background: rgba(33, 162, 220, 0.14);
+    border-color: rgba(33, 162, 220, 0.30);
+    transform: translateY(-1px);
 }
 
-/* Left: Ship Identity */
-.ship-media {
-    padding: 25px;
-    background: #fcfdfe; /* Subtle off-white */
-    border-right: 1px solid #f1f5f9;
+/* Button area */
+.button-area{
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+}
+
+.search-submit-btn{
+    height: 64px;
+    color: rgb(248, 248, 248);
+    border-radius: 14px;
+    border: 1px solid rgba(33, 162, 220, 0.20);
+    background: var(--ocean) !important;
+    box-shadow: 0 16px 30px rgba(33, 162, 220, 0.22);
+    font-weight: 800;
+    letter-spacing: 0 !important;
+    padding: 0 28px;
+    white-space: nowrap;
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.search-submit-btn:hover{
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+    box-shadow: 0 18px 40px rgba(33, 162, 220, 0.28);
+}
+
+/* =========================
+   SELECT2 - Modern look
+========================= */
+
+/* ✅ Force select2 container to full width (overrides inline width like 107px) */
+.search-input-group .select2-container{
+    width: 100% !important;
+    min-width: 0 !important;
+    display: block !important;
+}
+
+.search-input-group .select2-container .selection{
+    width: 100% !important;
+    display: block !important;
+}
+
+/* selection */
+.select2-container--default .select2-selection--single{
+    width: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    height: 26px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 !important;
+}
+
+/* selected text */
+.select2-container--default .select2-selection--single .select2-selection__rendered{
+    width: 100% !important;
+    padding: 0 !important;
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    color: var(--ink) !important;
+    line-height: 1.2 !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* hide arrow */
+.select2-container--default .select2-selection--single .select2-selection__arrow{
+    display: none !important;
+}
+
+/* dropdown */
+.select2-container--default .select2-dropdown{
+    border: 1px solid rgba(10, 60, 95, 0.14) !important;
+    border-radius: 14px !important;
+    overflow: hidden;
+    box-shadow: 0 22px 60px rgba(11, 18, 32, 0.16);
+    box-sizing: border-box !important;
+}
+
+/* dropdown width should follow select2 control width */
+.select2-container--open .select2-dropdown{
+    min-width: var(--select2-container-width) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+}
+
+.select2-results{
+    padding: 10px;
+}
+
+.select2-container--open{
+    width: auto !important;
+}
+
+/* search field in dropdown */
+.select2-container--default .select2-search--dropdown .select2-search__field{
+    border: 1px solid rgba(10, 60, 95, 0.14) !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+}
+
+/* options */
+.select2-container--default .select2-results__option{
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+    background: rgba(33, 162, 220, 0.12) !important;
+    color: var(--ink) !important;
+}
+
+.select2-container--default .select2-results__option--selected{
+    background: rgba(33, 162, 220, 0.18) !important;
+    color: var(--ink) !important;
+}
+
+/* =========================
+   FLATPICKR input visuals
+========================= */
+.search-input-group.calendar-trigger{
+    background: var(--surface-2);
+}
+
+.search-input-group.calendar-trigger input[type="text"].search-field,
+.search-input-group.calendar-trigger input.form-control.input{
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    height: auto !important;
+    box-shadow: none !important;
+    width: 100% !important;
+}
+
+/* =========================
+   BANNER HEIGHT OVERRIDE (kills 500px/200px)
+========================= */
+.rts-breadcrumb-area,
+.rts-breadcrumb-area.one{
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 26px 0 22px !important;
+    overflow: visible !important; /* so select2 dropdown doesn't clip */
+}
+
+.rts-breadcrumb-area.one .breadcrumb-area-wrapper{
+    padding: 0 !important;
+}
+
+/* spacing for title + form inside banner */
+.breadcrumb-area-wrapper--with-search{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.form-area-v2--in-banner{
+    margin-top: 6px;
+}
+
+/* responsive */
+@media (max-width: 991px){
+    .rts-breadcrumb-area,
+    .rts-breadcrumb-area.one{
+        padding: 18px 0 16px !important;
+    }
+
+    .breadcrumb-area-wrapper--with-search{
+        gap: 12px;
+    }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 991px){
+    .form-area-v2{
+        flex-direction: column;
+        padding: 14px;
+    }
+
+    .search-input-group,
+    .button-area{
+        width: 100% !important;
+    }
+
+    .search-submit-btn{
+        width: 100% !important;
+    }
+
+    .exchange-icon{
+        transform: rotate(90deg);
+    }
+}
+
+@media (max-width: 576px){
+    .form-area-v2{
+        border-radius: 16px;
+        padding: 12px;
+    }
+
+    .search-input-group{
+        min-height: 60px;
+        padding: 10px 12px;
+        border-radius: 14px;
+    }
+
+    .search-submit-btn{
+        height: 58px;
+        border-radius: 14px;
+        font-size: 14px;
+    }
+}
+
+
+/* =========================
+   LIST SPACING (cards were touching)
+========================= */
+.results-list.results-list--modern{
+    display: flex;
+    flex-direction: column;
+    gap: 18px;               /* spacing between cards */
+}
+
+.trip-card.trip-card--modern{
+    margin: 0;               /* rely on gap */
+    grid-template-columns: 240px 1fr 220px;
+}
+
+/* ===================================
+   TRIP CARD - MODERN COMPACT LAYOUT
+=================================== */
+.trip-card.trip-card--modern{
+    display: grid;
+    grid-template-columns: 280px 1fr 240px;
+    width: 100% !important;
+
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+
+    box-shadow: var(--shadow-sm);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.trip-card.trip-card--modern:hover{
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(22, 127, 202, 0.30);
+}
+
+/* ===================================
+   LEFT: ship block (compact)
+=================================== */
+.trip-card.trip-card--modern .ship-media{
+    padding: 16px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 10px;
 }
 
-.ship-img-v2 {
+.trip-card.trip-card--modern .ship-img-v2{
     width: 100%;
-    height: 140px; /* Increased height */
-    border-radius: 12px;
+    height: 120px;                 /* compact height */
+    border-radius: 14px;
     object-fit: cover;
-    margin-bottom: 15px;
+
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 10px 22px rgba(11,18,32,0.08);
 }
 
-.ship-name-v2 {
-    font-size: 26px !important; /* LARGE FONT */
-    font-weight: 900;
-    color: #1A2B3C;
+.trip-card.trip-card--modern .ship-type-tag{
+    font-size: 12px;
+    font-weight: 600;              /* not heavy */
+    color: var(--ocean-dark);
+
+    background: rgba(22,127,202,0.10);
+    border: 1px solid rgba(22,127,202,0.18);
+    padding: 5px 10px;
+    border-radius: 999px;
     margin: 0;
 }
 
-.ship-type-tag {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--primary-green);
-    margin-bottom: 4px;
-    display: block;
-}
-
-/* Center: Journey Timeline */
-.journey-details {
-    padding: 30px 50px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    background: #fff;
-}
-
-.timeline-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-}
-
-.time-val {
-    font-size: 40px !important; /* HUGE FONT FOR TIMES */
-    font-weight: 900;
-    color: #1A2B3C;
-    line-height: 1;
-}
-
-.loc-val {
-    font-size: 18px !important; /* LARGE FONT FOR LOCATIONS */
-    font-weight: 700;
-    color: #64748B;
-}
-
-/* Simple, Unbreakable Route Visual */
-.route-visual {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.duration-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.visual-line-container {
-    width: 100%;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-
-.visual-line {
-    height: 3px !important; /* Thicker line */
-    background: #e2e8f0;
-}
-
-.ship-icon-mid {
-    font-size: 22px !important;
-    background: #fff;
-    padding: 0 15px;
-}
-
-/* Amenities Pills */
-.amenities-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
-}
-
-.amenity {
-    font-size: 12px;
-    color: var(--text-main);
-    background: #f1f5f9;
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-}
-
-/* Right: Pricing & CTA */
-.price-action-side {
-    padding: 30px;
-    background: #f8fafc; /* Subtle gray contrast */
-    border-left: 1px solid #f1f5f9;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.trip-card.trip-card--modern .ship-name-v2{
+    font-size: 18px !important;
+    font-weight: 700;              /* fixed: not too high */
+    color: var(--ink);
+    margin: 0;
     text-align: center;
 }
 
-.price-amount-v2 {
-    font-size: 48px !important; /* MASSIVE PRICE */
-    font-weight: 900;
-    color: #2ECC71;
-    margin-bottom: 15px;
-    letter-spacing: -1px;
+.trip-card.trip-card--modern .ship-seat-count-v2{
+    font-size: 13px !important;
+    font-weight: 700;
+    color: var(--ocean-dark);
+
+    background: rgba(22,127,202,0.10);
+    border: 1px solid rgba(22,127,202,0.18);
+    padding: 6px 10px;
+    border-radius: 999px;
+
+    line-height: 1.2;
 }
 
-.book-btn-v2 {
+/* ===================================
+   CENTER: journey block (clean + compact)
+=================================== */
+.trip-card.trip-card--modern .journey-details{
+    padding: 18px 22px;            /* compact height */
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+}
+
+.trip-card.trip-card--modern .timeline-container{
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    align-items: center;
+    column-gap: 16px;
     width: 100%;
-    background: #2ECC71;
-    color: white !important;
-    font-size: 20px !important; /* LARGE BUTTON TEXT */
-    font-weight: 800;
-    padding: 18px !important;
-    border-radius: 12px;
+}
+
+.trip-card.trip-card--modern .time-point{
+    min-width: 0;                  /* allow shrink */
+}
+
+.trip-card.trip-card--modern .time-val{
+    font-size: 24px !important;     /* modern, not huge */
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.1;
+}
+
+.trip-card.trip-card--modern .loc-val{
+    display: block;
+    margin-top: 2px;
+    font-size: 14px !important;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+/* Route visual (modern line + centered icon) */
+.trip-card.trip-card--modern .route-visual{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.trip-card.trip-card--modern .duration-label{
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0;
+}
+
+.trip-card.trip-card--modern .visual-line-container{
+    width: 100%;
+    height: 18px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.trip-card.trip-card--modern .visual-line{
+    width: 100%;
+    height: 3px !important;
+    border-radius: 999px;
+    background: rgba(22,127,202,0.22); /* no gradient */
+}
+
+.trip-card.trip-card--modern .ship-icon-mid{
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px !important;
+
+    color: var(--ocean);
+    background: #fff;
+    border: 1px solid rgba(22,127,202,0.20);
+    border-radius: 999px;
+    padding: 5px 9px;
+    box-shadow: 0 10px 18px rgba(11,18,32,0.10);
+}
+
+/* Route path (compact chips) */
+.trip-card.trip-card--modern .clean-route-path{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+
+    padding-top: 12px;
+    border-top: 1px solid rgba(10, 60, 95, 0.10);
+    margin-top: 0;
+}
+
+.trip-card.trip-card--modern .route-stop{
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+
+    background: rgba(11, 74, 120, 0.05);
+    border: 1px solid rgba(10, 60, 95, 0.10);
+    padding: 5px 10px;
+    border-radius: 999px;
+}
+
+.trip-card.trip-card--modern .route-arrow{
+    color: rgba(11, 74, 120, 0.40);
+    font-weight: 700;
+}
+
+.ship-seat-count-v2--modern{
+    color: var(--ocean-dark) !important;
+}
+
+.ship-seat-count-v2{
+    color: var(--ocean-dark) !important;
+}
+
+/* ===================================
+   RIGHT: action block (modern CTA)
+=================================== */
+.trip-card.trip-card--modern .price-action-side{
+    padding: 18px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.book-btn-v2.book-btn--modern{
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--ocean);
+    color: #fff !important;
+
+    border-radius: 14px;
+    padding: 14px 14px !important;
+
+    font-size: 14px !important;
+    font-weight: 700;              /* not screaming */
     text-transform: uppercase;
     text-decoration: none;
-    transition: 0.3s;
+
+    box-shadow: 0 12px 22px rgba(22,127,202,0.22);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
-.book-btn-v2:hover {
-    background: #27ae60;
-    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+.book-btn-v2.book-btn--modern:hover{
+    transform: translateY(-1px);
+    background: #136fb0;
+    box-shadow: 0 16px 28px rgba(22,127,202,0.28);
 }
 
+.book-btn-v2.book-btn--modern{
+    transition: background .18s ease, transform .15s ease, box-shadow .15s ease;
+}
 
-    /* Remove default Select2 box styling to match your group look */
-    /* 1. Main Form Layout */
-    .form-area-v2 {
-        display: flex;
-        align-items: center;
-        background: #fff;
-        padding: 15px 25px;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        gap: 10px;
-        margin-bottom: 40px;
+.book-btn-v2.book-btn--modern.is-hide{
+    background: #0b4a78; /* darker */
+    box-shadow: 0 12px 22px rgba(11, 74, 120, 0.22);
+}
+
+.book-btn-v2.book-btn--modern.is-hide:hover{
+    background: #083a5f;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+/* =========================
+   RESPONSIVE (DO NOT BREAK DESKTOP)
+   Put this at the VERY END of the CSS
+========================= */
+
+/* Tablet and below: stack the 3 columns into one */
+@media (max-width: 992px){
+    .trip-card.trip-card--modern{
+        grid-template-columns: 1fr !important;
     }
 
-    .search-input-group {
-        display: flex;
-        align-items: center;
-        border: 1px solid #EAEAEA;
-        border-radius: 12px;
-        padding: 10px 15px;
-        flex: 1;
-        min-height: 70px;
-        background: #fff;
+    .trip-card.trip-card--modern .ship-media{
+        border-right: none !important;
+        border-bottom: 1px solid var(--border) !important;
+        align-items: flex-start !important;
+        text-align: left !important;
     }
 
-    .icon-box {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 30px;
+    .trip-card.trip-card--modern .ship-name-v2{
+        text-align: left !important;
     }
 
-    .input-content {
-        display: flex;
-        flex-direction: column;
-        margin-left: 10px;
-        width: 100%;
+    .trip-card.trip-card--modern .price-action-side{
+        border-left: none !important;
+        border-top: 1px solid var(--border) !important;
+        justify-content: stretch !important;
+    }
+    .trip-card.trip-card--modern .ship-seat-count-v2{
+        align-self: flex-start;
+    }
+}
+
+/* Large phones / small tablets: slightly tighter sizes */
+@media (max-width: 768px){
+    .trip-card.trip-card--modern .journey-details{
+        padding: 14px 16px !important;
+        gap: 10px !important;
     }
 
-    .label-tag {
-        font-size: 11px;
-        font-weight: 700;
-        color: #FF8C66 !important; /* Brand Orange */
-        margin-bottom: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .trip-card.trip-card--modern .ship-img-v2{
+        display: none !important;
     }
 
-    .search-field {
-        border: none;
-        outline: none;
-        font-weight: 600;
-        font-size: 16px;
-        color: #333;
-        width: 100%;
-        background: transparent;
+    .trip-card.trip-card--modern .time-val{
+        font-size: 20px !important;
     }
 
-    .exchange-icon {
-        padding: 0 5px;
-        cursor: pointer;
-        transition: 0.3s;
+    .trip-card.trip-card--modern .loc-val{
+        font-size: 13px !important;
+    }
+}
+
+/* Mobile: keep timeline RESPONSIVE (not forced into one row) */
+@media (max-width: 576px){
+
+    /* Card spacing (if you use flex list gap) */
+    .results-list.results-list--modern{
+        gap: 12px;
     }
 
-    .search-submit-btn {
-        background-color: #2ECC71;
-        color: white;
-        border: none;
-        padding: 0 40px;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 16px;
-        cursor: pointer;
-        transition: 0.3s;
-        height: 70px;
-        white-space: nowrap;
+    /* Ship area (image stays on top) */
+    .trip-card.trip-card--modern .ship-media{
+        padding: 12px !important;
+        gap: 8px !important;
+        align-items: center !important;
+        text-align: center !important;
     }
 
-    /* 2. Select2 Modern Styling */
-    .select2-container--default .select2-selection--single {
-        border: none !important;
-        background: transparent !important;
-        height: 25px !important;
-        display: flex;
-        align-items: center;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        padding-left: 0 !important;
-        font-weight: 600 !important;
-        font-size: 16px !important;
-        color: #333 !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        display: none;
-    }
-
-    /* 3. Flatpickr Custom Theme */
-    .flatpickr-calendar {
+    .trip-card.trip-card--modern .ship-img-v2{
+        width: 100% !important;
+        height: 96px !important;
         border-radius: 12px !important;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
-        border: 1px solid #eee !important;
+        object-fit: cover !important;
     }
 
-    .flatpickr-current-month .flatpickr-monthDropdown-months,
-    .flatpickr-current-month input.cur-year {
-        color: #079D49 !important;
-        font-weight: 800 !important;
+    .trip-card.trip-card--modern .ship-type-tag{
+        font-size: 11px !important;
+        padding: 4px 9px !important;
     }
 
-    .flatpickr-day.selected {
-        background: #fff !important;
-        border: 2px solid #079D49 !important;
-        color: #079D49 !important;
+    .trip-card.trip-card--modern .ship-name-v2{
+        font-size: 16px !important;
+        font-weight: 650 !important;
+        line-height: 1.15 !important;
+        text-align: center !important;
+        width: 100% !important;
+        margin: 0 !important;
     }
 
-    /* 4. Mobile Responsiveness */
-    @media (max-width: 991px) {
-        .form-area-v2 {
-            flex-direction: column;
-            padding: 20px;
-        }
-        .search-input-group, .search-submit-btn {
-            width: 100%;
-        }
-        .exchange-icon {
-            transform: rotate(90deg);
-        }
+    /* Journey area */
+    .trip-card.trip-card--modern .journey-details{
+        padding: 12px 14px !important;
+        gap: 10px !important;
     }
-    /*datepicker styles ends */
 
-    @media (max-width: 1200px) {
-    .trip-card {
-        grid-template-columns: 1fr; /* Stack on mobile/tablets */
+    /* ✅ Timeline: FROM | ROUTE | TO (route in between) */
+    .trip-card.trip-card--modern .timeline-container{
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(80px, 110px) minmax(0, 1fr) !important;
+        align-items: center !important;
+        column-gap: 10px !important;
+        width: 100% !important;
     }
-    .ship-media, .price-action-side {
-        border: none;
-        width: 100%;
+
+    .trip-card.trip-card--modern .time-point{
+        min-width: 0 !important;
+    }
+
+    .trip-card.trip-card--modern .timeline-container .time-point:first-child{
+        text-align: left !important;
+        justify-self: start !important;
+    }
+
+    .trip-card.trip-card--modern .timeline-container .time-point:last-child{
+        text-align: right !important;
+        justify-self: end !important;
+    }
+
+    /* Smaller departure/arrival time */
+    .trip-card.trip-card--modern .time-val{
+        font-size: 16px !important;   /* reduced */
+        font-weight: 700 !important;
+        line-height: 1.05 !important;
+        white-space: nowrap !important;
+    }
+
+    .trip-card.trip-card--modern .loc-val{
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        margin-top: 2px !important;
+
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+
+        /* keep middle column alive */
+        max-width: 110px !important;
+    }
+
+    /* Route visual */
+    .trip-card.trip-card--modern .route-visual{
+        width: 100% !important;
+        min-width: 0 !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .trip-card.trip-card--modern .duration-label{
+        font-size: 10px !important;
+        white-space: nowrap !important;
+        margin: 0 !important;
+    }
+
+    .trip-card.trip-card--modern .visual-line-container{
+        height: 12px !important;
+        width: 100% !important;
+        position: relative !important;
+    }
+
+    .trip-card.trip-card--modern .visual-line{
+        width: 100% !important;
+        height: 3px !important;
+    }
+
+    .trip-card.trip-card--modern .ship-icon-mid{
+        font-size: 13px !important;
+        padding: 3px 6px !important;
+    }
+
+    /* Route chips */
+    .trip-card.trip-card--modern .clean-route-path{
+        padding-top: 10px !important;
+        gap: 6px !important;
+    }
+
+    .trip-card.trip-card--modern .route-stop{
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+    }
+
+    /* CTA area */
+    .trip-card.trip-card--modern .price-action-side{
+        padding: 12px 14px !important;
+    }
+
+    .book-btn-v2.book-btn--modern{
+        padding: 12px 12px !important;
+        font-size: 13px !important;
+        border-radius: 12px !important;
     }
 }
+
 
 
 
@@ -431,9 +969,19 @@
 }
 
 .grid-canvas {
-    background-color: #f8f9fa !important;
+    width: max-content;
+    min-width: max-content;
+    margin: 0;
+    background: #ffffff !important;
     border-radius: 16px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.6),
+        0 8px 20px rgba(15, 23, 42, 0.05);
+    position: relative;
+
+    /* move visual spacing here instead of scroll parent */
+    margin: 12px;
 }
 
 /* Modern Seat Styling */
@@ -502,19 +1050,58 @@
 /* seat layout page styles start */
 /* --- Header & Wrapper --- */
 .deck-selection-container {
-    height: auto;
-    min-height: 100%;
+    /* make this the scroll container */
+    /* max-height: 78vh;              
+    overflow-y: auto;
+    overflow-x: hidden; */
+
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+
+    padding: 0 16px 16px 16px;
+    animation: deckPanelReveal 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top center;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+.deck-selection-container{
+    position: relative;
 }
 
 .deck-scroll-container {
-    display: flex;
-    justify-content: center;
-    /* RESPONSIVE START */
+    display: block;
     width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 10px;
-    /* RESPONSIVE END */
+
+    /* IMPORTANT: remove padding from the scroll container itself */
+    padding: 0;
+    padding-bottom: 6px;
+
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 100%);
+    border: 1px solid #e2e8f0;
+
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+
+    /* helps prevent clipping in grid/flex parents */
+    min-width: 0;
+}
+
+.deck-scroll-scale-wrap {
+    width: 100%;
+    overflow: visible;
+    display: block;
+}
+
+.deck-scroll-scale-wrap .grid-canvas {
+    transform-origin: top left;
+    will-change: transform;
 }
 
 .deck-header {
@@ -529,33 +1116,424 @@
 .deck-selection-wrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     width: 100%;
+    gap: 10px;
+}
+
+/* Tabs + Zoom on the same row */
+.deck-topbar{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+
+    /* give it a background so content doesn't show behind while scrolling */
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%);
+    padding: 10px 10px;
+    /* margin: -16px -16px 10px -16px;  */
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+/* Tabs area can wrap; zoom stays fixed */
+.deck-topbar .modern-tabs{
+    flex: 1 1 auto;
+    min-width: 0;              /* important so it can shrink */
+    margin: 0 !important;      /* override the centered margin */
+}
+
+/* Zoom stays on the right */
+.deck-topbar .deck-zoom-toolbar{
+    flex: 0 0 auto;
+    margin: 0 !important;      /* remove auto-right margin from old style */
+}
+
+/* When screen is tight, stack neatly */
+@media (max-width: 768px){
+    .deck-topbar{
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .deck-topbar .deck-zoom-toolbar{
+        align-self: flex-end;
+    }
 }
 
 .modern-tabs {
-    background: #f8fafc;
-    padding: 8px;
-    border-radius: 50px; /* Pill shape */
+    background: rgba(255, 255, 255, 0.9);
+    padding: 6px;
+    border-radius: 12px;
+
     display: inline-flex;
-    border: 1px solid #e2e8f0;
-    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+
+    margin: 0; /* handled by .deck-topbar */
+    max-width: 100%;
+
+    backdrop-filter: blur(8px);
+}
+
+@keyframes deckPanelReveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modern-tabs .nav-link {
-    border-radius: 40px;
-    padding: 10px 24px;
+    border-radius: 999px;
+    padding: 7px 14px;              /* tighter */
     color: #64748b;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    font-weight: 700;               /* a bit stronger */
+    font-size: 12px;                /* smaller */
+    line-height: 1;
+
+    transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     border: none !important;
 }
 
 .modern-tabs .nav-link.active {
-    background: #ffffff !important;
-    color: #10b981 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #059669 !important;
+
+    box-shadow: 0 10px 18px rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
 }
+
+/* Zoom toolbar styles start */
+.deck-zoom-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin: 0;      /* tighter vertical spacing */
+    padding: 5px;
+
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 12px;
+
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(8px);
+}
+
+.deck-zoom-btn {
+    width: 30px;            /* smaller */
+    height: 30px;           /* smaller */
+
+    border: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    color: #334155;
+
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 16px;        /* smaller */
+    line-height: 1;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    transition: transform 0.15s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.deck-zoom-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+}
+
+.deck-zoom-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.deck-zoom-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.deck-zoom-label {
+    min-width: 52px;        /* smaller */
+    text-align: center;
+
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+
+    color: #0f172a;
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 10px;
+
+    padding: 6px 8px;       /* tighter */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+}
+/* Zoom toolbar styles end */
+
+
+/* =========================================
+   Modern horizontal scrollbar (deck scroll) starts
+========================================= */
+
+/* Firefox */
+.deck-scroll-container{
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+/* WebKit (Chrome/Edge/Safari) */
+.deck-scroll-container::-webkit-scrollbar{
+    height: 8px; /* slim horizontal bar */
+}
+
+.deck-scroll-container::-webkit-scrollbar-track{
+    background: transparent;
+}
+
+.deck-scroll-container::-webkit-scrollbar-thumb{
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;      /* makes it look slimmer */
+    background-clip: padding-box;
+}
+
+/* subtle highlight on hover (only when user interacts) */
+.deck-scroll-container:hover::-webkit-scrollbar-thumb{
+    background: rgba(100, 116, 139, 0.55);
+    background-clip: padding-box;
+}
+
+/* Make the scrollbar less visually "always present" */
+.deck-scroll-container::-webkit-scrollbar-thumb{
+    opacity: 0.25;
+}
+
+.deck-scroll-container:hover::-webkit-scrollbar-thumb{
+    opacity: 1;
+}
+
+/* =========================================
+   Modern horizontal scrollbar (deck scroll) ends
+========================================= */
+
+
+/* =========================================
+   Modern vertical scrollbar (deck container) starts
+========================================= */
+
+/* Firefox */
+.deck-selection-container{
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+/* WebKit (Chrome/Edge/Safari) */
+.deck-selection-container::-webkit-scrollbar{
+    width: 8px; /* slim vertical bar */
+}
+
+.deck-selection-container::-webkit-scrollbar-track{
+    background: transparent;
+}
+
+.deck-selection-container::-webkit-scrollbar-thumb{
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;   /* makes it look slimmer */
+    background-clip: padding-box;
+}
+
+.deck-selection-container:hover::-webkit-scrollbar-thumb{
+    background: rgba(100, 116, 139, 0.55);
+    background-clip: padding-box;
+}
+
+/* Less visible until hover */
+.deck-selection-container::-webkit-scrollbar-thumb{
+    opacity: 0.25;
+}
+.deck-selection-container:hover::-webkit-scrollbar-thumb{
+    opacity: 1;
+}
+
+.deck-selection-container{
+    padding-right: 12px; /* instead of 16px right padding */
+}
+/* =========================================
+   Modern vertical scrollbar (deck container) ends
+========================================= */
+
+
+/* Selected Items panel style starts */
+.selected-items-panel {
+    margin-bottom: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    animation: selectedPanelFade 0.2s ease;
+}
+
+.selected-items-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eef2f7;
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.selected-items-panel__title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.selected-items-panel__head-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.selected-items-panel__count {
+    min-width: 24px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #10b981;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected-items-panel__subtotal {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 3px 8px;
+}
+
+.selected-items-panel__subtotal-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.selected-items-panel__subtotal-value {
+    font-size: 11px;
+    font-weight: 800;
+    color: #059669;
+    white-space: nowrap;
+}
+
+.selected-items-panel__list {
+    padding: 8px 10px;
+    display: grid;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.selected-items-panel__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+.selected-items-panel__left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.selected-items-panel__badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.selected-items-panel__name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.selected-items-panel__meta {
+    font-size: 10px;
+    color: #64748b;
+    line-height: 1.1;
+    margin-top: 1px;
+}
+
+.selected-items-panel__price {
+    font-size: 11px;
+    font-weight: 800;
+    color: #10b981;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@keyframes selectedPanelFade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Selected Items panel style ends */
 
 /* --- Layout Items (Improved Readability) --- */
 .layout-item {
@@ -582,65 +1560,100 @@
     text-align: center;
 }
 
-/* --- Seat States --- */
+
+
 .layout-item.available {
     cursor: pointer;
-    border-bottom: 4px solid var(--category-color);
+    background: rgba(16, 185, 129, 0.10) !important;
+    border: 1px solid rgba(16, 185, 129, 0.85) !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.18);
 }
 
 .layout-item.available:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     z-index: 10;
-    border-color: var(--category-color);
 }
 
 .layout-item.selected {
-    background: rgba(16, 185, 129, 0.1) !important; 
-    border: 2px solid #10b981 !important;
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    background: rgba(148, 163, 184, 0.18) !important;
+    border: 2px solid rgba(100, 116, 139, 0.90) !important;
+    box-shadow: 0 0 12px rgba(100, 116, 139, 0.22);
     z-index: 5;
 }
 
-.layout-item.selected .obj-icon, 
+.layout-item.selected::after {
+    content: none !important;
+}
+
+.layout-item.selected .obj-icon,
 .layout-item.selected .obj-label-modern {
-    color: #059669 !important; /* Saturated green text/icon */
-}
-
-/* ON-HOLD: Modern translucent amber glow */
-.layout-item.on-hold {
-    background: rgba(245, 158, 11, 0.1) !important;
-    border: 2px solid #f59e0b !important;
-    box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
-    cursor: not-allowed;
-}
-
-.layout-item.on-hold .obj-icon,
-.layout-item.on-hold .obj-label-modern {
-    color: #d97706 !important; /* Saturated orange text/icon */
+    color: #059669 !important;
 }
 
 .layout-item.occupied {
-    background-color: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    background-color: rgba(148, 163, 184, 0.18);
+    border: 1px solid rgba(148, 163, 184, 0.45);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.7;
 }
 
 .layout-item.occupied .obj-icon {
-    color: #adb5bd !important; /* Muted icon color */
+    color: rgba(100, 116, 139, 0.65) !important;
 }
 .layout-item.occupied .obj-label-modern {
-    color: #6c757d;
+    color: rgba(100, 116, 139, 0.85);
 }
-/* Add a "Sold" diagonal line effect to occupied seats */
+
+.layout-item.occupied.occupied-male {
+    background: rgba(239, 68, 68, 0.30) !important;  
+    border: 1px solid rgba(239, 68, 68, 0.45) !important;
+}
+
+.layout-item.occupied.occupied-male .obj-icon,
+.layout-item.occupied.occupied-male .obj-label-modern {
+    color: rgba(255, 0, 0, 1) !important;
+}
+
+/* red diagonal cut */
+.layout-item.occupied.occupied-male::after {
+    content: "";
+    position: absolute;
+    width: 55px;
+    height: 2px;
+    background: rgba(239, 68, 68, 0.6);
+    transform: rotate(-45deg);
+}
+
+.layout-item.occupied.occupied-female {
+    background: rgba(236, 72, 153, 0.30) !important; 
+    border: 1px solid rgba(236, 72, 153, 0.45) !important;
+}
+
+.layout-item.occupied.occupied-female .obj-icon,
+.layout-item.occupied.occupied-female .obj-label-modern {
+    color: rgb(255, 0, 106) !important;
+}
+
+
+.layout-item.occupied.occupied-female::after {
+    content: "";
+    position: absolute;
+    width: 55px;
+    height: 2px;
+    background: rgba(236, 72, 153, 0.6);
+    transform: rotate(-45deg);
+}
+
 .layout-item.occupied::after {
     content: "";
     position: absolute;
     width: 55px;
-    height: 1px; 
-    background: rgba(0,0,0,0.1); transform: rotate(-45deg);
+    height: 2px;
+    background: rgba(100, 116, 139, 0.35); /* slate cut */
+    transform: rotate(-45deg);
 }
+/* Seat States Ends Here */
 
 /* NON-BOOKABLE: Structural elements (Stairs, Corridors, Toilets) */
 .layout-item.non-bookable {
@@ -663,65 +1676,111 @@
     box-shadow: none !important;
 }
 
+/* ON-HOLD: seat temporarily reserved by someone else */
+.layout-item.on-hold {
+    background: rgba(245, 158, 11, 0.18) !important;   /* amber tint */
+    border: 2px solid rgba(245, 158, 11, 0.65) !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.20);
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+/* keep icon/label readable */
+.layout-item.on-hold .obj-icon,
+.layout-item.on-hold .obj-label-modern {
+    color: rgba(180, 83, 9, 0.95) !important; /* amber/dark */
+}
+
+/* optional: show an amber diagonal cut so it visually matches “reserved” */
+.layout-item.on-hold::after {
+    content: "";
+    position: absolute;
+    width: 55px;
+    height: 2px;
+    background: rgba(245, 158, 11, 0.55);
+    transform: rotate(-45deg);
+}
+
+/* IMPORTANT: block clicks even if JS handler exists */
+.layout-item.on-hold:hover {
+    transform: none !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.20) !important;
+}
+
 /* --- Modern Floating Footer --- */
 .modern-booking-footer {
     position: relative;
-    width: 100%;           /* Full width */
+    width: 100%;
     background: #ffffff;
     border-top: 1px solid #e2e8f0;
-    padding: 1.5rem 2rem;
+    padding: 10px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.05);
+    gap: 10px;
+    box-shadow: 0 -8px 14px rgba(0, 0, 0, 0.04);
     z-index: 1100;
     flex-shrink: 0;
-    /* Removed: width 95%, bottom 20px, transform, and border-radius */
+    flex-wrap: nowrap;
 }
 
 .footer-info-group {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+}
+
+.footer-total-group {
+    flex: 1 1 auto;
 }
 
 .footer-label {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     font-weight: 700;
     color: #94a3b8;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin-bottom: 2px;
 }
 
 .footer-value {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 700;
     color: #1e293b;
+    line-height: 1.1;
 }
 
 .total-price-display {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 800;
     color: #10b981;
+    line-height: 1.1;
+    white-space: nowrap;
 }
 
 .btn-modern-checkout {
     background: #10b981;
     color: white;
-    padding: 12px 32px;
-    border-radius: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
     font-weight: 700;
+    font-size: 13px;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     border: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 40px;
 }
 
 .btn-modern-checkout:hover {
     background: #059669;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.22);
 }
 
 .btn-modern-checkout:disabled {
@@ -731,6 +1790,53 @@
     transform: none;
     box-shadow: none;
 }
+
+.modern-booking-footer .footer-action {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px !important;
+}
+
+.modern-booking-footer #backToSeatsBtn {
+    padding: 8px 10px !important;
+    min-height: 40px;
+    line-height: 1;
+}
+
+/* Desktop: keep hidden if you already want desktop footer hidden */
+@media (min-width: 992px) {
+    .modern-booking-footer {
+        display: none !important;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 420px) {
+    .modern-booking-footer {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .footer-label {
+        font-size: 9px;
+    }
+
+    .total-price-display {
+        font-size: 16px;
+    }
+
+    .btn-modern-checkout {
+        padding: 9px 12px;
+        font-size: 12px;
+        min-height: 38px;
+    }
+
+    .modern-booking-footer #backToSeatsBtn {
+        min-height: 38px;
+        padding: 7px 9px !important;
+    }
+}
+/* --- Modern Floating Footer --- */
 
 /* Icon & Label Styling */
 .item-content-wrapper {
@@ -776,8 +1882,8 @@
 /* --- New Modern Legend Styles --- */
 .legend-container {
     width: 100%;
-    margin-top: -1rem;
-    margin-bottom: 2rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
 }
 
 .legend-card {
@@ -788,10 +1894,9 @@
 
 .legend-section {
     display: flex;
-    align-items:
-    center; padding:
-    12px 20px;
-    gap:20px;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 20px;
     flex-wrap: wrap;
 }
 
@@ -820,9 +1925,12 @@
 }
 
 .l-box {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
 }
 
 .l-item span {
@@ -831,20 +1939,22 @@
     color: #475569;
 }
 
-/* Legend Specific Box Colors */
+/* Available = green */
 .l-box.available {
-    background: white;
-    border: 1px solid #cbd5e1;
+    background: rgba(16, 185, 129, 0.10);
+    border: 1px solid rgba(16, 185, 129, 0.55);
 }
 
+/* Selected = gray */
 .l-box.selected {
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid #10b981;
+    background: rgba(148, 163, 184, 0.18);
+    border: 1px solid rgba(100, 116, 139, 0.65);
 }
 
+/* On hold = amber */
 .l-box.on-hold {
-    background: rgba(245, 158, 11, 0.2);
-    border: 1px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.55);
 }
 
 .l-box.occupied {
@@ -864,6 +1974,39 @@
     top: 6px;
 }
 
+/* Booked (Male) */
+.l-box.occupied-male {
+    background: rgba(239, 68, 68, 0.30);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+}
+.l-box.occupied-male::after {
+    content: "";
+    position: absolute;
+    width: 140%;
+    height: 2px;
+    background: rgba(239, 68, 68, 0.65);
+    transform: rotate(-45deg);
+    top: 9px;
+    left: -6px;
+}
+
+/* Booked (Female) */
+.l-box.occupied-female {
+    background: rgba(236, 72, 153, 0.30);
+    border: 1px solid rgba(236, 72, 153, 0.45);
+}
+.l-box.occupied-female::after {
+    content: "";
+    position: absolute;
+    width: 140%;
+    height: 2px;
+    background: rgba(236, 72, 153, 0.65);
+    transform: rotate(-45deg);
+    top: 9px;
+    left: -6px;
+}
+
+/* Facility */
 .l-box.non-bookable {
     background: #fcfcfc;
     border: 1px dashed #dee2e6;
@@ -873,55 +2016,100 @@
 @media (max-width: 768px) {
     .legend-section { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
+/* Legend Styles End Here */
 
 
 /* Passenger Details Section Starts Here */
 #passengerDetailsSection {
     width: 100%;
     display: none;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--heading-font, 'Inter', sans-serif);
 }
 
-/* --- 1. Compact Card Design --- */
+/* --- 1. Compact Modern Card Design --- */
 .passenger-row {
-    background: #ffffff;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    border: 1px solid var(--border, rgba(10, 60, 95, 0.12));
+    box-shadow: var(--shadow-sm, 0 6px 18px rgba(11, 18, 32, 0.06));
+    border-radius: 10px;
+    padding: 10px 10px 9px 12px;
+    margin-bottom: 8px;
     position: relative;
+    transition: all 0.18s ease;
+}
+
+.passenger-row:hover {
+    border-color: rgba(22, 127, 202, 0.26);
+    box-shadow: 0 10px 22px rgba(22, 127, 202, 0.08);
+}
+
+.passenger-row::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 3px;
+    border-radius: 0 6px 6px 0;
+    background: linear-gradient(180deg, var(--ocean, #167fca) 0%, var(--ocean-dark, #0b4a78) 100%);
+    opacity: 0.95;
 }
 
 /* --- 2. Header & Badge --- */
 .seat-badge {
-    background: #334155; /* Original dark color */
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
+    background: rgba(22, 127, 202, 0.10);
+    color: var(--ocean-dark, #0b4a78);
+    border: 1px solid rgba(22, 127, 202, 0.22);
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1;
 }
 
 .passenger-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    line-height: 1;
 }
 
 /* --- 3. Grid Layout --- */
 .field-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
 }
 
 @media (max-width: 768px) {
     .field-grid {
         grid-template-columns: 1fr;
+        gap: 7px;
+    }
+
+    .passenger-row {
+        padding: 9px 9px 8px 11px;
+        margin-bottom: 7px;
+    }
+}
+
+.tab-pane.fade.show.active {
+    animation: deckTabFade 0.22s ease;
+}
+
+@keyframes deckTabFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
@@ -929,111 +2117,434 @@
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
 }
 
 .form-label {
-    font-size: 0.7rem;
+    font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 700;
     color: #64748b;
     margin: 0;
+    line-height: 1.1;
 }
 
 .optional-text {
-    font-weight: 400;
+    font-weight: 500;
     text-transform: none;
     color: #94a3b8;
+    font-size: 9px;
 }
 
-/* --- 5. Modern Inputs (Fixed Borders) --- */
+/* --- 5. Compact Modern Inputs (Ocean Theme) --- */
 .modern-input {
     width: 100%;
-    height: 40px;
-    background-color: #ffffff !important;
-    /* Light Slate Border - Visible but modern */
-    border: 1px solid #cbd5e1 !important; 
-    border-radius: 6px;
-    padding: 0 12px;
-    font-size: 0.9rem;
-    color: #1e293b;
+    height: 32px !important;              /* compact */
+    min-height: 32px;
+    background: #ffffff !important;
+    border: 1px solid rgba(10, 60, 95, 0.16) !important;
+    border-radius: 7px;
+    padding: 0 9px;
+    font-size: 12px;
+    color: var(--ink, #0b1220);
     outline: none;
-    transition: all 0.2s ease;
+    font-size: 14px !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
 }
 
 .modern-input::placeholder {
-    color: #cbd5e1;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.modern-input:hover {
+    border-color: rgba(22, 127, 202, 0.25) !important;
 }
 
 .modern-input:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    border-color: var(--ocean, #167fca) !important;
+    box-shadow: 0 0 0 3px rgba(22, 127, 202, 0.12) !important;
+    background: #fff !important;
 }
 
-/* --- 6. Select Dropdown --- */
-.select-wrapper {
-    position: relative;
+.modern-input.is-valid {
+    border-color: var(--ocean, #167fca) !important;
+    box-shadow: 0 0 0 2px rgba(22, 127, 202, 0.08) !important;
 }
 
+.modern-input.is-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.08) !important;
+}
+
+/* Select is usually taller by browser default, force compact look */
 select.modern-input {
+    height: 32px !important;
+    line-height: 30px;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.75rem center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23167fca' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.7' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.55rem center;
     background-repeat: no-repeat;
-    background-size: 1em 1em;
-    padding-right: 2rem;
+    background-size: 0.9em 0.9em;
+    padding-right: 1.8rem;
     cursor: pointer;
 }
 
-/* --- 7. RESTORED: Modern Checkbox (Switch) --- */
-/* Use this structure in HTML: 
-   <label class="custom-switch">
-       <input type="checkbox">
-       <span class="slider"></span>
-   </label> 
-*/
+/* --- 6. Modern Checkbox (Switch) --- */
 .custom-switch {
     position: relative;
     display: inline-block;
-    width: 40px;
-    height: 22px;
+    width: 36px;
+    height: 20px;
 }
 
-.custom-switch input { 
-    opacity: 0; 
-    width: 0; 
-    height: 0; 
+.custom-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
 .slider {
-    position: absolute; 
+    position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #cbd5e1; /* Gray when off */
-    transition: .3s; 
-    border-radius: 34px;
+    inset: 0;
+    background-color: #cbd5e1;
+    transition: .25s;
+    border-radius: 999px;
 }
 
 .slider:before {
-    position: absolute; 
+    position: absolute;
     content: "";
-    height: 16px; 
-    width: 16px;
-    left: 3px; 
+    height: 14px;
+    width: 14px;
+    left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: .3s; 
+    transition: .25s;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-input:checked + .slider { 
-    background-color: #10b981; /* Green when on */
+input:checked + .slider {
+    background-color: var(--ocean, #167fca);
 }
 
-input:checked + .slider:before { 
-    transform: translateX(18px); 
+input:checked + .slider:before {
+    transform: translateX(16px);
+}
+
+/* --- 7. Confirm & Pay Button (Ocean Theme, keep modern style) --- */
+.btn-modern-checkout {
+    background: linear-gradient(135deg, var(--ocean, #167fca) 0%, var(--ocean-dark, #0b4a78) 100%);
+    color: #ffffff;
+    padding: 10px 16px;
+    min-height: 38px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(11, 74, 120, 0.22);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: 0 8px 18px rgba(22, 127, 202, 0.20);
+}
+
+.btn-modern-checkout:hover {
+    background: linear-gradient(135deg, #136fb0 0%, #093b60 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(22, 127, 202, 0.26);
+}
+
+.btn-modern-checkout:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Desktop submit button */
+#desktopSubmitBookingBtn {
+    width: 100%;
+    min-height: 38px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(11, 74, 120, 0.22);
+    background: linear-gradient(135deg, var(--ocean, #167fca) 0%, var(--ocean-dark, #0b4a78) 100%);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(22, 127, 202, 0.20);
+    transition: all 0.2s ease;
+}
+
+#desktopSubmitBookingBtn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #136fb0 0%, #093b60 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(22, 127, 202, 0.26);
+}
+
+#desktopSubmitBookingBtn:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+
+/* OTP feedback styles starts */
+
+/* Outer wrappers */
+.otp-ui-wrap {
+    margin-top: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.otp-input-wrap {
+    border: 1px solid rgba(22, 127, 202, 0.18);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Status / hints */
+.otp-status {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #0f172a;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.otp-status.is-error {
+    color: #991b1b;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.otp-phone-hint {
+    margin: 0 0 8px 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--ocean-dark, #0b4a78);
+    background: rgba(22, 127, 202, 0.08);
+    border: 1px solid rgba(22, 127, 202, 0.18);
+}
+
+.otp-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+/* OTP input + verify button (BOTH full width, stacked) */
+.otp-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    width: 100%;
+}
+
+.otp-input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+    box-sizing: border-box;
+    display: block;
+    caret-color: #0f172a;
+    -webkit-text-fill-color: #0f172a; /* helps on some browsers */
+}
+
+.otp-input::placeholder {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: normal;
+}
+
+.otp-input:focus {
+    outline: none;
+    border-color: #21a2dc;
+    box-shadow: 0 0 0 3px rgba(33, 162, 220, 0.12);
+}
+
+.otp-verify-btn {
+    width: 100%;
+    height: 42px;
+    border: 1px solid rgba(22, 127, 202, 0.25);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-weight: 500;
+    font-size: 12px;
+    background: linear-gradient(135deg, var(--ocean, #21a2dc) 0%, var(--ocean-dark, #0b4a78) 100%);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(11, 74, 120, 0.18);
+    transition: all 0.18s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.otp-verify-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(11, 74, 120, 0.22);
+}
+
+.otp-verify-btn:disabled {
+    background: #cbd5e1;
+    color: #64748b;
+    border-color: #cbd5e1;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Footer help row */
+.otp-help {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Resend button styled to match other buttons */
+.otp-resend-btn {
+    height: 38px;
+    min-width: 120px;
+    border: 1px solid rgba(22, 127, 202, 0.25);
+    background: #ffffff;
+    color: var(--ocean-dark, #0b4a78);
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    box-sizing: border-box;
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+.otp-resend-btn:hover:not(:disabled) {
+    background: rgba(22, 127, 202, 0.06);
+    border-color: rgba(22, 127, 202, 0.45);
+}
+
+.otp-resend-btn:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.otp-input::-webkit-input-placeholder {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+}
+
+.otp-input::-moz-placeholder {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+}
+
+.otp-input:-ms-input-placeholder {
+    color: #cbd5e1 !important;
+}
+
+.otp-input::-ms-input-placeholder {
+    color: #cbd5e1 !important;
+}
+
+.otp-status {
+    background: rgba(22, 127, 202, 0.08);
+    border: 1px solid rgba(22, 127, 202, 0.22);
+    color: var(--ocean-dark, #0b4a78);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.25;
+    margin-bottom: 10px;
+}
+
+.otp-status.is-error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.22);
+    color: #991b1b;
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+    .otp-ui-wrap {
+        padding: 10px;
+    }
+
+    .otp-input-wrap {
+        padding: 10px;
+    }
+
+    .otp-help {
+        align-items: stretch !important;
+    }
+
+    .otp-help > span {
+        width: 100%;
+    }
+
+    .otp-resend-btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+/* OTP feedback styles ends */
+
+/* Desktop passenger list scroll */
+@media (min-width: 992px) {
+    #passengerRows {
+        max-height: 54vh;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    #passengerRows::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #passengerRows::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
 }
 /* Passenger Details Section Ends Here */
 
@@ -1104,3 +2615,456 @@ input:checked + .slider:before {
     background: #047857;
 }
 /* seat layout page styles end */
+
+/* Inline Booking Panel Styles */
+.inline-booking-panel {
+    margin-top: 16px;
+    margin-bottom: 24px;
+}
+
+.inline-booking-panel__inner {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.inline-booking-body {
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.trip-inline-seat-host:empty {
+    display: none;
+}
+/* Inline Booking Panel Styles */
+
+/* [NEW:PAYMENT_MODAL_CSS] */
+.pay-modal { position: fixed; inset: 0; z-index: 9999; }
+.pay-modal__backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(6px);
+}
+.pay-modal__card {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(920px, calc(100vw - 24px));
+    max-height: min(84vh, 780px);
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 22px 70px rgba(2, 8, 23, .35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.pay-modal__header {
+    padding: 18px 18px 12px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+.pay-modal__title { margin: 0; font-size: 18px; color: #0f172a; font-weight: 800; }
+.pay-modal__subtitle { margin: 4px 0 0 0; font-size: 13px; color: #64748b; }
+.pay-modal__close {
+    border: 0; background: #f1f5f9;
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.pay-modal__body {
+    padding: 16px 18px 0 18px;
+    overflow: auto;
+}
+.pay-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+.pay-section__title { font-weight: 800; color: #0f172a; font-size: 14px; margin-bottom: 10px; }
+.pay-kv {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.pay-kv__item { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px; }
+.pay-kv__label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+.pay-kv__value { margin-top: 4px; color: #0f172a; font-weight: 800; font-size: 13px; }
+
+.pay-seats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.pay-seat-pill {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 8px 10px;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 13px;
+}
+.pay-seat-pill small { font-weight: 700; color: #64748b; }
+
+.pay-passengers { display: grid; gap: 10px; }
+.pay-passenger {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+}
+.pay-passenger__title { grid-column: 1 / -1; font-weight: 900; color: #0f172a; }
+.pay-passenger__kv { font-size: 13px; color: #0f172a; }
+.pay-passenger__kv span { color: #64748b; font-weight: 700; margin-right: 6px; }
+
+.pay-method__option { display: block; cursor: pointer; }
+.pay-method__option input { display: none; }
+.pay-method__box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 2px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 12px;
+}
+.pay-method__img { width: 140px; height: 44px; object-fit: contain; border-radius: 10px; background: #fff; }
+.pay-method__text { font-weight: 900; color: #0f172a; }
+.pay-method__option input:checked + .pay-method__box { border-color: #21a2dc; box-shadow: 0 12px 30px rgba(33, 162, 220, .18); }
+
+.pay-note { font-size: 12px; color: #64748b; margin-top: 10px; }
+
+.pay-modal__spacer { height: 12px; }
+
+.pay-modal__footer {
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    bottom: 0;
+}
+.pay-total__label { font-size: 12px; color: #64748b; font-weight: 800; text-transform: uppercase; }
+.pay-total__value { font-size: 18px; color: #0f172a; font-weight: 900; }
+
+@media (max-width: 640px) {
+    .pay-kv { grid-template-columns: 1fr; }
+    .pay-passenger { grid-template-columns: 1fr; }
+}
+
+.pay-breakdown {
+    display: grid;
+    gap: 8px;
+}
+.pay-breakdown__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 10px;
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 13px;
+}
+.pay-breakdown__row small {
+    font-weight: 700;
+    color: #64748b;
+}
+.pay-breakdown__total {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 16px;
+}
+
+/* [FIX:PAYMENT_FOOTER_LAYOUT] Desktop: keep Total + Pay on one row */
+.pay-total {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.pay-total__value {
+    white-space: nowrap;
+}
+
+.pay-now-btn {
+    flex: 1 1 auto;
+    width: auto;            /* not full width on desktop */
+    min-width: 240px;       /* keep button usable */
+}
+
+/* Mobile: break/stack and full width Pay */
+@media (max-width: 640px) {
+    .pay-modal__footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pay-total {
+        width: 100%;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+    }
+
+    .pay-now-btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+
+/* [FIX:PAYMENT_MODAL_ABOVE_MOBILE_NAV] */
+@media (max-width: 991.98px) {
+
+    /* Make the card fit in the space ABOVE the bottom bar */
+    .pay-modal__card {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+
+        /* this is the key: reserve space for the fixed mobile nav */
+        bottom: calc(var(--mbn2-bar-h) + env(safe-area-inset-bottom) + 12px);
+
+        width: auto;                 /* override min(920px, ..) */
+        max-height: none;            /* override min(84vh, 780px) */
+        transform: none;             /* stop centering translate */
+    }
+
+    /* Body scroll area should not hide behind sticky footer */
+    .pay-modal__body {
+        padding-bottom: 12px;        /* simple + safe */
+    }
+
+    /* Footer stays sticky at the bottom of the MODAL (not viewport) */
+    .pay-modal__footer {
+        bottom: 0;
+    }
+}
+/* [/FIX:PAYMENT_MODAL_ABOVE_MOBILE_NAV] */
+/* [/FIX:PAYMENT_FOOTER_LAYOUT] */
+/* [/NEW:PAYMENT_MODAL_CSS] */
+
+
+/* =========================
+   Desktop Split Booking UI
+   (Seat layout left + Passenger form right starts)
+   ========================= */
+@media (min-width: 992px) {
+    /* Split the inline booking body into two columns */
+    .inline-booking-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 430px;
+        gap: 16px;
+        align-items: start;
+        max-height: none;         /* let content grow normally on desktop */
+        overflow: visible;
+        padding: 16px;
+    }
+
+    .inline-booking-body .deck-selection-container {
+        min-width: 0;
+    }
+
+    /* Left side = seat layout */
+    .inline-booking-body #drawerContent {
+        min-width: 0;
+        overflow: hidden; /* prevents parent visual overlap */
+    }
+
+    /* Right side = passenger section card */
+    .inline-booking-body #passengerDetailsSection {
+        display: block !important;      /* always visible on desktop */
+        width: 100%;
+        padding: 0 !important;
+        align-self: start;
+        position: sticky;
+        top: 16px;
+    }
+
+    .inline-booking-body #passengerDetailsSection > .d-flex {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .inline-booking-body #passengerDetailsSection .w-100.d-flex.justify-content-between {
+        margin-top: 0 !important;
+        padding: 0 0 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .inline-booking-body #bookingForm {
+        max-width: 100% !important;
+        margin-top: 12px;
+    }
+
+    .modern-booking-footer {
+        display: none !important;
+    }
+
+    /* Hide footer action buttons on desktop (no NEXT/BACK in desktop flow) */
+    .modern-booking-footer .footer-action {
+        display: none !important;
+    }
+
+    /* Show desktop submit button under passenger details */
+    .desktop-passenger-submit-wrap {
+        display: block !important;
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        padding-top: 8px;
+        margin-top: 8px;
+    }
+
+    /* Passenger rows inside right panel should be tighter */
+    #passengerRows {
+        max-height: 56vh;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    /* Optional scrollbar polish */
+    #passengerRows::-webkit-scrollbar {
+        width: 6px;
+    }
+    #passengerRows::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    /* Modern look for the left seat layout container */
+    .deck-selection-container {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        padding: 0 16px 16px 16px;
+    }
+
+    /* Slightly nicer header spacing inside the deck card */
+    .deck-header {
+        margin-bottom: 1rem;
+        letter-spacing: -0.01em;
+    }
+
+    /* Keep legend/card inside the deck panel aligned and clean */
+    .legend-container {
+        margin-top: 0;
+    }
+}
+/* Seat layout left + Passenger form right ends */
+
+.req-star{
+    color: #ef4444;
+    font-weight: 800;
+    margin-left: 4px;
+}
+
+.p-phone:disabled {
+    background-color: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+/* =========================
+   Mobile drawer behavior for inlineBookingPanel
+   ========================= */
+@media (max-width: 991.98px) {
+    #inlineBookingPanel.inline-booking-panel {
+        display: block !important;          /* we control visibility via class */
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 100%;
+        /* height: 100%; */
+        bottom: calc(var(--mbn2-bar-h, 78px) + env(safe-area-inset-bottom));
+        height: auto;
+        background: #f8fafc;
+        z-index: 2000;
+        overflow: hidden;
+
+        /* slide state */
+        transform: translateX(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-bottom: 8px;
+    }
+
+    #inlineBookingPanel.inline-booking-panel.is-open {
+        transform: translateX(0);
+    }
+
+    #inlineBookingPanel .inline-booking-panel__inner {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* only body scrolls */
+    }
+
+    #inlineBookingPanel .inline-booking-body {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        min-height: 0;
+
+        max-height: none !important;
+        height: auto !important;
+    }
+}
+
+/* Optional overlay for mobile drawer */
+@media (max-width: 991.98px) {
+    .inline-booking-overlay {
+        position: fixed;
+        /* inset: 0; */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--mbn2-bar-h, 78px) + env(safe-area-inset-bottom));
+        background: rgba(0,0,0,0.45);
+        z-index: 1999;
+        display: none;
+    }
+    .inline-booking-overlay.is-open {
+        display: block;
+    }
+}
+
+@media (min-width: 992px) {
+    #desktopLegendSlot {
+        display: block !important;
+        margin-bottom: 12px;
+    }
+
+    /* Optional: tighten legend spacing on desktop sidebar */
+    #desktopLegendSlot .legend-container {
+        margin-bottom: 0 !important;
+    }
+}

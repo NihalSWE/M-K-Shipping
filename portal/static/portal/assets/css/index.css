@@ -1,0 +1,269 @@
+/* ============================
+   MBX Launch (isolated styles)
+   Prefix: .mbx-launch
+   ============================ */
+
+.mbx-launch {
+    /* Force your theme font everywhere in this component */
+    font-family: var(--heading-font) !important;
+    color: var(--ink) !important;
+}
+
+/* Force fonts for ALL headings inside, regardless of theme conflicts */
+.mbx-launch :where(h1,h2,h3,h4,h5,h6),
+.mbx-launch :where(p,span,div,li,a,small,button,input,textarea,select) {
+    font-family: var(--heading-font) !important;
+}
+
+/* Container */
+.mbx-launch__container {
+    width: min(1120px, calc(100% - 32px));
+    margin: 0 auto;
+}
+
+/* ---------- Steps block ---------- */
+.mbx-launch__steps {
+    padding: clamp(28px, 4vw, 56px) 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.mbx-launch__header {
+    text-align: center;
+    margin-bottom: clamp(18px, 3vw, 28px);
+}
+
+.mbx-launch__title {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    font-size: clamp(22px, 3vw, 34px);
+    color: var(--ink) !important;
+}
+
+.mbx-launch__title-accent {
+    color: var(--ocean) !important;
+}
+
+.mbx-launch__subtitle {
+    margin: 10px auto 0;
+    max-width: 58ch;
+    color: var(--muted) !important;
+    font-size: clamp(14px, 1.5vw, 16px);
+    line-height: 1.65;
+}
+
+/* Grid */
+.mbx-launch__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 991.98px) {
+    .mbx-launch__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card */
+.mbx-launch__card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.mbx-launch__card::before {
+    content: "";
+    position: absolute;
+    inset: -60px -60px auto auto;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(closest-side, rgba(22,127,202,0.18), rgba(22,127,202,0));
+    transform: rotate(12deg);
+    z-index: 0;
+}
+
+.mbx-launch__icon {
+    width: 72px;
+    height: 72px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: rgba(22, 127, 202, 0.08);
+    border: 1px solid rgba(22, 127, 202, 0.18);
+    z-index: 1;
+}
+
+.mbx-launch__icon svg {
+    display: block;
+    max-width: 56px;
+    height: auto;
+}
+
+/* Content */
+.mbx-launch__content {
+    z-index: 1;
+}
+
+.mbx-launch__card-title {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink) !important;
+    letter-spacing: -0.01em;
+}
+
+.mbx-launch__card-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted) !important;
+}
+
+/* Step badge */
+.mbx-launch__badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ocean-dark) !important;
+    background: rgba(22, 127, 202, 0.10);
+    border: 1px solid rgba(22, 127, 202, 0.18);
+    padding: 6px 10px;
+    border-radius: 999px;
+    z-index: 2;
+}
+
+/* ---------- Overview block ---------- */
+.mbx-launch__overview {
+    padding: clamp(28px, 4vw, 56px) 0;
+    background: #fff;
+}
+
+.mbx-launch__overview-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.85fr;
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 991.98px) {
+    .mbx-launch__overview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mbx-launch__overview-title {
+    margin: 0 0 10px 0;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: clamp(20px, 2.6vw, 30px);
+    color: var(--ink) !important;
+}
+
+/* Description area (includes rich HTML from |safe) */
+.mbx-launch__overview-desc {
+    color: var(--muted) !important;
+    font-size: 15px;
+    line-height: 1.85;
+}
+
+/* Force styles inside the injected HTML too */
+.mbx-launch__overview-desc :where(p,ul,ol,li,strong,em,a,span) {
+    font-family: var(--heading-font) !important;
+    color: inherit;
+}
+
+.mbx-launch__overview-desc :where(ul,ol) {
+    padding-left: 18px;
+    margin: 10px 0;
+}
+
+.mbx-launch__overview-desc :where(a) {
+    color: var(--ocean) !important;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.mbx-launch__overview-desc :where(a:hover) {
+    text-decoration: underline;
+}
+
+/* Highlights */
+.mbx-launch__highlights {
+    margin-top: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--ocean);
+    border-radius: 18px;
+    padding: 14px 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mbx-launch__highlights-title {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--ink) !important;
+}
+
+.mbx-launch__highlights-list {
+    color: var(--muted) !important;
+    font-size: 14px;
+    line-height: 1.75;
+}
+
+/* If key_points renders lists, make them look clean */
+.mbx-launch__highlights-list :where(ul,ol) {
+    margin: 0;
+    padding-left: 18px;
+}
+.mbx-launch__highlights-list :where(li) {
+    margin: 6px 0;
+}
+
+/* Image */
+.mbx-launch__image-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.mbx-launch__image {
+    display: block;
+    width: 100%;
+    height: clamp(220px, 36vw, 360px);
+    object-fit: cover;
+}
+
+/* Small screens spacing tweaks */
+@media (max-width: 575.98px) {
+    .mbx-launch__card {
+        grid-template-columns: 64px 1fr;
+        padding: 14px;
+    }
+    .mbx-launch__icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+    }
+}

@@ -54,6 +54,122 @@
     .custom-toast { min-width: 300px; padding: 15px; border-radius: 12px; margin-bottom: 10px; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; align-items: center; transition: 0.4s; }
     .toast-success { background: #28a745; }
     .toast-error { background: #dc3545; }
+
+    /* Modern switch + actions starts */
+    /* Modern switch + actions */
+    .modern-switch-wrap {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #e9ecef;
+        border-radius: 999px;
+        padding: 6px 10px;
+    }
+
+    .modern-switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 26px;
+    }
+
+    .modern-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .modern-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #d1d5db;
+        transition: .25s ease;
+        border-radius: 999px;
+    }
+
+    .modern-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        top: 3px;
+        background-color: white;
+        transition: .25s ease;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+
+    .modern-switch input:checked + .modern-slider {
+        background: linear-gradient(90deg, #7366ff, #8b7cff);
+    }
+
+    .modern-switch input:checked + .modern-slider:before {
+        transform: translateX(20px);
+    }
+
+    .btn-danger-soft {
+        background: linear-gradient(180deg, #fff5f5 0%, #ffeaea 100%);
+        color: #d92d20;
+        border: 1px solid #ffd1cc;
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 6px 12px;
+        box-shadow: 0 4px 12px rgba(217, 45, 32, 0.08);
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger-soft:hover {
+        background: linear-gradient(180deg, #ffeaea 0%, #ffdede 100%);
+        color: #b42318;
+        border-color: #ffb4ab;
+        box-shadow: 0 8px 18px rgba(217, 45, 32, 0.14);
+        transform: translateY(-1px);
+    }
+
+    .btn-danger-soft:active {
+        transform: translateY(0);
+        box-shadow: 0 3px 8px rgba(217, 45, 32, 0.1);
+    }
+
+    .btn-danger-soft:focus {
+        box-shadow: 0 0 0 4px rgba(217, 45, 32, 0.15);
+    }
+
+    .btn-danger-soft i {
+        opacity: 0.95;
+    }
+
+    /* Confirmation Modal */
+    .modal-confirm-modern .modal-content {
+        border: none;
+        border-radius: 18px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    }
+    .modal-confirm-modern .modal-header {
+        border-bottom: 1px solid #f1f3f5;
+        padding: 16px 20px;
+    }
+    .modal-confirm-modern .modal-body {
+        padding: 18px 20px;
+    }
+    .modal-confirm-modern .modal-footer {
+        border-top: 1px solid #f1f3f5;
+        padding: 14px 20px;
+    }
+    .confirm-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(255, 193, 7, .15);
+        color: #8a6d00;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    /* Modern switch + actions ends */
 </style>
 
 {% endblock css %}
@@ -73,7 +189,25 @@
             <div class="col-xl-4">
                 <div class="card update-card mb-4">
                     <div class="card-body">
-                        <div class="section-title"><i class="fa-solid fa-clock"></i> General Schedule</div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="section-title mb-0"><i class="fa-solid fa-clock"></i> General Schedule</div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="modern-switch-wrap" title="Trip visibility">
+                                    <span class="small text-muted me-2" id="statusLabelText">
+                                        {% if trip.is_published %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                    <label class="modern-switch mb-0">
+                                        <input type="checkbox" id="tripStatusSwitch" {% if trip.is_published %}checked{% endif %}>
+                                        <span class="modern-slider"></span>
+                                    </label>
+                                </div>
+
+                                <button type="button" class="btn btn-sm btn-danger-soft" id="deleteTripBtn" title="Delete Trip">
+                                    <i class="fa-solid fa-trash-can me-1"></i> Delete
+                                </button>
+                            </div>
+                        </div>
                         
                         <div class="mb-3">
                             <label class="form-label text-muted small">Departure Date & Time</label>
@@ -89,6 +223,24 @@
                                 class="form-control border" 
                                 style="color: #333 !important;"
                                 value="{{ trip.price_multiplier }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Booking Close Offset (Minutes)</label>
+                            <input
+                                type="number"
+                                name="booking_close_offset_minutes"
+                                class="form-control border"
+                                min="0"
+                                max="10080"
+                                step="1"
+                                style="color: #333 !important;"
+                                value="{{ trip.booking_close_offset_minutes|default_if_none:'' }}"
+                                placeholder="Leave blank to use schedule/default"
+                            >
+                            <small class="text-muted d-block mt-1">
+                                Leave blank to inherit from the schedule or system default. Example: 120 = booking closes 120 minutes before departure.
+                            </small>
                         </div>
 
                         <hr class="my-4">
@@ -177,12 +329,44 @@
         </div>
     </form>
 </div>
+
+<!-- Booking Warning / Confirmation Modal -->
+<div class="modal fade modal-confirm-modern" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-1">Confirmation Required</h5>
+                    <div class="confirm-badge">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Trip has bookings
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="small text-muted mb-2" id="confirmOriginText">Booking Warning</div>
+                <div id="confirmMessageText" class="text-dark" style="line-height: 1.5;">
+                    This trip has booked/locked tickets. Do you want to continue?
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="confirmActionBtn">
+                    Yes, Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scriptcontent %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    // 1. Initialize Date Picker (Always unlocked)
+    // 1. Initialize Date Picker
     flatpickr("#departurePicker", {
         enableTime: true,
         dateFormat: "Y-m-d H:i",
@@ -199,47 +383,249 @@
         setTimeout(() => toast.remove(), 4000);
     }
 
-    // 3. AJAX Submission
-    document.getElementById('updateTripForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const btn = document.getElementById('saveBtn');
-        const spinner = document.getElementById('btnSpinner');
-        const errorDiv = document.getElementById('error-container');
-        const sourceSpan = document.getElementById('error-source');
-        const messageSpan = document.getElementById('error-message');
-        
-        // UI State
-        btn.disabled = true;
-        spinner.classList.remove('d-none');
-        errorDiv.style.display = 'none';
+    const form = document.getElementById('updateTripForm');
+    const btn = document.getElementById('saveBtn');
+    const spinner = document.getElementById('btnSpinner');
+    const errorDiv = document.getElementById('error-container');
+    const sourceSpan = document.getElementById('error-source');
+    const messageSpan = document.getElementById('error-message');
+
+    const statusSwitch = document.getElementById('tripStatusSwitch');
+    const statusLabelText = document.getElementById('statusLabelText');
+    const deleteTripBtn = document.getElementById('deleteTripBtn');
+
+    const confirmModalEl = document.getElementById('confirmActionModal');
+    const confirmModal = new bootstrap.Modal(confirmModalEl);
+    const confirmOriginText = document.getElementById('confirmOriginText');
+    const confirmMessageText = document.getElementById('confirmMessageText');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+
+    let pendingRequest = null;
+    let lastKnownSwitchState = statusSwitch.checked;
+
+    const csrfToken = "{{ csrf_token }}";
+
+    function setSavingState(isSaving) {
+        btn.disabled = isSaving;
+        spinner.classList.toggle('d-none', !isSaving);
+        if (isSaving) {
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    function showInlineError(origin, message) {
+        sourceSpan.innerText = origin || 'System';
+        messageSpan.innerText = message || 'Something went wrong.';
+        errorDiv.style.display = 'block';
+    }
+
+    function buildFormDataForSave(forceConfirm = false) {
+        const fd = new FormData(form);
+        fd.set('action', 'save');
+        if (forceConfirm) {
+            fd.set('force_confirm', '1');
+        }
+        return fd;
+    }
+
+    function buildFormDataForToggle(forceConfirm = false) {
+        const fd = new FormData();
+        fd.set('csrfmiddlewaretoken', csrfToken);
+        fd.set('action', 'toggle_status');
+        fd.set('is_published', statusSwitch.checked ? '1' : '0');
+        if (forceConfirm) {
+            fd.set('force_confirm', '1');
+        }
+        return fd;
+    }
+
+    function buildFormDataForDelete(forceConfirm = false) {
+        const fd = new FormData();
+        fd.set('csrfmiddlewaretoken', csrfToken);
+        fd.set('action', 'delete_trip');
+        if (forceConfirm) {
+            fd.set('force_confirm', '1');
+        }
+        return fd;
+    }
+
+    function sendRequest(formData, options = {}) {
+        const { onSuccess, onError, onFinally } = options;
 
         fetch(window.location.href, {
             method: 'POST',
-            body: new FormData(this),
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
         })
         .then(response => response.json())
         .then(data => {
+            if (data.status === 'warning' && data.requires_confirmation) {
+                // Hold request for confirmation
+                pendingRequest = {
+                    action: data.confirm_action,
+                    payloadBuilder: () => {
+                        if (data.confirm_action === 'save') return buildFormDataForSave(true);
+                        if (data.confirm_action === 'toggle_status') return buildFormDataForToggle(true);
+                        if (data.confirm_action === 'delete_trip') return buildFormDataForDelete(true);
+                        return null;
+                    }
+                };
+
+                confirmOriginText.innerText = data.origin || 'Booking Warning';
+                confirmMessageText.innerText = data.message || 'Confirmation required.';
+                confirmModal.show();
+                return;
+            }
+
             if (data.status === 'success') {
-                showNotification(data.message, 'success');
-                // Optional: Refresh itinerary times without reloading page
-                // location.reload(); 
+                if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                } else {
+                    showNotification(data.message || 'Success', 'success');
+                }
             } else {
-                // PINPOINT: Showing JSON error at the top
-                sourceSpan.innerText = data.origin;
-                messageSpan.innerText = data.message;
-                errorDiv.style.display = 'block';
-                showNotification('Update failed', 'error');
+                if (typeof onError === 'function') {
+                    onError(data);
+                } else {
+                    showInlineError(data.origin, data.message);
+                    showNotification('Update failed', 'error');
+                }
             }
         })
-        .catch(err => {
-            showNotification('Network error occurred.', 'error');
+        .catch(() => {
+            if (typeof onError === 'function') {
+                onError({ origin: 'Network', message: 'Network error occurred.' });
+            } else {
+                showInlineError('Network', 'Network error occurred.');
+                showNotification('Network error occurred.', 'error');
+            }
         })
         .finally(() => {
-            btn.disabled = false;
-            spinner.classList.add('d-none');
+            if (typeof onFinally === 'function') {
+                onFinally();
+            }
         });
+    }
+
+    // 3. Save form
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        setSavingState(true);
+
+        sendRequest(buildFormDataForSave(false), {
+            onSuccess: (data) => {
+                showNotification(data.message, 'success');
+            },
+            onError: (data) => {
+                showInlineError(data.origin, data.message);
+                showNotification('Update failed', 'error');
+            },
+            onFinally: () => {
+                setSavingState(false);
+            }
+        });
+    });
+
+    // 4. Toggle status (active/inactive)
+    statusSwitch.addEventListener('change', function() {
+        const targetState = statusSwitch.checked;
+
+        // instant UI label update (will revert if failed/cancelled)
+        statusLabelText.innerText = targetState ? 'Active' : 'Inactive';
+        errorDiv.style.display = 'none';
+
+        sendRequest(buildFormDataForToggle(false), {
+            onSuccess: (data) => {
+                lastKnownSwitchState = !!data.is_published;
+                statusSwitch.checked = !!data.is_published;
+                statusLabelText.innerText = data.is_published ? 'Active' : 'Inactive';
+                showNotification(data.message, 'success');
+            },
+            onError: (data) => {
+                // revert switch on hard error
+                statusSwitch.checked = lastKnownSwitchState;
+                statusLabelText.innerText = lastKnownSwitchState ? 'Active' : 'Inactive';
+                showInlineError(data.origin, data.message);
+                showNotification('Status update failed', 'error');
+            }
+        });
+    });
+
+    // 5. Delete trip
+    deleteTripBtn.addEventListener('click', function() {
+        errorDiv.style.display = 'none';
+
+        sendRequest(buildFormDataForDelete(false), {
+            onSuccess: (data) => {
+                showNotification(data.message, 'success');
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 700);
+                }
+            },
+            onError: (data) => {
+                showInlineError(data.origin, data.message);
+                showNotification('Delete failed', 'error');
+            }
+        });
+    });
+
+    // 6. Confirm modal action
+    confirmActionBtn.addEventListener('click', function() {
+        if (!pendingRequest || typeof pendingRequest.payloadBuilder !== 'function') {
+            confirmModal.hide();
+            return;
+        }
+
+        const actionName = pendingRequest.action;
+        const payload = pendingRequest.payloadBuilder();
+
+        confirmModal.hide();
+
+        sendRequest(payload, {
+            onSuccess: (data) => {
+                if (actionName === 'toggle_status') {
+                    lastKnownSwitchState = !!data.is_published;
+                    statusSwitch.checked = !!data.is_published;
+                    statusLabelText.innerText = data.is_published ? 'Active' : 'Inactive';
+                }
+
+                if (actionName === 'delete_trip' && data.redirect_url) {
+                    showNotification(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 700);
+                    return;
+                }
+
+                showNotification(data.message || 'Action completed', 'success');
+            },
+            onError: (data) => {
+                // revert switch if toggle failed after confirmation
+                if (actionName === 'toggle_status') {
+                    statusSwitch.checked = lastKnownSwitchState;
+                    statusLabelText.innerText = lastKnownSwitchState ? 'Active' : 'Inactive';
+                }
+
+                showInlineError(data.origin, data.message);
+                showNotification('Action failed', 'error');
+            },
+            onFinally: () => {
+                pendingRequest = null;
+            }
+        });
+    });
+
+    // 7. If modal is closed without confirming (cancel), revert switch if toggle was pending
+    confirmModalEl.addEventListener('hidden.bs.modal', function () {
+        if (pendingRequest && pendingRequest.action === 'toggle_status') {
+            statusSwitch.checked = lastKnownSwitchState;
+            statusLabelText.innerText = lastKnownSwitchState ? 'Active' : 'Inactive';
+        }
     });
 </script>
 {% endblock %}

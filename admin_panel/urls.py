@@ -1,12 +1,9 @@
 from django.urls import path
 from .import views
 
-
-
-
-
 urlpatterns = [
     path('', views.dashboard, name='admin_dashboard'),
+    path("logout/", views.admin_logout, name="admin_logout"),
 
     # Ships
     path('ships/', views.ships, name='ships'),
@@ -15,6 +12,8 @@ urlpatterns = [
     # Locations & Routes
     path('locations/', views.locations, name='locations'),
     path('counters/', views.counters, name='counters'),
+    path('counters/<int:counter_id>/sales/', views.counter_sales_report, name='counter_sales_report'),
+    path('counters/<int:counter_id>/sales/download-csv/', views.counter_sales_report_csv, name='counter_sales_report_csv'),
     path('routes/', views.routes, name='routes'),
     path('routes/<int:route_id>/', views.route_details, name='route_details'),
     
@@ -26,7 +25,6 @@ urlpatterns = [
     path('deck/<int:deck_id>/design/', views.seat_plan_editor, name='seat_plan_editor'),
     path('deck/<int:deck_id>/save/', views.save_seat_layout, name='save_seat_layout'),
     path('deck/<int:deck_id>/update-rows/', views.update_deck_rows, name='update_deck_rows'),
-    path('deck/<int:deck_id>/save/', views.save_seat_layout, name='save_seat_layout'),
     path('deck/<int:deck_id>/view/', views.view_seat_plan, name='view_seat_plan'),
     
     # Trips
@@ -45,7 +43,8 @@ urlpatterns = [
     # Site Identity
     path('identity/', views.site_identity_view, name='site_identity'),
     path('banner/', views.banner, name='banner'),
-     path('overview/', views.overview, name='overview'),
+    path('overview/', views.overview, name='overview'),
+    
     #for search bar
     path('api/get-search-locations/', views.get_search_locations, name='get_search_locations'),
 
@@ -56,7 +55,6 @@ urlpatterns = [
     path('contact-us/info-cards/', views.contact_info_cards_view, name='contact_info_cards'),
     path('contact-us/map/', views.contact_map_view, name='contact_map'),
     path('contact-us/faq/', views.contact_faq_view, name='contact_faq'),
-    #contact
     
     # About Us Management
     path('about-us/banner/', views.about_banner_view, name='about_banner'),
@@ -80,7 +78,6 @@ urlpatterns = [
     path('admin_user_list/delete/<int:id>/', views.admin_user_delete, name='admin_user_delete'),
     path('users/edit/<int:id>/', views.admin_user_edit, name='admin_user_edit'),
     path('user_add/', views.user_add, name='user_add'),
-    #user accounts---
     
     #tckt booking
     path('tcktbook/', views.tcktbook, name='tcktbook'),
@@ -90,12 +87,16 @@ urlpatterns = [
     path('trip/toggle-lock/<int:trip_id>/', views.toggle_trip_lock, name='toggle_trip_lock'),
     path('trip/toggle-single-seat/', views.toggle_single_seat_lock, name='toggle_single_seat_lock'),
     path('trip/report/<int:trip_id>/', views.trip_seat_report, name='trip_seat_report'),
-    path('bookings/list/', views.booking_list, name='admin_booking_list'),
+    path('bookings/list/', views.passenger_list, name='passenger_list'),
     path('bookings/issued/', views.booking_issue_list, name='booking_issue_list'),
     path('bookings/pending/', views.booking_pending_list, name='booking_pending_list'),
     path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
     path('bookings/expired/', views.booking_expired_list, name='booking_expired_list'),
     path('booking/extend-time/', views.extend_booking_time_api, name='extend_booking_time'),
+    
+    # In your urls.py
+    path('booking/<int:booking_id>/stop-time/', views.stop_booking_time, name='stop_booking_time'),
+    path('booking/<int:booking_id>/resume-time/', views.resume_booking_time, name='resume_booking_time'),
     path('booking/ticket/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('booking/visual-map/<int:booking_id>/', views.booking_visual_map, name='booking_visual_map'),
     path('booking/cancel/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
@@ -105,18 +106,17 @@ urlpatterns = [
     path('booking/manifest/<int:trip_id>/export/', views.export_manifest_xls, name='export_manifest_xls'),
     path('export-manifest-pdf/<int:trip_id>/', views.download_manifest_pdf, name='download_manifest_pdf'), 
     path('get-seat-details/<int:trip_id>/<int:seat_id>/', views.get_seat_details, name='get_seat_details'),
-    #tckt booking
     
+    # NEW API ENDPOINTS for seat holding - ADD THESE LINES
+    path('check-seat-availability/', views.check_seat_availability, name='check_seat_availability'),
+    path('create-seat-hold/', views.create_seat_hold, name='create_seat_hold'),
+    path('release-seat-hold/', views.release_seat_hold, name='release_seat_hold'),
+    path('api/check-multiple-seats/', views.check_multiple_seats_availability, name='check_multiple_seats'),
+    path('api/create-multiple-holds/', views.create_multiple_seat_holds, name='create_multiple_holds'),
+    path('api/release-multiple-holds/', views.release_multiple_seat_holds, name='release_multiple_holds'),
     
-     #pos
-    # 1. ADD THIS: The page to choose a ship (No ID needed here)
+    #pos
     path('pos/select-trip/', views.pos_trip_select, name='pos_trip_select'),
-
-    # 2. YOUR EXISTING URL: The interface (Requires ID)
     path('pos/booking/<int:trip_id>/', views.pos_booking_interface, name='pos_booking_interface'),
     path('pos/booking/confirm/', views.pos_book_confirm, name='pos_book_confirm'),
-    #pos
-    
-    
-    
 ]

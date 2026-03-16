@@ -1,0 +1,760 @@
+:root{
+        --heading-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+        --ocean:#167fca;
+        --ocean-dark:#0b4a78;
+        --ink:#0b1220;
+        --muted:#607387;
+
+        --card:#ffffff;
+        --surface:#f6fbff;
+        --border:rgba(10, 60, 95, 0.12);
+
+        --shadow-sm: 0 6px 18px rgba(11, 18, 32, 0.06);
+        --shadow-md: 0 14px 30px rgba(11, 18, 32, 0.10);
+    }
+
+    .mbx-page-wrap {
+        font-family: var(--heading-font);
+        background: linear-gradient(180deg, #f8fbff 0%, #f4f9ff 100%);
+        min-height: 100%;
+        padding: 26px 0 48px;
+    }
+
+    .mbx-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* ===============================
+       HERO
+    =============================== */
+    .mbx-hero {
+        background: linear-gradient(135deg, rgba(22,127,202,0.10), rgba(11,74,120,0.08));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        animation: mbxFadeUp .45s ease;
+    }
+
+    .mbx-hero__title {
+        margin: 0;
+        color: var(--ink);
+        font-weight: 800;
+        font-size: 2.2rem;
+        line-height: 1.2;
+    }
+
+    .mbx-hero__sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 1.4rem;
+        line-height: 1.3;
+    }
+
+    .mbx-hero__support {
+        margin-top: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px dashed rgba(22,127,202,0.35);
+        color: var(--ocean-dark);
+        background: rgba(22,127,202,0.06);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-weight: 600;
+        font-size: 1.2rem;
+        line-height: 1.2;
+        flex-wrap: wrap;
+    }
+
+    /* ===============================
+       TABS
+    =============================== */
+    .mbx-tabs {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        padding: 8px;
+        margin-bottom: 14px;
+        animation: mbxFadeUp .55s ease;
+    }
+
+    .mbx-tabs .nav-pills {
+        gap: 6px;
+    }
+
+    .mbx-tabs .nav-link {
+        border: none;
+        border-radius: 10px;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 1.22rem;
+        padding: 8px 12px;
+        transition: all .25s ease;
+        line-height: 1.1;
+    }
+
+    .mbx-tabs .nav-link:hover {
+        background: rgba(22,127,202,0.06);
+        color: var(--ocean-dark);
+    }
+
+    .mbx-tabs .nav-link.active {
+        background: linear-gradient(135deg, var(--ocean), var(--ocean-dark));
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(22,127,202,0.22);
+    }
+
+    /* ===============================
+       LIST
+    =============================== */
+    .mbx-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* ===============================
+       CARD
+    =============================== */
+    .mbx-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        animation: mbxFadeUp .45s ease;
+    }
+
+    .mbx-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(22,127,202,0.22);
+    }
+
+    .mbx-card__head {
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+        background: linear-gradient(180deg, rgba(22,127,202,0.04), rgba(22,127,202,0.01));
+    }
+
+    .mbx-card__topline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .mbx-card__ref {
+        font-weight: 800;
+        color: var(--ink);
+        letter-spacing: 0.1px;
+        font-size: 1.65rem;
+        line-height: 1.1;
+    }
+
+    .mbx-chip-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .mbx-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 1.08rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .mbx-chip i {
+        font-size: 0.88rem;
+    }
+
+    .mbx-chip--status-confirmed {
+        background: rgba(25, 135, 84, 0.10);
+        color: #0f7a45;
+        border-color: rgba(25, 135, 84, 0.18);
+    }
+
+    .mbx-chip--status-pending,
+    .mbx-chip--status-locked {
+        background: rgba(255, 193, 7, 0.14);
+        color: #8a6a00;
+        border-color: rgba(255, 193, 7, 0.24);
+    }
+
+    .mbx-chip--status-cancelled,
+    .mbx-chip--status-expired {
+        background: rgba(220, 53, 69, 0.10);
+        color: #b02a37;
+        border-color: rgba(220, 53, 69, 0.18);
+    }
+
+    .mbx-chip--payment-paid {
+        background: rgba(22,127,202,0.10);
+        color: var(--ocean-dark);
+        border-color: rgba(22,127,202,0.18);
+    }
+
+    .mbx-chip--payment-unpaid {
+        background: rgba(108, 117, 125, 0.10);
+        color: #495057;
+        border-color: rgba(108, 117, 125, 0.18);
+    }
+
+    .mbx-route-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 1.46rem;
+        line-height: 1.2;
+    }
+
+    .mbx-route-line .mbx-route-arrow {
+        color: var(--ocean);
+        opacity: 0.9;
+        font-size: 1.08rem;
+    }
+
+    .mbx-route-meta {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .mbx-route-meta__item {
+        background: rgba(22,127,202,0.04);
+        border: 1px solid rgba(22,127,202,0.08);
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-height: 62px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .mbx-label {
+        display: block;
+        color: var(--muted);
+        font-size: 1.08rem;
+        font-weight: 500;
+        margin-bottom: 2px;
+        line-height: 1.15;
+    }
+
+    .mbx-value {
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 1.28rem;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .mbx-card__body {
+        padding: 10px 14px 12px;
+    }
+
+    /* Bootstrap summary row wrapper */
+    .mbx-summary-grid {
+        margin-bottom: 10px;
+    }
+
+    .mbx-summary-item {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .mbx-summary-item .mbx-label {
+        margin-bottom: 3px;
+        font-size: 1rem;
+    }
+
+    .mbx-summary-item .mbx-value {
+        font-size: 1.18rem;
+        line-height: 1.15;
+    }
+
+    .mbx-summary-item .mbx-value.mbx-seats-value {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* ===============================
+       DETAILS SECTION
+    =============================== */
+    .mbx-section {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        border-radius: 12px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .mbx-section__head {
+        background: rgba(22,127,202,0.04);
+        border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+        padding: 8px 10px;
+        font-weight: 700;
+        font-size: 1.16rem;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        line-height: 1.15;
+    }
+
+    .mbx-section__body {
+        padding: 8px 10px;
+        background: #fff;
+    }
+
+    .mbx-passenger-list,
+    .mbx-ticket-list {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mbx-passenger-item,
+    .mbx-ticket-item {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        border-radius: 10px;
+        padding: 8px 9px;
+        background: #fff;
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .mbx-passenger-item:hover,
+    .mbx-ticket-item:hover {
+        background: #fbfdff;
+        transform: translateY(-1px);
+    }
+
+    .mbx-passenger-item .fw-semibold,
+    .mbx-ticket-item .fw-semibold {
+        font-size: 1.2rem;
+        line-height: 1.15;
+    }
+
+    .mbx-inline-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.2;
+    }
+
+    .mbx-inline-meta strong {
+        color: var(--ink);
+        font-weight: 700;
+    }
+
+    .mbx-empty {
+        background: var(--card);
+        border: 1px dashed rgba(22,127,202,0.25);
+        border-radius: 16px;
+        padding: 22px 16px;
+        text-align: center;
+        color: var(--muted);
+        box-shadow: var(--shadow-sm);
+        animation: mbxFadeUp .4s ease;
+    }
+
+    .mbx-empty__icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(22,127,202,0.08);
+        color: var(--ocean);
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+    }
+
+    .mbx-empty h5 {
+        font-size: 1.4rem;
+        color: var(--ink);
+        margin-bottom: 0.4rem;
+    }
+
+    .mbx-empty p {
+        font-size: 1.14rem;
+        margin-bottom: 0;
+    }
+
+    .mbx-cancel-note {
+        margin-top: 8px;
+        background: rgba(255, 193, 7, 0.10);
+        border: 1px solid rgba(255, 193, 7, 0.24);
+        color: #7a5b00;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-weight: 600;
+        font-size: 1.08rem;
+        line-height: 1.2;
+    }
+
+    .mbx-collapse-btn {
+        border: 1px solid rgba(22,127,202,0.16);
+        background: rgba(22,127,202,0.06);
+        color: var(--ocean-dark);
+        border-radius: 8px;
+        padding: 5px 9px;
+        font-size: 1.04rem;
+        font-weight: 700;
+        transition: all .2s ease;
+        line-height: 1.1;
+    }
+
+    .mbx-collapse-btn:hover {
+        background: rgba(22,127,202,0.12);
+        transform: translateY(-1px);
+    }
+
+    .mbx-muted {
+        color: var(--muted);
+    }
+
+    .mbx-card .collapse {
+        transition: all .25s ease;
+    }
+
+    @keyframes mbxFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===============================
+       LARGE TABLETS / SMALL LAPTOPS
+    =============================== */
+    @media (max-width: 991.98px) {
+        .mbx-page-wrap {
+            padding: 22px 0 40px;
+        }
+
+        .mbx-card__ref {
+            font-size: 1.42rem;
+        }
+
+        .mbx-route-line {
+            font-size: 1.28rem;
+        }
+
+        .mbx-value {
+            font-size: 1.14rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 1rem;
+        }
+    }
+
+    /* ===============================
+       MOBILE
+    =============================== */
+    @media (max-width: 767.98px) {
+        .mbx-page-wrap {
+            padding-top: 16px;
+            padding-bottom: 28px;
+        }
+
+        .mbx-hero {
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .mbx-hero__title {
+            font-size: 1.68rem;
+        }
+
+        .mbx-hero__sub {
+            font-size: 1.2rem;
+        }
+
+        .mbx-hero__support {
+            width: 100%;
+            border-radius: 10px;
+            justify-content: flex-start;
+            align-items: flex-start;
+            font-size: 1.08rem;
+            padding: 8px 9px;
+        }
+
+        .mbx-tabs {
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 10px;
+        }
+
+        .mbx-tabs .nav {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mbx-tabs .nav-item {
+            width: 100%;
+        }
+
+        .mbx-tabs .nav-link {
+            width: 100%;
+            font-size: 1.02rem;
+            padding: 8px 8px;
+            text-align: center;
+        }
+
+        .mbx-grid {
+            gap: 10px;
+        }
+
+        .mbx-card {
+            border-radius: 14px;
+        }
+
+        .mbx-card__head,
+        .mbx-card__body {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .mbx-card__head {
+            padding-top: 10px;
+            padding-bottom: 9px;
+        }
+
+        .mbx-card__body {
+            padding-top: 9px;
+            padding-bottom: 10px;
+        }
+
+        .mbx-card__topline {
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .mbx-card__ref {
+            font-size: 1.34rem;
+        }
+
+        .mbx-chip {
+            font-size: 0.98rem;
+            padding: 4px 8px;
+        }
+
+        .mbx-route-line {
+            font-size: 1.16rem;
+            gap: 5px;
+            line-height: 1.15;
+        }
+
+        .mbx-route-meta {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .mbx-route-meta__item {
+            min-height: auto;
+            padding: 7px 8px;
+            border-radius: 9px;
+        }
+
+        .mbx-label {
+            font-size: 0.98rem;
+        }
+
+        .mbx-value {
+            font-size: 1.08rem;
+        }
+
+        /* Bootstrap summary already handles 2 columns via col-6 */
+        .mbx-summary-grid {
+            margin-bottom: 8px;
+        }
+
+        .mbx-summary-item {
+            min-height: auto;
+            padding: 7px 8px;
+            border-radius: 9px;
+        }
+
+        .mbx-summary-item .mbx-label {
+            font-size: 0.94rem;
+        }
+
+        .mbx-summary-item .mbx-value {
+            font-size: 1.02rem;
+        }
+
+        .mbx-summary-item .mbx-value.mbx-seats-value {
+            -webkit-line-clamp: 2;
+        }
+
+        .mbx-collapse-btn {
+            width: 100%;
+            text-align: center;
+            padding: 7px 8px;
+            border-radius: 8px;
+            font-size: 0.98rem;
+        }
+
+        .mbx-section {
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+
+        .mbx-section__head {
+            padding: 7px 8px;
+            font-size: 1.04rem;
+        }
+
+        .mbx-section__body {
+            padding: 7px 8px;
+        }
+
+        .mbx-passenger-item,
+        .mbx-ticket-item {
+            border-radius: 8px;
+            padding: 7px 8px;
+        }
+
+        .mbx-passenger-item .fw-semibold,
+        .mbx-ticket-item .fw-semibold {
+            font-size: 1.06rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 0.98rem;
+            gap: 4px 10px;
+        }
+
+        .mbx-cancel-note {
+            font-size: 0.98rem;
+            padding: 7px 8px;
+            border-radius: 8px;
+        }
+
+        .mbx-card__body .d-flex.justify-content-between .small {
+            font-size: 0.98rem;
+            line-height: 1.25;
+        }
+    }
+
+    /* ===============================
+       VERY SMALL DEVICES
+    =============================== */
+    @media (max-width: 420px) {
+        .mbx-card__ref {
+            font-size: 1.2rem;
+        }
+
+        .mbx-route-line {
+            font-size: 1.06rem;
+        }
+
+        .mbx-chip {
+            font-size: 0.92rem;
+            padding: 4px 7px;
+        }
+
+        .mbx-tabs .nav-link {
+            font-size: 0.98rem;
+            padding: 7px 6px;
+        }
+
+        .mbx-value,
+        .mbx-summary-item .mbx-value {
+            font-size: 1rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 0.92rem;
+        }
+
+        .mbx-label,
+        .mbx-summary-item .mbx-label {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* [NEW:MBX_PAGINATION] */
+.mbx-pagination{
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+.mbx-pagination .pagination{
+    gap: 8px;
+    padding: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mbx-pagination .page-link{
+    border: 0 !important;
+    border-radius: 12px !important;
+    padding: 10px 12px;
+    font-weight: 800;
+    color: var(--ocean-dark);
+    background: rgba(22,127,202,0.08);
+    transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.mbx-pagination .page-link:hover{
+    transform: translateY(-1px);
+    background: rgba(22,127,202,0.14);
+}
+
+.mbx-pagination .page-item.disabled .page-link{
+    opacity: .45;
+    pointer-events: none;
+    background: rgba(96,115,135,0.12);
+    color: var(--muted);
+}
+
+.mbx-pagination .page-item.disabled span.page-link{
+    opacity: 1;
+    background: transparent;
+    color: var(--muted);
+}
+/* [/NEW:MBX_PAGINATION] */

@@ -1,0 +1,29 @@
+{# portal/partial/nav_links.html #}
+
+<li class="menu-item">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'home' %}">Home</a>
+</li>
+
+<li class="menu-item">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'aboutUs' %}">About</a>
+</li>
+
+<li class="menu-item">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'services' %}">Services</a>
+</li>
+
+<li class="menu-item">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'technology_innovation' %}">Technology</a>
+</li>
+
+<li class="menu-item rts-has-dropdown">
+    <a href="#" class="rts-dropdown-main-element">Pages</a>
+    <ul class="rts-submenu list-unstyled menu-home">
+        <li class="nav-item"><a class="nav-link" href="{% url 'team' %}">Leadership Profile</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'blog' %}">Blog</a></li>
+    </ul>
+</li>
+
+<li class="menu-item">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'contact' %}">Contact</a>
+</li>

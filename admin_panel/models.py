@@ -3,7 +3,9 @@ from django.db import models
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
+from datetime import timedelta
 from django.conf import settings
+import uuid
 
 
 
@@ -195,6 +197,21 @@ class Counter(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.location.name})"
+    
+    
+class CounterUser(models.Model):
+    counter = models.ForeignKey('Counter', on_delete=models.CASCADE, related_name='user_assignments')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='counter_assignments')
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('counter', 'user')
+
+    def __str__(self):
+        return f"{self.user} -> {self.counter}"
+    
 
 class Route(models.Model):
     name = models.CharField(max_length=100)
@@ -262,6 +279,12 @@ class TripSchedule(models.Model):
     # How many days in advance should the system automatically open bookings?
     advance_booking_days = models.PositiveIntegerField(default=10)
     
+    booking_close_offset_minutes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Default minutes before departure when booking closes. Leave blank to use default 5 minutes."
+    )
+    
     run_monday = models.BooleanField(default=True)
     run_tuesday = models.BooleanField(default=True)
     run_wednesday = models.BooleanField(default=True)
@@ -285,6 +308,12 @@ class Trip(models.Model):
     arrival_datetime = models.DateTimeField(null=True, blank=True)
     is_published = models.BooleanField(default=True, help_text="Set to False to hide this specific date from customers")
     
+    booking_close_offset_minutes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Minutes before departure when booking closes for this trip. Leave blank to inherit from schedule/default."
+    )
+    
     price_multiplier = models.DecimalField(
         max_digits=4, 
         decimal_places=2, 
@@ -297,6 +326,30 @@ class Trip(models.Model):
     
     def __str__(self):
         return f"{self.ship.name} - {self.departure_datetime}"
+    
+    def get_booking_close_offset_minutes(self):
+        """
+        Priority:
+        1. Trip-specific override
+        2. Schedule default
+        3. Fallback = 5 minutes
+        """
+        if self.booking_close_offset_minutes is not None:
+            return self.booking_close_offset_minutes
+
+        if self.schedule and self.schedule.booking_close_offset_minutes is not None:
+            return self.schedule.booking_close_offset_minutes
+
+        return 5
+
+    def booking_cutoff_datetime(self):
+        """
+        After this datetime, the trip should not appear for booking.
+        """
+        return self.departure_datetime - timedelta(minutes=self.get_booking_close_offset_minutes())
+
+    def is_booking_open(self):
+        return timezone.now() < self.booking_cutoff_datetime()
     
     def get_price(self, category, from_stop, to_stop):
         """
@@ -326,23 +379,78 @@ class Trip(models.Model):
         
         return 0
     
+    # Method 1: For frontend (simple version - used during booking)
     def is_seat_available(self, seat_object, from_stop, to_stop):
-        # We use a transaction to prevent others from writing at the same time
+        """
+        Simple version for frontend booking.
+        This considers a seat available if:
+        - It's not booked by anyone
+        - User's own hold is OK (will be checked separately)
+        """
         with transaction.atomic():
             start_order = from_stop.stop_order
             end_order = to_stop.stop_order
 
-            # .select_for_update() locks these rows in the DB until the transaction is finished
-            overlapping_exists = self.tickets.select_for_update().filter(
+            # Check if seat is BOOKED by anyone
+            booked_exists = self.tickets.select_for_update().filter(
                 seat_object=seat_object,
-                status__in=['BOOKED', 'LOCKED']
+                status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
             ).filter(
                 Q(from_stop__stop_order__lt=end_order) & 
                 Q(to_stop__stop_order__gt=start_order)
             ).exists()
 
-            return not overlapping_exists
-    
+            if booked_exists:
+                return False
+
+            # If not booked, it's available (holds are handled separately)
+            return True
+
+    # Method 2: For admin panel (with exclude_user parameter)
+    def is_seat_available_admin(self, seat_object, from_stop, to_stop, exclude_user=None):
+        """
+        Admin version that checks both tickets AND active holds.
+        exclude_user: If provided, ignores holds/tickets belonging to this user.
+        """
+        with transaction.atomic():
+            start_order = from_stop.stop_order
+            end_order = to_stop.stop_order
+
+            # Check TICKETS
+            tickets_qs = self.tickets.select_for_update().filter(
+                seat_object=seat_object,
+                status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+            ).filter(
+                Q(from_stop__stop_order__lt=end_order) & 
+                Q(to_stop__stop_order__gt=start_order)
+            )
+
+            # Check HOLDS
+            holds_qs = SeatHold.objects.select_for_update().filter(
+                trip=self,
+                seat_object=seat_object,
+                expires_at__gt=timezone.now()
+            ).filter(
+                Q(from_stop__stop_order__lt=to_stop.stop_order) &
+                Q(to_stop__stop_order__gt=from_stop.stop_order)
+            )
+
+            # Handle exclude_user
+            if exclude_user:
+                if hasattr(exclude_user, 'is_authenticated') and exclude_user.is_authenticated:
+                    tickets_qs = tickets_qs.exclude(booking__user=exclude_user)
+
+                    # Support both old and new holder_id formats during transition
+                    holds_qs = holds_qs.exclude(
+                        Q(holder_id=str(exclude_user.id)) |
+                        Q(holder_id=f"user_{exclude_user.id}")
+                    )
+
+            tickets_exist = tickets_qs.exists()
+            holds_exist = holds_qs.exists()
+
+            return not (tickets_exist or holds_exist)
+        
     
 
 class TripPricing(models.Model):
@@ -364,10 +472,6 @@ class TripPricing(models.Model):
 
 # --- 4. BOOKING TRANSACTIONS ---
 
-from django.db import models
-from django.conf import settings
-# Import your Trip, Counter models if they are in the same file or imported above
-
 class Booking(models.Model):
     # --- CHOICES ---
     STATUS_CHOICES = (
@@ -384,15 +488,26 @@ class Booking(models.Model):
     )
 
     # --- FIELDS ---
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    trip = models.ForeignKey('Trip', on_delete=models.PROTECT) # specific 'Trip' string or class
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
+    trip = models.ForeignKey('Trip', on_delete=models.CASCADE) # specific 'Trip' string or class
     booking_ref = models.CharField(max_length=12, unique=True)
     
     # Counter Logic
     counter = models.ForeignKey('Counter', null=True, blank=True, on_delete=models.SET_NULL)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='issued_bookings',
+        help_text="Admin/staff user who created this booking."
+    )
+    
     sales_channel = models.CharField(max_length=20, default='ONLINE', choices=(('ONLINE', 'Online'), ('COUNTER', 'Counter')))
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    # Add this new field
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     # Booking Status (e.g., Is the seat held?)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
@@ -406,18 +521,58 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
+    # New field for time stop feature
+    time_stopped = models.BooleanField(default=False)
+    stopped_at = models.DateTimeField(null=True, blank=True)  # When time was stopped
+    
     expiry_at = models.DateTimeField(null=True, blank=True, help_text="Auto-cancel time for unpaid bookings")
     seat_snapshot = models.CharField(max_length=255, blank=True, null=True, help_text="Stores seat numbers for expired bookings")
+    
+    # ===== NEW: Payment gateway fields =====
+    payment_session_key = models.CharField(max_length=100, blank=True, null=True)
+    payment_tran_id = models.CharField(max_length=100, blank=True, null=True)
+    payment_val_id = models.CharField(max_length=100, blank=True, null=True)
+    payment_date = models.DateTimeField(blank=True, null=True)
+    
+    share_token = models.CharField(max_length=40, blank=True, null=True, db_index=True)
+    qr_image = models.ImageField(upload_to="booking_qr/", blank=True, null=True)
+    ticket_pdf = models.FileField(upload_to="booking_pdfs/", blank=True, null=True)
     
     def save(self, *args, **kwargs):
         # Auto-set expiry if PENDING and not set
         if self.status == 'PENDING' and not self.expiry_at:
             self.expiry_at = timezone.now() + timezone.timedelta(hours=2)
         super().save(*args, **kwargs)
+        
+    @property
+    def due_amount(self):
+        total = self.total_amount or 0
+        paid = self.paid_amount or 0
+        due = total - paid
+        return due if due > 0 else 0
+    
+    def ensure_share_token(self):
+        if not self.share_token:
+            self.share_token = uuid.uuid4().hex
+            self.save(update_fields=["share_token"])
+        return self.share_token
+
+    def get_public_ticket_path(self):
+        token = self.share_token or ""
+        return f"/ticket/{self.booking_ref}/{token}/"
     
     
     def __str__(self):
-        return f"{self.booking_ref} - {self.passenger_name}"
+        # Get first passenger name if exists, otherwise use user's name
+        first_passenger = self.passengers.first()
+        if first_passenger:
+            passenger_display = first_passenger.name
+        elif self.user:
+            passenger_display = self.user.get_display_name() or self.user.phone_number or "Unknown"
+        else:
+            passenger_display = "No Passenger"
+        
+        return f"{self.booking_ref} - {passenger_display}"
 
     @property
     def passenger_name(self):
@@ -428,6 +583,34 @@ class Booking(models.Model):
                 return full_name
             return self.user.username  # Fallback to username if name is blank
         return "Unknown Guest"
+    
+
+class Passenger(models.Model):
+    GENDER_CHOICES = (
+        (0, 'Male'),
+        (1, 'Female'),
+        (2, 'Other'),
+    )
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='booking_passengers')
+
+    name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField(blank=True, null=True)
+
+    gender = models.IntegerField(
+        choices=GENDER_CHOICES,
+        blank=True,
+        null=True
+    )
+
+    address = models.TextField(blank=True, null=True)
+
+    class Meta:
+        pass
+    
+    
 
 class Ticket(models.Model):
     STATUS_CHOICES = (
@@ -436,13 +619,14 @@ class Ticket(models.Model):
         ('CANCELLED', 'Cancelled'),
     )
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='tickets')
-    trip = models.ForeignKey('Trip', on_delete=models.PROTECT, related_name='tickets')
-    seat_object = models.ForeignKey(LayoutObject, on_delete=models.PROTECT)
+    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name='tickets')
+    trip = models.ForeignKey('Trip', on_delete=models.CASCADE, related_name='tickets')
+    seat_object = models.ForeignKey(LayoutObject, on_delete=models.CASCADE)
     passenger_name = models.CharField(max_length=100)
     
     # Segment Logic
-    from_stop = models.ForeignKey(RouteStop, on_delete=models.PROTECT, related_name='tickets_starting')
-    to_stop = models.ForeignKey(RouteStop, on_delete=models.PROTECT, related_name='tickets_ending')
+    from_stop = models.ForeignKey(RouteStop, on_delete=models.CASCADE, related_name='tickets_starting')
+    to_stop = models.ForeignKey(RouteStop, on_delete=models.CASCADE, related_name='tickets_ending')
     
     fare_amount = models.DecimalField(
         max_digits=10, 
@@ -459,9 +643,36 @@ class Ticket(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
-    
-    
-    
+
+class SeatHold(models.Model):
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="seat_holds")
+    from_stop = models.ForeignKey(RouteStop, on_delete=models.CASCADE, related_name="seat_holds_from")
+    to_stop = models.ForeignKey(RouteStop, on_delete=models.CASCADE, related_name="seat_holds_to")
+    seat_object = models.ForeignKey(LayoutObject, on_delete=models.CASCADE, related_name="seat_holds")
+
+    # holder_id = models.CharField(max_length=64, db_index=True)
+    # holder = models.ForeignKey(
+    #     settings.AUTH_USER_MODEL,
+    #     on_delete=models.CASCADE,
+    #     related_name="seat_holds",
+    #     db_index=True
+    # )
+    holder_id = models.CharField(max_length=64, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["trip", "from_stop", "to_stop", "seat_object"],
+                name="uniq_seat_hold_per_segment"
+            )
+        ]
+
+    def is_active(self):
+        return self.expires_at > timezone.now()
     
 #-----------------------------------------------------------------------
 #-------------------------------------------------------------------------

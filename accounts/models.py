@@ -93,10 +93,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     city = models.CharField(max_length=250, blank=True, null=True)
     state = models.CharField(max_length=250, blank=True, null=True)
     postal_code = models.CharField(max_length=50, blank=True, null=True)
-    company_name = models.CharField(max_length=150, blank=True, null=True) 
+    company_name = models.CharField(max_length=150, blank=True, null=True)
+    
+    is_guest = models.BooleanField(
+        default=False,
+        help_text="True if the account was auto-created during booking and not yet claimed by the user."
+    )
 
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, default=2)
     user_status = models.IntegerField(choices=STATUS_CHOICES, default=1)
+    
+    assigned_counter = models.ForeignKey(
+        'admin_panel.Counter',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users',
+        help_text="Counter this staff/admin user belongs to (if any)."
+    )
     
     balance = models.FloatField(default=0.0)
     credit_limit = models.FloatField(default=0.0)

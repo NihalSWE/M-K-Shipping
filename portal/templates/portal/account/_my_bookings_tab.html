@@ -1,0 +1,595 @@
+{% load static %}
+
+
+
+<div class="mbx-page-wrap">
+    <div class="container mbx-shell">
+        <div class="mbx-hero">
+            <h1 class="mbx-hero__title">My Bookings</h1>
+            <p class="mbx-hero__sub">
+                View your upcoming trips and booking history with full details.
+            </p>
+            <div class="mbx-hero__support">
+                <i class="fa-solid fa-headset"></i>
+                For cancellation, contact support: <strong>09678330055</strong>
+            </div>
+        </div>
+
+        <div class="mbx-tabs">
+            <ul class="nav nav-pills" id="mbxBookingTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if booking_tab == 'upcoming' %}active{% endif %}"
+                            aria-selected="{% if booking_tab == 'upcoming' %}true{% else %}false{% endif %}"
+                            id="mbx-upcoming-tab"
+                            data-bs-toggle="pill"
+                            data-bs-target="#mbx-upcoming-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="mbx-upcoming-pane"
+                            aria-selected="true">
+                        Upcoming Bookings ({{ upcoming_count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if booking_tab == 'history' %}active{% endif %}"
+                            aria-selected="{% if booking_tab == 'history' %}true{% else %}false{% endif %}"
+                            id="mbx-history-tab"
+                            data-bs-toggle="pill"
+                            data-bs-target="#mbx-history-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="mbx-history-pane"
+                            aria-selected="false">
+                        Booking History ({{ past_count }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="mbxBookingTabsContent">
+            <!-- Upcoming -->
+            <div class="tab-pane fade {% if booking_tab == 'upcoming' %}show active{% endif %}" id="mbx-upcoming-pane" role="tabpanel" aria-labelledby="mbx-upcoming-tab" tabindex="0">
+                {% if upcoming_page_obj %}
+                    <div class="mbx-grid">
+                        {% for booking in upcoming_page_obj %}
+                            <div class="mbx-card">
+                                <div class="mbx-card__head">
+                                    <div class="mbx-card__topline">
+                                        <div class="mbx-card__ref">{{ booking.booking_ref }}</div>
+
+                                        <div class="mbx-chip-wrap">
+                                            <span class="mbx-chip mbx-chip--status-{{ booking.status|lower }}">
+                                                <i class="fa-solid fa-circle"></i>
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                            <span class="mbx-chip mbx-chip--payment-{{ booking.payment_status|lower }}">
+                                                <i class="fa-solid fa-wallet"></i>
+                                                {{ booking.get_payment_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-route-line">
+                                        <span>{{ booking.trip.route.source.name }}</span>
+                                        <i class="fa-solid fa-arrow-right mbx-route-arrow"></i>
+                                        <span>{{ booking.trip.route.destination.name }}</span>
+                                    </div>
+
+                                    <div class="mbx-route-meta">
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Departure</span>
+                                            <span class="mbx-value">{{ booking.trip.departure_datetime|date:"d M Y, h:i A" }}</span>
+                                        </div>
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Ship</span>
+                                            <span class="mbx-value">{{ booking.trip.ship.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mbx-card__body">
+                                    <!-- ✅ Bootstrap summary row (2 cols mobile, 4 cols md+) -->
+                                    <div class="row g-2 mbx-summary-grid">
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Total Amount</span>
+                                                <span class="mbx-value">৳{{ booking.total_amount }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Passengers</span>
+                                                <span class="mbx-value">{{ booking.passengers.count }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Seats</span>
+                                                <span class="mbx-value mbx-seats-value">
+                                                    {% if booking.seat_labels %}{{ booking.seat_labels|join:", " }}{% else %}N/A{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Channel</span>
+                                                <span class="mbx-value">{{ booking.get_sales_channel_display|default:booking.sales_channel }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="small mbx-muted">
+                                            <strong class="text-dark">Booked on:</strong> {{ booking.created_at|date:"d M Y, h:i A" }}
+                                        </div>
+
+                                        <div class="d-flex justify-content-end">
+                                            <button class="mbx-collapse-btn"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#mbx-detail-{{ booking.id }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="mbx-detail-{{ booking.id }}">
+                                                <i class="fa-solid fa-chevron-down me-1"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-cancel-note">
+                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                        To cancel this booking, please contact support at <strong>09678330055</strong>.
+                                    </div>
+
+                                    <div class="collapse mt-2" id="mbx-detail-{{ booking.id }}">
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-qrcode me-1"></i> Ticket QR & Download</span>
+                                            </div>
+
+                                            <div class="mbx-section__body">
+                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        {% if booking.qr_image %}
+                                                            <img
+                                                                src="{{ booking.qr_image.url }}"
+                                                                alt="Ticket QR"
+                                                                style="width: 88px; height: 88px; border-radius: 12px; border: 1px solid rgba(10, 60, 95, 0.12); background: #fff; object-fit: contain;"
+                                                            >
+                                                        {% else %}
+                                                            <img
+                                                                src="{% url 'ticket_qr_png' booking.booking_ref booking.share_token %}"
+                                                                alt="Ticket QR"
+                                                                style="width: 88px; height: 88px; border-radius: 12px; border: 1px solid rgba(10, 60, 95, 0.12); background: #fff; object-fit: contain;"
+                                                            >
+                                                        {% endif %}
+
+                                                        <div>
+                                                            <div class="fw-semibold" style="font-size: 1.1rem; color: var(--ink);">
+                                                                Scan to verify ticket
+                                                            </div>
+
+                                                            {% comment %} <div class="mbx-muted" style="font-size: 1rem;">
+                                                                Share link:
+                                                                <a href="{{ booking.public_url }}" target="_blank" style="color: var(--ocean-dark); font-weight: 700; text-decoration: none;">
+                                                                    Open Ticket Page
+                                                                </a>
+                                                            </div> {% endcomment %}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <a href="{% url 'booking_ticket_pdf' booking.booking_ref %}" class="mbx-collapse-btn" style="text-decoration:none;">
+                                                            <i class="fa-solid fa-file-pdf me-1"></i> Download Ticket
+                                                        </a>
+
+                                                        {% comment %} <a href="https://wa.me/?text={{ booking.public_url|urlencode }}" target="_blank" class="mbx-collapse-btn" style="text-decoration:none;">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
+                                                        </a> {% endcomment %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-users me-1"></i> Passenger Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.passengers.all %}
+                                                    <ul class="mbx-passenger-list">
+                                                        {% for p in booking.passengers.all %}
+                                                            <li class="mbx-passenger-item">
+                                                                <div class="fw-semibold">{{ p.name }}</div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Phone:</strong> {{ p.phone }}</span>
+                                                                    {% if p.email %}<span><strong>Email:</strong> {{ p.email }}</span>{% endif %}
+                                                                    {% if p.get_gender_display %}<span><strong>Gender:</strong> {{ p.get_gender_display }}</span>{% endif %}
+                                                                    {% if p.address %}<span><strong>Address:</strong> {{ p.address }}</span>{% endif %}
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No passenger details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-ticket me-1"></i> Ticket Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.tickets.all %}
+                                                    <ul class="mbx-ticket-list">
+                                                        {% for t in booking.tickets.all %}
+                                                            <li class="mbx-ticket-item">
+                                                                <div class="fw-semibold">
+                                                                    Seat {{ t.seat_object.label|default:t.seat_object_id }} — ৳{{ t.fare_amount }}
+                                                                </div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Passenger:</strong> {{ t.passenger_name }}</span>
+                                                                    <span><strong>Segment:</strong> {{ t.from_stop.location.name }} → {{ t.to_stop.location.name }}</span>
+                                                                    <span><strong>Status:</strong> {{ t.get_status_display }}</span>
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No ticket details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if upcoming_page_obj.paginator.num_pages > 1 %}
+                        <nav class="mbx-pagination" aria-label="Upcoming pagination">
+                            <ul class="pagination mb-0">
+
+                                <!-- First -->
+                                {% if upcoming_page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=upcoming&up_page=1&hist_page={{ past_page_obj.number }}">
+                                            <i class="fa-solid fa-angles-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angles-left"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Prev -->
+                                {% if upcoming_page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=upcoming&up_page={{ upcoming_page_obj.previous_page_number }}&hist_page={{ past_page_obj.number }}">
+                                            <i class="fa-solid fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angle-left"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Status -->
+                                <li class="page-item disabled">
+                                    <span class="page-link">
+                                        Page {{ upcoming_page_obj.number }} of {{ upcoming_page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                <!-- Next -->
+                                {% if upcoming_page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=upcoming&up_page={{ upcoming_page_obj.next_page_number }}&hist_page={{ past_page_obj.number }}">
+                                            <i class="fa-solid fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angle-right"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Last -->
+                                {% if upcoming_page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=upcoming&up_page={{ upcoming_page_obj.paginator.num_pages }}&hist_page={{ past_page_obj.number }}">
+                                            <i class="fa-solid fa-angles-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angles-right"></i></span>
+                                    </li>
+                                {% endif %}
+
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="mbx-empty">
+                        <div class="mbx-empty__icon">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <h5>No Upcoming Bookings</h5>
+                        <p>You don’t have any upcoming trips yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- History -->
+            <div class="tab-pane fade {% if booking_tab == 'history' %}show active{% endif %}"id="mbx-history-pane" role="tabpanel" aria-labelledby="mbx-history-tab" tabindex="0">
+                {% if past_page_obj %}
+                    <div class="mbx-grid">
+                        {% for booking in past_page_obj %}
+                            <div class="mbx-card">
+                                <div class="mbx-card__head">
+                                    <div class="mbx-card__topline">
+                                        <div class="mbx-card__ref">{{ booking.booking_ref }}</div>
+
+                                        <div class="mbx-chip-wrap">
+                                            <span class="mbx-chip mbx-chip--status-{{ booking.status|lower }}">
+                                                <i class="fa-solid fa-circle"></i>
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                            <span class="mbx-chip mbx-chip--payment-{{ booking.payment_status|lower }}">
+                                                <i class="fa-solid fa-wallet"></i>
+                                                {{ booking.get_payment_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-route-line">
+                                        <span>{{ booking.trip.route.source.name }}</span>
+                                        <i class="fa-solid fa-arrow-right mbx-route-arrow"></i>
+                                        <span>{{ booking.trip.route.destination.name }}</span>
+                                    </div>
+
+                                    <div class="mbx-route-meta">
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Departure</span>
+                                            <span class="mbx-value">{{ booking.trip.departure_datetime|date:"d M Y, h:i A" }}</span>
+                                        </div>
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Ship</span>
+                                            <span class="mbx-value">{{ booking.trip.ship.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mbx-card__body">
+                                    <div class="row g-2 mbx-summary-grid">
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Total Amount</span>
+                                                <span class="mbx-value">৳{{ booking.total_amount }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Passengers</span>
+                                                <span class="mbx-value">{{ booking.passengers.count }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Seats</span>
+                                                <span class="mbx-value mbx-seats-value">
+                                                    {% if booking.seat_labels %}{{ booking.seat_labels|join:", " }}{% else %}N/A{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Channel</span>
+                                                <span class="mbx-value">{{ booking.get_sales_channel_display|default:booking.sales_channel }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="small mbx-muted">
+                                            <strong class="text-dark">Booked on:</strong> {{ booking.created_at|date:"d M Y, h:i A" }}
+                                        </div>
+
+                                        <div class="d-flex justify-content-end">
+                                            <button class="mbx-collapse-btn"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#mbx-history-detail-{{ booking.id }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="mbx-history-detail-{{ booking.id }}">
+                                                <i class="fa-solid fa-chevron-down me-1"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="collapse mt-2" id="mbx-history-detail-{{ booking.id }}">
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-qrcode me-1"></i> Ticket QR & Download</span>
+                                            </div>
+
+                                            <div class="mbx-section__body">
+                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        {% if booking.qr_image %}
+                                                            <img
+                                                                src="{{ booking.qr_image.url }}"
+                                                                alt="Ticket QR"
+                                                                style="width: 88px; height: 88px; border-radius: 12px; border: 1px solid rgba(10, 60, 95, 0.12); background: #fff; object-fit: contain;"
+                                                            >
+                                                        {% else %}
+                                                            <img
+                                                                src="{% url 'ticket_qr_png' booking.booking_ref booking.share_token %}"
+                                                                alt="Ticket QR"
+                                                                style="width: 88px; height: 88px; border-radius: 12px; border: 1px solid rgba(10, 60, 95, 0.12); background: #fff; object-fit: contain;"
+                                                            >
+                                                        {% endif %}
+
+                                                        <div>
+                                                            <div class="fw-semibold" style="font-size: 1.1rem; color: var(--ink);">
+                                                                Scan to verify ticket
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <a href="{% url 'booking_ticket_pdf' booking.booking_ref %}" class="mbx-collapse-btn" style="text-decoration:none;">
+                                                            <i class="fa-solid fa-file-pdf me-1"></i> Download Ticket
+                                                        </a>
+
+                                                        {% comment %} <a href="https://wa.me/?text={{ booking.public_url|urlencode }}" target="_blank" class="mbx-collapse-btn" style="text-decoration:none;">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
+                                                        </a> {% endcomment %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-users me-1"></i> Passenger Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.passengers.all %}
+                                                    <ul class="mbx-passenger-list">
+                                                        {% for p in booking.passengers.all %}
+                                                            <li class="mbx-passenger-item">
+                                                                <div class="fw-semibold">{{ p.name }}</div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Phone:</strong> {{ p.phone }}</span>
+                                                                    {% if p.email %}<span><strong>Email:</strong> {{ p.email }}</span>{% endif %}
+                                                                    {% if p.get_gender_display %}<span><strong>Gender:</strong> {{ p.get_gender_display }}</span>{% endif %}
+                                                                    {% if p.address %}<span><strong>Address:</strong> {{ p.address }}</span>{% endif %}
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No passenger details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-ticket me-1"></i> Ticket Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.tickets.all %}
+                                                    <ul class="mbx-ticket-list">
+                                                        {% for t in booking.tickets.all %}
+                                                            <li class="mbx-ticket-item">
+                                                                <div class="fw-semibold">
+                                                                    Seat {{ t.seat_object.label|default:t.seat_object_id }} — ৳{{ t.fare_amount }}
+                                                                </div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Passenger:</strong> {{ t.passenger_name }}</span>
+                                                                    <span><strong>Segment:</strong> {{ t.from_stop.location.name }} → {{ t.to_stop.location.name }}</span>
+                                                                    <span><strong>Status:</strong> {{ t.get_status_display }}</span>
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No ticket details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if past_page_obj.paginator.num_pages > 1 %}
+                        <nav class="mbx-pagination" aria-label="History pagination">
+                            <ul class="pagination mb-0">
+
+                                <!-- First -->
+                                {% if past_page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=history&hist_page=1&up_page={{ upcoming_page_obj.number }}">
+                                            <i class="fa-solid fa-angles-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angles-left"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Prev -->
+                                {% if past_page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=history&hist_page={{ past_page_obj.previous_page_number }}&up_page={{ upcoming_page_obj.number }}">
+                                            <i class="fa-solid fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angle-left"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Status -->
+                                <li class="page-item disabled">
+                                    <span class="page-link">
+                                        Page {{ past_page_obj.number }} of {{ past_page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                <!-- Next -->
+                                {% if past_page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=history&hist_page={{ past_page_obj.next_page_number }}&up_page={{ upcoming_page_obj.number }}">
+                                            <i class="fa-solid fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angle-right"></i></span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Last -->
+                                {% if past_page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                        href="?tab={{ active_tab }}&booking_tab=history&hist_page={{ past_page_obj.paginator.num_pages }}&up_page={{ upcoming_page_obj.number }}">
+                                            <i class="fa-solid fa-angles-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fa-solid fa-angles-right"></i></span>
+                                    </li>
+                                {% endif %}
+
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="mbx-empty">
+                        <div class="mbx-empty__icon">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <h5>No Booking History</h5>
+                        <p>Your completed/past bookings will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

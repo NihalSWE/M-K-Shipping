@@ -1,20 +1,319 @@
 {% extends 'admin_panel/base.html' %}
 {% load static %}
 
-
 {% block css %}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/select.bootstrap5.css' %}">
+
+<style>
+    .dashboard-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+
+    .dashboard-card h6 {
+        font-size: 13px;
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-card .value {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .dashboard-card .sub {
+        font-size: 12px;
+        color: #888;
+        margin-top: 6px;
+    }
+
+    .module-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .mini-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mini-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 13px;
+    }
+
+    .mini-list li:last-child {
+        border-bottom: none;
+    }
+
+    .mini-list .row-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-weight: 600;
+    }
+
+    .mini-list .row-sub {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 4px;
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+    .alert-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 13px;
+    }
+
+    .alert-item:last-child {
+        border-bottom: none;
+    }
+
+    .alert-badge {
+        background: #f8f9fa;
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .chart-box {
+        min-height: 300px;
+    }
+
+    .compact-chart-box {
+        min-height: 280px;
+    }
+
+    .kpi-grid .col-xl-3,
+    .kpi-grid .col-md-6 {
+        margin-bottom: 16px;
+    }
+</style>
 {% endblock css %}
 
 {% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h4 class="mb-1">Transport Dashboard</h4>
+                        <p class="text-muted mb-0">Operational snapshot, sales insights, and trip performance</p>
+                    </div>
+                    <div class="text-muted small">
+                        Updated: {{ now|default:"Now" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-{% include 'admin_panel/general/dashboard/components/dashboard-09.html' %}
+    <!-- KPI Cards (Module 1) -->
+    <div class="row kpi-grid">
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Bookings Today</h6>
+                <div class="value">{{ bookings_today }}</div>
+                <div class="sub">New bookings created today</div>
+            </div>
+        </div>
 
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Paid Revenue (This Month)</h6>
+                <div class="value">৳{{ paid_revenue_month }}</div>
+                <div class="sub">Sum of paid booking amounts</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Active Trips Today</h6>
+                <div class="value">{{ active_trips_today }}</div>
+                <div class="sub">Published trips scheduled today</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Avg Occupancy Today</h6>
+                <div class="value">{{ avg_occupancy_today }}%</div>
+                <div class="sub">Based on booked tickets / ship capacity</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Active Seat Holds</h6>
+                <div class="value">{{ active_seat_holds }}</div>
+                <div class="sub">Current unexpired seat holds</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Pending Bookings</h6>
+                <div class="value">{{ pending_bookings }}</div>
+                <div class="sub">Awaiting payment / confirmation</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Expired Bookings</h6>
+                <div class="value">{{ expired_bookings }}</div>
+                <div class="sub">Bookings marked as expired</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Trips Departing (6 Hours)</h6>
+                <div class="value">{{ trips_departing_6h }}</div>
+                <div class="sub">Immediate operational attention</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row (Modules 2,3,4,5) -->
+    <div class="row">
+        <div class="col-xl-8 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Bookings Trend (Last 14 Days)</div>
+                <div id="bookingsTrendChart" class="chart-box"></div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Booking Status Breakdown</div>
+                <div id="bookingStatusChart" class="compact-chart-box"></div>
+            </div>
+        </div>
+
+        <div class="col-xl-8 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Paid Revenue Trend (Last 14 Days)</div>
+                <div id="revenueTrendChart" class="chart-box"></div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Sales Channel</div>
+                <div id="salesChannelChart" class="compact-chart-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Small Modules Row (Modules 6,7,8) -->
+    <div class="row">
+        <div class="col-xl-4 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Top Routes (By Tickets Sold)</div>
+                <ul class="mini-list">
+                    {% for item in top_routes_data %}
+                        <li>
+                            <div class="row-top">
+                                <span>{{ item.route_name }}</span>
+                                <span>{{ item.tickets_sold }} tickets</span>
+                            </div>
+                            <div class="row-sub">
+                                <span>Revenue</span>
+                                <span>৳{{ item.revenue }}</span>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li class="text-muted">No route sales data yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Upcoming Trips</div>
+                <ul class="mini-list">
+                    {% for trip in upcoming_trips %}
+                        <li>
+                            <div class="row-top">
+                                <span>{{ trip.ship }}</span>
+                                <span>{{ trip.occupancy }}%</span>
+                            </div>
+                            <div class="row-sub">
+                                <span>{{ trip.route }}</span>
+                                <span>{{ trip.sold }}/{{ trip.capacity }}</span>
+                            </div>
+                            <div class="row-sub">
+                                <span>{{ trip.departure }}</span>
+                                <span></span>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li class="text-muted">No upcoming published trips found.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-4">
+            <div class="dashboard-card">
+                <div class="module-title">Top Ships + Alerts</div>
+
+                <ul class="mini-list mb-3">
+                    {% for ship in top_ships_data %}
+                        <li>
+                            <div class="row-top">
+                                <span>{{ ship.ship_name }}</span>
+                                <span>৳{{ ship.revenue }}</span>
+                            </div>
+                            <div class="row-sub">
+                                <span>Tickets sold</span>
+                                <span>{{ ship.tickets_sold }}</span>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li class="text-muted">No ship performance data yet.</li>
+                    {% endfor %}
+                </ul>
+
+                <div class="module-title mt-2">Operational Alerts</div>
+                <div class="alert-item">
+                    <span>Overdue Pending Bookings</span>
+                    <span class="alert-badge">{{ overdue_pending }}</span>
+                </div>
+                <div class="alert-item">
+                    <span>Active Seat Holds</span>
+                    <span class="alert-badge">{{ active_seat_holds }}</span>
+                </div>
+                <div class="alert-item">
+                    <span>Trips in Next 6 Hours</span>
+                    <span class="alert-badge">{{ trips_departing_6h }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block scriptcontent %} 
-
+{% block scriptcontent %}
 <script src="{% static 'assets/js/chart/apex-chart/apex-chart.js' %}"></script>
 <script src="{% static 'assets/js/chart/apex-chart/stock-prices.js' %}"></script>
 <script src="{% static 'assets/js/counter/counter-custom.js' %}"></script>
@@ -26,5 +325,111 @@
 <script src="{% static 'assets/js/dashboard/dashboard_2.js' %}"></script>
 <script src="{% static 'assets/js/tooltip-init.js' %}"></script>
 
+<script>
+    // ---------- Chart Data ----------
+    const trendLabels = {{ trend_labels_json|safe }};
+    const trendBookings = {{ trend_bookings_json|safe }};
+    const trendRevenue = {{ trend_revenue_json|safe }};
+
+    const bookingStatusLabels = {{ booking_status_labels_json|safe }};
+    const bookingStatusSeries = {{ booking_status_series_json|safe }};
+
+    const salesChannelLabels = {{ sales_channel_labels_json|safe }};
+    const salesChannelSeries = {{ sales_channel_series_json|safe }};
+
+    // ---------- Bookings Trend Chart ----------
+    const bookingsTrendOptions = {
+        chart: {
+            type: 'line',
+            height: 300,
+            toolbar: { show: false }
+        },
+        series: [{
+            name: 'Bookings',
+            data: trendBookings
+        }],
+        xaxis: {
+            categories: trendLabels
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        dataLabels: {
+            enabled: false
+        },
+        grid: {
+            borderColor: '#f1f1f1'
+        }
+    };
+
+    new ApexCharts(document.querySelector("#bookingsTrendChart"), bookingsTrendOptions).render();
+
+    // ---------- Revenue Trend Chart ----------
+    const revenueTrendOptions = {
+        chart: {
+            type: 'bar',
+            height: 300,
+            toolbar: { show: false }
+        },
+        series: [{
+            name: 'Revenue',
+            data: trendRevenue
+        }],
+        xaxis: {
+            categories: trendLabels
+        },
+        yaxis: {
+            labels: {
+                formatter: function (val) {
+                    return '৳' + val;
+                }
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        grid: {
+            borderColor: '#f1f1f1'
+        }
+    };
+
+    new ApexCharts(document.querySelector("#revenueTrendChart"), revenueTrendOptions).render();
+
+    // ---------- Booking Status Donut ----------
+    const bookingStatusOptions = {
+        chart: {
+            type: 'donut',
+            height: 280
+        },
+        series: bookingStatusSeries,
+        labels: bookingStatusLabels,
+        legend: {
+            position: 'bottom'
+        },
+        dataLabels: {
+            enabled: true
+        }
+    };
+
+    new ApexCharts(document.querySelector("#bookingStatusChart"), bookingStatusOptions).render();
+
+    // ---------- Sales Channel Donut ----------
+    const salesChannelOptions = {
+        chart: {
+            type: 'donut',
+            height: 280
+        },
+        series: salesChannelSeries,
+        labels: salesChannelLabels,
+        legend: {
+            position: 'bottom'
+        },
+        dataLabels: {
+            enabled: true
+        }
+    };
+
+    new ApexCharts(document.querySelector("#salesChannelChart"), salesChannelOptions).render();
+</script>
 {% endblock %}
-   

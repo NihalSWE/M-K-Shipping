@@ -1,0 +1,166 @@
+{% load static %}
+
+
+
+
+
+<div class="prf-page">
+    <div class="container prf-container">
+        <div class="prf-hero">
+            <h1 class="prf-hero-title">Edit Profile</h1>
+            <p class="prf-hero-subtitle">Update your basic information and change your password.</p>
+        </div>
+
+        <!-- Bootstrap grid: side-by-side on lg+, full width on mobile -->
+        <div class="row g-3">
+            <div class="col-12 col-lg-7 prf-left-col">
+                <div class="prf-card">
+                    <div class="prf-card-header">
+                        <h2 class="prf-card-title">
+                            <i class="fa-solid fa-user-pen"></i>
+                            Profile Information
+                        </h2>
+                        <p class="prf-card-subtitle">Edit your account details below.</p>
+                    </div>
+
+                    <div class="prf-card-body">
+                        <form id="prfProfileForm" method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="profile">
+
+                            <div class="row">
+                                <div class="col-12 col-md-6">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfFirstName">First Name</label>
+                                        <input
+                                            id="prfFirstName"
+                                            name="first_name"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.first_name|default:'' }}"
+                                            placeholder="Enter first name"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfLastName">Last Name</label>
+                                        <input
+                                            id="prfLastName"
+                                            name="last_name"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.last_name|default:'' }}"
+                                            placeholder="Enter last name"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfEmail">Email</label>
+                                        <input
+                                            id="prfEmail"
+                                            name="email"
+                                            type="email"
+                                            class="prf-input"
+                                            value="{{ request.user.email|default:'' }}"
+                                            placeholder="Enter email (optional)"
+                                        >
+                                        <div class="prf-field-help">Email is optional, but if provided it must be unique.</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfPhone">Phone Number</label>
+                                        <input
+                                            id="prfPhone"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.phone_number }}"
+                                            disabled
+                                        >
+                                        <div class="prf-field-help">Phone number cannot be changed from this page.</div>
+                                    </div>
+                                </div>
+
+                                <div id="prfProfileAlert" class="prf-alert mb-4" role="alert" aria-live="polite">
+                                    <div id="prfProfileAlertIcon" class="prf-alert-icon"></div>
+                                    <div id="prfProfileAlertText" class="prf-alert-text"></div>
+                                </div>
+
+                                <div class="col-12">
+                                    <button id="prfProfileSubmitBtn" type="submit" class="prf-btn prf-btn-primary">
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                        <span>Save Profile</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5 prf-right-col">
+                <div class="prf-card">
+                    <div class="prf-card-header">
+                        <h2 class="prf-card-title">
+                            <i class="fa-solid fa-lock"></i>
+                            Change Password
+                        </h2>
+                        <p class="prf-card-subtitle">Use a strong password to keep your account secure.</p>
+                    </div>
+
+                    <div class="prf-card-body">
+                        <div class="prf-password-note">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Password must be at least 8 characters.
+                        </div>
+
+                        <form id="prfPasswordForm" method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="password">
+
+                            <div class="prf-field-wrap">
+                                <label class="prf-field-label" for="prfNewPassword">New Password</label>
+                                <input
+                                    id="prfNewPassword"
+                                    name="new_password"
+                                    type="password"
+                                    class="prf-input"
+                                    placeholder="Enter new password"
+                                    required
+                                >
+                            </div>
+
+                            <div class="prf-field-wrap">
+                                <label class="prf-field-label" for="prfConfirmPassword">Confirm New Password</label>
+                                <input
+                                    id="prfConfirmPassword"
+                                    name="confirm_password"
+                                    type="password"
+                                    class="prf-input"
+                                    placeholder="Confirm new password"
+                                    required
+                                >
+                            </div>
+
+                            <div id="prfPasswordAlert" class="prf-alert mb-4" role="alert" aria-live="polite">
+                                <div id="prfPasswordAlertIcon" class="prf-alert-icon"></div>
+                                <div id="prfPasswordAlertText" class="prf-alert-text"></div>
+                            </div>
+
+                            <button id="prfPasswordSubmitBtn" type="submit" class="prf-btn prf-btn-secondary">
+                                <i class="fa-solid fa-key"></i>
+                                <span>Update Password</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

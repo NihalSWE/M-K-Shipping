@@ -1,16 +1,43 @@
 from django.shortcuts import render,get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from urllib3 import request
 from admin_panel.models import *
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
+import io
+import qrcode
+from qrcode.constants import ERROR_CORRECT_M
 from django.core.paginator import Paginator
 from datetime import datetime
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
-from django.db.models import Min
+from django.views.decorators.http import require_GET, require_POST
+from django.contrib.auth import update_session_auth_hash
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.core.cache import cache
+from django.db.models import Q, Min, Prefetch, Count
+from django.core.files.base import ContentFile
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.core.paginator import Paginator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.middleware.csrf import get_token
+import traceback
+import logging
+import random
 import json
 import uuid
+from django.contrib.auth import login
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .utils import seat_hold_key, get_holder_id
+from .booking_invoice.qr_generation import ensure_booking_qr
+from .booking_invoice.pdf_generation import render_booking_pdf_from_html
+from admin_panel.utils import send_sms_task, send_booking_sms
 
 
 
@@ -24,7 +51,7 @@ from datetime import timedelta
 
 
 User = get_user_model()
-
+logger = logging.getLogger(__name__)
 
 def home (request):
     banner = HomeBanner.objects.filter(is_active=True).first()
@@ -88,6 +115,7 @@ def contact(request):
     
     return render(request, 'portal/contact/contact.html', context)
 
+
 def aboutUs (request):
     banner = AboutBanner.objects.filter(is_active=True).first()
     story = AboutStory.objects.filter(is_active=True).first()
@@ -123,9 +151,6 @@ def technology_innovation_view(request):
         'meta_description': 'Explore our advanced technology solutions for river transportation including online ticketing, GPS tracking, and digital innovations.'
     }
     return render(request, 'portal/t&i/technology_innovation.html', context)    
-    
-
-from django.db.models import Q # Import Q for complex queries
 
 def blog(request): # This is your blog_list view
     
@@ -243,6 +268,7 @@ def search_trips(request):
     date_str = request.GET.get('date')
     
     trips_found = []
+    now = timezone.now()
     
     if from_loc_id and to_loc_id and date_str:
         try:
@@ -252,11 +278,15 @@ def search_trips(request):
 
         # 1. Fetch trips for the date
         all_trips = Trip.objects.filter(
-            departure_datetime__date=date_obj, 
+            departure_datetime__date=date_obj,
             is_published=True
-        ).select_related('ship', 'route')
+        ).select_related('ship', 'route', 'schedule')
 
         for trip in all_trips:
+            # Do not show trips after booking cutoff
+            if now >= trip.booking_cutoff_datetime():
+                continue
+
             # 2. Get the specific stops for this route
             # We fetch them to verify they exist and check their order
             stops = list(trip.route.stops.filter(location_id__in=[from_loc_id, to_loc_id]))
@@ -291,74 +321,91 @@ def search_trips(request):
                         final_preview_price = override_min_price
                     else:
                         final_preview_price = base_min_price * trip.price_multiplier
-                    
+
                     # Calculate segment-specific times using offsets
                     departure_time = trip.departure_datetime + timedelta(minutes=stop_from.time_offset_minutes)
                     arrival_time = trip.departure_datetime + timedelta(minutes=stop_to.time_offset_minutes)
+
+                    # ---------------------------------------
+                    # Segment-aware available seats calculation
+                    # ---------------------------------------
+                    start_order = stop_from.stop_order
+                    end_order = stop_to.stop_order
+
+                    # 1) Total bookable seats on this ship (LayoutObject with bookable category)
+                    total_bookable_seats = LayoutObject.objects.filter(
+                        deck__ship=trip.ship,
+                        category__is_bookable=True
+                    ).count()
+
+                    # 2) Booked/locked tickets overlapping this segment
+                    # Overlap rule: ticket.from < requested_to AND ticket.to > requested_from
+                    booked_seat_ids = trip.tickets.filter(
+                        status__in=['BOOKED', 'LOCKED']  # your Ticket statuses
+                    ).filter(
+                        Q(from_stop__stop_order__lt=end_order) &
+                        Q(to_stop__stop_order__gt=start_order)
+                    ).values_list('seat_object_id', flat=True).distinct()
+
+                    # 3) Active holds overlapping this segment (any holder)
+                    held_seat_ids = trip.seat_holds.filter(
+                        expires_at__gt=timezone.now()
+                    ).filter(
+                        Q(from_stop__stop_order__lt=end_order) &
+                        Q(to_stop__stop_order__gt=start_order)
+                    ).values_list('seat_object_id', flat=True).distinct()
+
+                    # Combine both sets
+                    unavailable_ids = set(booked_seat_ids) | set(held_seat_ids)
+                    available_seats = total_bookable_seats - len(unavailable_ids)
+                    if available_seats < 0:
+                        available_seats = 0
 
                     trips_found.append({
                         'trip': trip,
                         'stop_from': stop_from,
                         'stop_to': stop_to,
                         'preview_price': final_preview_price,
-                        'segment_departure': departure_time, # Added this
-                        'segment_arrival': arrival_time      # Added this
+                        'segment_departure': departure_time,
+                        'segment_arrival': arrival_time,
+                        'available_seats': available_seats,
+                        'total_bookable_seats': total_bookable_seats,
                     })
+                    
+    # holder_id = request.user.id if request.user.is_authenticated else None
+    holder_id = get_holder_id(request)
+    is_authenticated = request.user.is_authenticated
+
+    logged_in_user_prefill = None
+    if request.user.is_authenticated:
+        full_name = f"{request.user.first_name or ''} {request.user.last_name or ''}".strip()
+        logged_in_user_prefill = {
+            "name": full_name,
+            "phone": _to_local_bd_phone(request.user.phone_number or ""),
+            "email": getattr(request.user, "email", "") or "",
+            "address": getattr(request.user, "address", "") or "",
+        }
 
     return render(request, 'portal/schedules/schedules.html', {
         'trips': trips_found,
         'locations': Location.objects.all(),
         'search_params': {
-            'from': from_loc_id, # Matches {{ search_params.from }} in template
-            'to': to_loc_id,     # Matches {{ search_params.to }} in template
+            'from': from_loc_id,
+            'to': to_loc_id,
             'date': date_str
-        }
+        },
+        'holder_id': holder_id,
+        'is_authenticated': is_authenticated,
+        'logged_in_user_prefill': logged_in_user_prefill,
     })
-    
-    
-# def get_trip_layout(request, trip_id):
-#     trip = get_object_or_404(Trip, id=trip_id)
-#     from_stop_id = request.GET.get('from_stop')
-#     to_stop_id = request.GET.get('to_stop')
-    
-#     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
-#     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
-#     # 1. Get all booked/locked seat IDs for THIS specific segment
-#     booked_seat_ids = set(trip.tickets.filter(
-#         status__in=['BOOKED', 'LOCKED']
-#     ).filter(
-#         from_stop__stop_order__lt=to_stop.stop_order,
-#         to_stop__stop_order__gt=from_stop.stop_order
-#     ).values_list('seat_object_id', flat=True))
-
-#     # 2. Pre-calculate prices per category (avoids calling get_price in loop)
-#     # We only care about categories that are actually bookable
-#     categories = SeatCategory.objects.filter(is_bookable=True)
-#     price_map = {cat.id: trip.get_price(cat, from_stop, to_stop) for cat in categories}
-
-#     # 3. Prepare the decks and objects
-#     decks = trip.ship.decks.all().order_by('level_order').prefetch_related('layout_objects__category__icon')
-    
-#     # We attach the calculated data directly to the objects in memory
-#     for deck in decks:
-#         for obj in deck.layout_objects.all():
-#             obj.is_booked = obj.id in booked_seat_ids
-#             # If it's a bookable seat, get its pre-calculated price
-#             obj.final_price = price_map.get(obj.category_id, 0) if obj.category.is_bookable else 0
-
-#     context = {
-#         'trip': trip,
-#         'decks': decks,
-#         'from_stop': from_stop,
-#         'to_stop': to_stop,
-#     }
-    
-#     html = render_to_string('portal/schedules/_seat_layout_content.html', context, request=request)
-#     return JsonResponse({'html': html})
 
 def get_seat_layout(request, trip_id):
-    trip = get_object_or_404(Trip, id=trip_id)
+    trip = get_object_or_404(Trip.objects.select_related('schedule'), id=trip_id)
+
+    if not trip.is_booking_open():
+        return HttpResponse("Booking for this trip is closed.", status=400)
+
     from_stop_id = request.GET.get('from_stop')
     to_stop_id = request.GET.get('to_stop')
     
@@ -366,6 +413,15 @@ def get_seat_layout(request, trip_id):
     
     stop_from = get_object_or_404(RouteStop, id=from_stop_id)
     stop_to = get_object_or_404(RouteStop, id=to_stop_id)
+    
+    # ✅ SAME FILTER AS YOUR CORE LOGIC (for genders only)
+    occupied_tickets = Ticket.objects.filter(
+        trip=trip,
+        status__in=['BOOKED', 'LOCKED']
+    ).filter(
+        Q(from_stop__stop_order__lt=stop_to.stop_order) &
+        Q(to_stop__stop_order__gt=stop_from.stop_order)
+    ).select_related('passenger').only('seat_object_id', 'passenger__gender')
 
     # Core logic: Find seats already booked for any part of this journey
     occupied_seat_ids = list(Ticket.objects.filter(
@@ -376,23 +432,104 @@ def get_seat_layout(request, trip_id):
         Q(to_stop__stop_order__gt=stop_from.stop_order)
     ).values_list('seat_object_id', flat=True).distinct())
     
+    # ✅ NEW: map seat_id -> gender ("0"/"1"/None)
+    occupied_seat_genders = {}
+    for t in occupied_tickets:
+        if t.seat_object_id not in occupied_seat_genders:
+            g = t.passenger.gender if t.passenger else None
+            occupied_seat_genders[t.seat_object_id] = str(g) if g is not None else None
+            
+    # 1) DB holds (fallback + admin visibility)
+    active_holds = SeatHold.objects.filter(
+        trip=trip,
+        expires_at__gt=timezone.now()
+    ).filter(
+        Q(from_stop__stop_order__lt=stop_to.stop_order) &
+        Q(to_stop__stop_order__gt=stop_from.stop_order)
+    ).values('seat_object_id', 'holder_id', 'expires_at')
+
+    db_held_seats = set()
+    db_held_holder_ids = {}   # seat_id -> holder_id
+    db_held_expires = {}      # seat_id -> iso string
+
+    for h in active_holds:
+        sid = h['seat_object_id']
+        db_held_seats.add(sid)
+        db_held_holder_ids[sid] = h['holder_id']
+        db_held_expires[sid] = h['expires_at'].isoformat()
+
+    # 2) Redis holds (primary)
+    redis_held_seats = set()
+    redis_held_holder_ids = {}  # seat_id -> holder_id
+    redis_held_expires = {}      # seat_id -> iso string (optional)
+
+    seat_ids = list(
+        LayoutObject.objects.filter(deck__ship=trip.ship).values_list("id", flat=True)
+    )
+
+    for seat_id in seat_ids:
+        key = seat_hold_key(trip.id, from_stop_id, to_stop_id, seat_id)
+        payload = cache.get(key)  # expected dict like {"holder_id": "...", "expires_at": "..."}
+        if payload:
+            redis_held_seats.add(seat_id)
+            if isinstance(payload, dict):
+                redis_held_holder_ids[seat_id] = payload.get("holder_id")
+                redis_held_expires[seat_id] = payload.get("expires_at")
+
+    # 3) Merge: show hold if either has it
+    held_seats = db_held_seats | redis_held_seats
+
+    # holder_id preference: Redis first, else DB
+    held_holder_ids = {}
+    held_expires = {}
+
+    for sid in held_seats:
+        held_holder_ids[sid] = redis_held_holder_ids.get(sid) or db_held_holder_ids.get(sid)
+        held_expires[sid] = redis_held_expires.get(sid) or db_held_expires.get(sid)
+    
     # Optional: Keep this here for 1 day to verify in your terminal that IDs are found
     print(f"DEBUG: Trip {trip_id} has occupied seats: {occupied_seat_ids}")
 
-    decks = trip.ship.decks.all().prefetch_related('layout_objects__category')
+    decks = trip.ship.decks.all().prefetch_related('layout_objects__category__icon')
+
+    legend_categories = SeatCategory.objects.filter(
+        is_bookable=True,
+        layoutobject__deck__ship=trip.ship
+    ).select_related('icon').distinct().order_by('name')
+    
+    # holder_id = request.user.id
+    holder_id = get_holder_id(request)
+    
+    print("UI DEBUG", {
+        "segment": f"{stop_from.location.name}->{stop_to.location.name}",
+        "occupied_seat_ids": occupied_seat_ids,
+        "held_seats": list(held_seats),
+        "held_holder_ids": held_holder_ids,
+    })
 
     return render(request, 'portal/schedules/_seat_layout.html', {
         'trip': trip,
         'decks': decks,
         'occupied_seats': occupied_seat_ids,
+        'occupied_seat_genders': occupied_seat_genders,
         'from_stop': stop_from,
         'to_stop': stop_to,
+        'holder_id': holder_id,
+        'is_authenticated': request.user.is_authenticated,
+        'held_seats': held_seats,
+        'held_holder_ids': held_holder_ids,
+        'held_expires': held_expires,
+        'legend_categories': legend_categories,
     })
     
     
 def save_booking_view(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+    
+    if not request.user.is_authenticated:
+        if not request.session.get("booking_otp_verified"):
+            return JsonResponse({'success': False, 'error': 'OTP verification required.'}, status=401)
 
     try:
         data = json.loads(request.body)
@@ -400,106 +537,1159 @@ def save_booking_view(request):
         from_stop_id = data.get('from_stop')
         to_stop_id = data.get('to_stop')
         passengers_data = data.get('passengers', [])
-        
-        print('Received booking data for booking:', data)  # Debug log
 
-        # 1. Server-side Validation
-        if not all([trip_id, from_stop_id, to_stop_id, passengers_data]):
+        print('Received booking data for booking:', data)
+
+        if not all([trip_id, from_stop_id, to_stop_id]) or not passengers_data:
             return JsonResponse({'success': False, 'error': 'Missing required booking data.'}, status=400)
+        
+        first_phone = (passengers_data[0].get("phone") or "").strip()
+        if not first_phone:
+            return JsonResponse({'success': False, 'error': 'First passenger phone is required.'}, status=400)
 
-        trip = Trip.objects.get(id=trip_id)
+        # (Recommended) prevent duplicate seats in same request
+        seat_ids = [p.get('seat_id') for p in passengers_data]
+        if len(seat_ids) != len(set(seat_ids)):
+            return JsonResponse({'success': False, 'error': 'Duplicate seat selected.'}, status=400)
+
+        trip = Trip.objects.select_related('schedule').get(id=trip_id)
+
+        if not trip.is_booking_open():
+            return JsonResponse(
+                {'success': False, 'error': 'Booking for this trip is closed.'},
+                status=400
+            )
+
         from_stop = RouteStop.objects.get(id=from_stop_id)
         to_stop = RouteStop.objects.get(id=to_stop_id)
+        
+        was_guest_booking = not request.user.is_authenticated
+        holder_id = get_holder_id(request)
 
         with transaction.atomic():
-            # 2. User Handling (Logged in vs Guest)
-            booking_user = None
             if request.user.is_authenticated:
                 booking_user = request.user
+                print('******booking_user ***: ', booking_user.email)
             else:
-                # Use details from the FIRST passenger as the account owner
-                primary = passengers_data[0]
-                email = primary.get('email')
-                full_name = primary.get('name', '')
-                phone = primary.get('phone')
+                # For guest booking: use the OTP verified phone as booking owner
+                otp_phone = request.session.get("booking_otp_phone")
+                if not otp_phone:
+                    raise Exception("OTP phone not found. Please request OTP again.")
 
-                if not email or not phone:
-                    return JsonResponse({'success': False, 'error': 'Email and Phone are required for guest booking.'}, status=400)
+                booking_user, _, otp_phone_local = _get_or_create_user_by_bd_phone(
+                    otp_phone,
+                    defaults={
+                        "username": f"user_{_to_local_bd_phone(otp_phone)}_{uuid.uuid4().hex[:4]}",
+                        "email": None,
+                        "user_type": 1,
+                        "is_guest": True,
+                    }
+                )
 
-                # Check if user exists, else create
-                booking_user, created = User.objects.get_or_create(email=email, defaults={
-                    'username': email.split('@')[0] + str(uuid.uuid4().hex[:4]),
-                    'phone_number': phone,
-                    'user_type': 1, # Customer
-                })
+                if not booking_user:
+                    raise Exception("Invalid OTP phone. Please request OTP again.")
+                
+            holder_id = get_holder_id(request)
+            
+            first_phone_local = _to_local_bd_phone(first_phone)
+            
+            first_p = passengers_data[0] if passengers_data else {}
+            apply_user_profile_if_missing(
+                booking_user,
+                name=(first_p.get("name") or "").strip(),
+                email=(first_p.get("email") or "").strip(),
+                address=(first_p.get("address") or "").strip(),
+            )
 
-                if created:
-                    # Name splitting logic
-                    name_parts = full_name.split(' ', 1)
-                    booking_user.first_name = name_parts[0]
-                    booking_user.last_name = name_parts[1] if len(name_parts) > 1 else ""
-                    # Generate a random password for the new account
-                    temp_password = get_random_string(length=12)
-                    booking_user.set_password(temp_password)
-                    booking_user.save()
+            # ✅ Always normalize booking owner's phone to local format (01...)
+            if first_phone_local and (booking_user.phone_number or "").strip() != first_phone_local:
+                conflict_exists = User.objects.filter(phone_number=first_phone_local).exclude(id=booking_user.id).exists()
+                if not conflict_exists:
+                    booking_user.phone_number = first_phone_local
+                    booking_user.save(update_fields=["phone_number"])
 
-            # 3. Booking & Ticket Creation
             total_amount = 0
             booking_ref = f"BK-{uuid.uuid4().hex[:8].upper()}"
-            
+
             booking = Booking.objects.create(
                 user=booking_user,
                 trip=trip,
                 booking_ref=booking_ref,
-                total_amount=0, # Will update after calculating fares
-                status='CONFIRMED' # Since no payment gateway yet
+                total_amount=0,
+                status='CONFIRMED'
             )
+            
+            channel_layer = get_channel_layer()
+            group = f"seats_{trip.id}_{from_stop.id}_{to_stop.id}"
+            
+            updated_user_phones = set()
 
             for p in passengers_data:
                 seat = LayoutObject.objects.get(id=p['seat_id'])
-                
-                # Double-check availability inside transaction
+
+                # ✅ Seat availability check (kept from original logic)
                 if not trip.is_seat_available(seat, from_stop, to_stop):
                     raise Exception(f"Seat {seat.label} is no longer available.")
+                
+                # ✅ Redis hold check kept for reference, but disabled for sync with DB-first flow
+                # key = seat_hold_key(trip_id, from_stop_id, to_stop_id, p['seat_id'])
+                # r_payload = cache.get(key)
+                #
+                # # Redis: payload is dict {"holder_id": "..."}
+                # if not isinstance(r_payload, dict) or r_payload.get("holder_id") != holder_id:
+                #     raise Exception(f"Seat {seat.label} is not held by you anymore. Please reselect.")
+
+                # ✅ HOLD CHECK (DB is source of truth for sync with admin save flow)
+                db_hold = SeatHold.objects.filter(
+                    trip=trip,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    seat_object_id=seat.id,
+                    expires_at__gt=timezone.now()
+                ).first()
+
+                if not db_hold:
+                    raise Exception(f"Seat {seat.label} is not held by you anymore. Please reselect.")
+
+                if db_hold.holder_id != holder_id:
+                    raise Exception(f"Seat {seat.label} is currently on hold by another user.")
 
                 fare = trip.get_price(seat.category, from_stop, to_stop)
                 total_amount += fare
 
+                p_phone_raw = (p.get('phone') or '').strip()
+                p_phone = _to_local_bd_phone(p_phone_raw)
+                p_name = (p.get('name') or '').strip()
+                p_email = (p.get('email') or '').strip() or None
+                p_gender_raw = p.get('gender', None)  # can be 0, 1, "0", "1", None
+                p_gender = int(p_gender_raw) if p_gender_raw is not None else None
+                p_address = (p.get('address') or None)
+
+                if not p_phone:
+                    raise Exception("Each passenger must have a phone number.")
+
+                pass_user, created, p_phone = _get_or_create_user_by_bd_phone(
+                    p_phone,
+                    defaults={
+                        "username": f"user_{p_phone}_{uuid.uuid4().hex[:4]}",
+                        "email": p_email,
+                        "user_type": 1,
+                        "is_guest": True,
+                    }
+                )
+                
+                # Fill missing profile fields for this phone only once per request
+                if p_phone and p_phone not in updated_user_phones:
+                    apply_user_profile_if_missing(pass_user, name=p_name, email=p_email, address=p_address)
+                    updated_user_phones.add(p_phone)
+
+                if not pass_user:
+                    raise Exception("Invalid passenger phone number.")
+
+                # If a user is found by phone, do NOT update their User profile.
+                # Only set profile fields when a NEW user is created.
+                if created:
+                    dirty = []
+
+                    # Set password for newly auto-created passenger user
+                    temp_password = get_random_string(length=12)
+                    pass_user.set_password(temp_password)
+                    dirty.append('password')
+
+                    # Ensure guest flag
+                    if getattr(pass_user, 'is_guest', None) is not True:
+                        pass_user.is_guest = True
+                        dirty.append('is_guest')
+
+                    if dirty:
+                        dirty = list(dict.fromkeys(dirty))
+                        pass_user.save(update_fields=dirty)
+
+                # ✅ Create a fresh Passenger snapshot PER SEAT (even if phone/user repeats)
+                passenger = Passenger.objects.create(
+                    booking=booking,
+                    user=pass_user,
+                    name=p_name,
+                    phone=p_phone,
+                    email=p_email,
+                    gender=p_gender,
+                    address=p_address,
+                )
+                    
                 Ticket.objects.create(
                     booking=booking,
                     trip=trip,
                     seat_object=seat,
-                    passenger_name=p['name'],
+                    passenger=passenger,
+                    passenger_name=p_name,
                     from_stop=from_stop,
                     to_stop=to_stop,
                     fare_amount=fare,
                     status='BOOKED',
-                    lock_expires_at=timezone.now() + timedelta(days=1) # Placeholder
+                    lock_expires_at=timezone.now() + timedelta(days=1)
                 )
 
-            # Update final total
+                
+                
+                SeatHold.objects.filter(
+                    trip=trip,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    seat_object_id=seat.id
+                ).delete()
+                
+                # ✅ Redis delete kept but disabled for DB-first sync flow
+                cache.delete(seat_hold_key(trip.id, from_stop.id, to_stop.id, seat.id))
+
+                # ✅ now broadcast booked
+                async_to_sync(channel_layer.group_send)(group, {
+                    "type": "seat_event",
+                    "action": "booked",
+                    "seat_id": int(seat.id),
+                })
+
             booking.total_amount = total_amount
-            booking.save()
+            booking.save(update_fields=['total_amount'])
+            
+            # [NEW:SHARE_TOKEN]
+            # later put in the ssl commerz callback
+            booking.ensure_share_token()
+            # [/NEW:SHARE_TOKEN]
+            
+            def _send_confirm_sms():
+                try:
+                    send_booking_sms(booking)
+                except Exception as sms_err:
+                    print(f"BOOKING SMS ERROR: {sms_err}")
+
+            transaction.on_commit(_send_confirm_sms)
+
+        if was_guest_booking:
+            login(request, booking_user)
+
+            # Clear OTP session state after successful booking
+            request.session["booking_otp_verified"] = False
+            request.session["booking_otp_phone"] = None
+            request.session.modified = True
 
         return JsonResponse({
-            'success': True, 
+            'success': True,
             'booking_ref': booking_ref,
-            'message': 'Booking saved successfully!'
+            'message': 'Booking saved successfully!',
+            'logged_in': True if was_guest_booking else request.user.is_authenticated,
+            'user': {
+                'first_name': (request.user.first_name or "").strip(),
+                'phone_number': (request.user.phone_number or "").strip(),
+                'display_name': ((request.user.first_name or "").strip() or (request.user.phone_number or "").strip()),
+            } if request.user.is_authenticated else None
         })
 
     except Exception as e:
+        # ✅ FULL traceback in terminal/logs
+        logger.exception("save_booking_view failed")   # best
+        print("SAVE_BOOKING_VIEW ERROR:", str(e))
+        print(traceback.format_exc())
+
+        # ✅ safety: if guest flow, don't keep OTP verified on error
+        if not request.user.is_authenticated:
+            request.session["booking_otp_verified"] = False
+            request.session.modified = True
+
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+
+def apply_user_profile_if_missing(user, name=None, email=None, address=None):
+    """
+    Fill missing User profile fields only (never overwrite existing non-empty values).
+    """
+    if not user:
+        return
+
+    dirty = []
+
+    # Name -> first_name / last_name (only if both empty)
+    name = (name or "").strip()
+    if name and not ((user.first_name or "").strip() or (user.last_name or "").strip()):
+        parts = name.split(" ", 1)
+        first = parts[0].strip()
+        last = parts[1].strip() if len(parts) > 1 else ""
+
+        if first and (user.first_name or "").strip() != first:
+            user.first_name = first
+            dirty.append("first_name")
+
+        if last and (user.last_name or "").strip() != last:
+            user.last_name = last
+            dirty.append("last_name")
+
+    # Email (only if empty)
+    email = (email or "").strip()
+    if email and not (getattr(user, "email", "") or "").strip():
+        user.email = email
+        dirty.append("email")
+
+    # Address (only if empty)
+    address = (address or "").strip()
+    if address and not (getattr(user, "address", "") or "").strip():
+        user.address = address
+        dirty.append("address")
+
+    if dirty:
+        user.save(update_fields=dirty)
+
+    
+    
+def _normalize_bd_phone(phone: str) -> str:
+    """
+    Normalize BD phone to 8801XXXXXXXXX.
+    Returns "" for invalid formats.
+    """
+    clean = "".join(ch for ch in str(phone or "") if ch.isdigit())
+
+    # Handle 00 international prefix (e.g. 0088019...)
+    if clean.startswith("008801") and len(clean) == 15:
+        clean = clean[2:]  # -> 8801...
+
+    # 01XXXXXXXXX -> 8801XXXXXXXXX
+    if clean.startswith("01") and len(clean) == 11:
+        return "88" + clean
+
+    # 1XXXXXXXXX -> 8801XXXXXXXXX
+    if clean.startswith("1") and len(clean) == 10:
+        return "880" + clean
+
+    # Already normalized
+    if clean.startswith("8801") and len(clean) == 13:
+        return clean
+
+    # Reject invalid values (IMPORTANT)
+    return ""
+
+
+def _to_local_bd_phone(phone: str) -> str:
+    """
+    Convert any BD format to local 11-digit format: 01XXXXXXXXX
+    Accepts:
+      - 01XXXXXXXXX
+      - 1XXXXXXXXX
+      - 8801XXXXXXXXX
+      - +8801XXXXXXXXX
+    """
+    clean = "".join(ch for ch in str(phone or "") if ch.isdigit())
+
+    if clean.startswith("01") and len(clean) == 11:
+        return clean
+
+    if clean.startswith("1") and len(clean) == 10:
+        return "0" + clean
+
+    if clean.startswith("8801") and len(clean) == 13:
+        return clean[2:]   # ✅ FIXED: Just remove "88", keep "01XXXXXXXXX"
+
+    return clean
+
+
+def _otp_cache_key(holder_id: str, phone_norm: str) -> str:
+    return f"booking_otp:{holder_id}:{phone_norm}"
+
+
+@require_POST
+def send_booking_otp_view(request):
+    try:
+        data = json.loads(request.body or "{}")
+        phone = (data.get("phone") or "").strip()
+
+        if not phone:
+            return JsonResponse({"success": False, "error": "Phone number is required."}, status=400)
+
+        phone_norm = _normalize_bd_phone(phone)
+
+        # Basic sanity check
+        if not phone_norm.startswith("8801") or len(phone_norm) != 13:
+            return JsonResponse({"success": False, "error": "Invalid BD phone number."}, status=400)
+
+        holder_id = get_holder_id(request)
+
+        otp = f"{random.randint(0, 999999):06d}"
+        ttl_seconds = 5 * 60  # 5 minutes
+
+        cache.set(
+            _otp_cache_key(holder_id, phone_norm),
+            {
+                "otp": otp,
+                "phone": phone_norm,
+                "created_at": timezone.now().isoformat(),
+                "attempts": 0,
+            },
+            timeout=ttl_seconds
+        )
+
+        # ✅ Send SMS using your existing sender
+        msg = f"MK Shipping OTP: {otp}. Valid for 5 minutes."
+        send_sms_task(phone_norm, msg)
+
+        # Also keep phone in session so we can reference it later
+        request.session["booking_otp_phone"] = phone_norm
+        request.session["booking_otp_verified"] = False
+        request.session.modified = True
+
+        return JsonResponse({
+            "success": True,
+            "message": f"OTP sent to {phone_norm}. Please enter it below.",
+            "expires_in": ttl_seconds
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+@require_POST
+def verify_booking_otp_view(request):
+    try:
+        data = json.loads(request.body or "{}")
+        phone = (data.get("phone") or "").strip()
+        otp_input = (data.get("otp") or "").strip()
+
+        if not phone or not otp_input:
+            return JsonResponse({"success": False, "error": "Phone and OTP are required."}, status=400)
+
+        phone_norm = _normalize_bd_phone(phone)
+        holder_id = get_holder_id(request)
+
+        payload = cache.get(_otp_cache_key(holder_id, phone_norm))
+        if not isinstance(payload, dict):
+            return JsonResponse({"success": False, "error": "OTP expired. Please request again."}, status=400)
+
+        # throttle attempts
+        payload["attempts"] = int(payload.get("attempts") or 0) + 1
+        if payload["attempts"] > 5:
+            cache.delete(_otp_cache_key(holder_id, phone_norm))
+            return JsonResponse({"success": False, "error": "Too many attempts. Please request a new OTP."}, status=429)
+
+        if str(payload.get("otp")) != otp_input:
+            # update attempts back into cache (keep remaining TTL)
+            cache.set(_otp_cache_key(holder_id, phone_norm), payload, timeout=5 * 60)
+            return JsonResponse({"success": False, "error": "Invalid OTP. Please try again."}, status=400)
+
+        # ✅ Verified
+        request.session["booking_otp_verified"] = True
+        request.session["booking_otp_phone"] = phone_norm
+        request.session.modified = True
+
+        # Optional: delete OTP so it can't be reused
+        cache.delete(_otp_cache_key(holder_id, phone_norm))
+
+        return JsonResponse({"success": True, "message": "OTP verified. You can confirm booking now."})
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+    
+
+@require_POST
+@ensure_csrf_cookie
+def verify_booking_otp_login_view(request):
+    """
+    Verifies OTP AND logs the user in immediately.
+    Keeps save_booking_view login as fallback.
+    """
+    try:
+        data = json.loads(request.body or "{}")
+        phone = (data.get("phone") or "").strip()
+        otp_input = (data.get("otp") or "").strip()
+
+        if not phone or not otp_input:
+            return JsonResponse({"success": False, "error": "Phone and OTP are required."}, status=400)
+
+        phone_norm = _normalize_bd_phone(phone)
+        holder_id = get_holder_id(request)
+
+        payload = cache.get(_otp_cache_key(holder_id, phone_norm))
+        if not isinstance(payload, dict):
+            return JsonResponse({"success": False, "error": "OTP expired. Please request again."}, status=400)
+
+        payload["attempts"] = int(payload.get("attempts") or 0) + 1
+        if payload["attempts"] > 5:
+            cache.delete(_otp_cache_key(holder_id, phone_norm))
+            return JsonResponse({"success": False, "error": "Too many attempts. Please request a new OTP."}, status=429)
+
+        if str(payload.get("otp")) != otp_input:
+            cache.set(_otp_cache_key(holder_id, phone_norm), payload, timeout=5 * 60)
+            return JsonResponse({"success": False, "error": "Invalid OTP. Please try again."}, status=400)
+
+        # ✅ Mark session verified (fallback for save_booking_view)
+        request.session["booking_otp_verified"] = True
+        request.session["booking_otp_phone"] = phone_norm
+        request.session.modified = True
+
+        # ✅ Ensure a user exists and log them in NOW
+        user, _, phone_local = _get_or_create_user_by_bd_phone(
+            phone_norm,
+            defaults={
+                "username": f"user_{_to_local_bd_phone(phone_norm)}_{uuid.uuid4().hex[:4]}",
+                "email": None,
+                "user_type": 1,
+                "is_guest": True,
+            }
+        )
+
+        if not user:
+            return JsonResponse({"success": False, "error": "Invalid phone. Please request OTP again."}, status=400)
+
+        login(request, user)
+
+        # ✅ FORCE a fresh CSRF token after login (token may rotate on login)
+        csrf_token = get_token(request)
+
+        # Optional: delete OTP so it can't be reused
+        cache.delete(_otp_cache_key(holder_id, phone_norm))
+
+        full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+
+        resp = JsonResponse({
+            "success": True,
+            "message": "OTP verified. Logged in successfully.",
+            "logged_in": True,
+            "csrfToken": csrf_token,  # ✅ IMPORTANT: send to frontend
+            "user": {
+                "first_name": (user.first_name or "").strip(),
+                "phone_number": (getattr(user, "phone_number", "") or "").strip(),
+                "display_name": (full_name or (getattr(user, "phone_number", "") or "").strip() or "Account"),
+            }
+        })
+        return resp
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
     
     
 def booking_success(request, booking_ref):
-    # 1. Use 'booking_ref' instead of 'reference'
-    # 2. Use 'tickets' (default related_name) instead of 'passengers'
-    # 3. Use 'seat_object' instead of 'seat'
     booking = get_object_or_404(
-        Booking.objects.prefetch_related('tickets__seat_object'), 
+        Booking.objects.prefetch_related('tickets__seat_object'),
         booking_ref=booking_ref
     )
-    
+
+    # [NEW:QR_ON_INVOICE]
+    # Ensure share_token exists (only once)
+    if not booking.share_token:
+        booking.share_token = uuid.uuid4().hex
+        booking.save(update_fields=["share_token"])
+
+    # Shareable public URL (use token)
+    public_url = request.build_absolute_uri(f"/ticket/{booking.booking_ref}/{booking.share_token}/")
+
+    # Generate+save QR only if missing
+    ensure_booking_qr(booking, public_url)
+    booking.refresh_from_db(fields=["qr_image"])
+    # [/NEW:QR_ON_INVOICE]
+
     return render(request, 'portal/schedules/booking_success.html', {
-        'booking': booking
+        'booking': booking,
+        'public_url': public_url,   # for share buttons
     })
+    
+    
+@require_POST
+def hold_seats_view(request):
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'success': False, 'error': 'Authentication required.'}, status=401)
+    
+    data = json.loads(request.body)
+    trip_id = data.get('trip_id')
+    from_stop_id = data.get('from_stop')
+    to_stop_id = data.get('to_stop')
+    seat_ids = data.get('seat_ids', [])
+
+    if not all([trip_id, from_stop_id, to_stop_id]) or not seat_ids:
+        return JsonResponse({'success': False, 'error': 'Missing payload.'}, status=400)
+    
+    holder_id = get_holder_id(request)
+
+    trip = get_object_or_404(Trip, id=trip_id)
+    from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+    to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+
+    # expires_at is created HERE
+    expires_at = timezone.now() + timedelta(seconds=getattr(settings, 'SEAT_HOLD_SECONDS', 300))
+
+    # group name for websocket broadcasts
+    group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    channel_layer = get_channel_layer()
+
+    # cleanup expired holds for this segment
+    SeatHold.objects.filter(
+        trip=trip,
+        expires_at__lte=timezone.now()
+    ).delete()
+
+    held = []
+    rejected = []
+
+    for seat_id in seat_ids:
+        seat = get_object_or_404(LayoutObject, id=seat_id)
+        
+        # --- REDIS: if someone else already holds it, reject ---
+        r_key = seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id)
+        r_payload = cache.get(r_key)
+
+        if isinstance(r_payload, dict):
+            existing_holder = r_payload.get("holder_id")
+            if existing_holder and existing_holder != holder_id:
+                rejected.append({'seat_id': seat_id, 'reason': 'held'})
+                continue
+        # --------------------
+        else:
+            # --- DB FALLBACK (secondary): if Redis missed, check SeatHold table ---
+            db_hold = SeatHold.objects.filter(
+                trip=trip,
+                seat_object_id=seat_id,
+                expires_at__gt=timezone.now()
+            ).filter(
+                Q(from_stop__stop_order__lt=to_stop.stop_order) &
+                Q(to_stop__stop_order__gt=from_stop.stop_order)
+            ).exclude(holder_id=holder_id).first()
+
+            if db_hold:
+                rejected.append({'seat_id': seat_id, 'reason': 'held'})
+                continue
+        # --------------------------
+
+        # HARD BLOCK: if seat is already booked for overlapping segment, reject
+        if Ticket.objects.filter(
+            trip=trip,
+            status__in=['BOOKED']
+        ).filter(
+            Q(from_stop__stop_order__lt=to_stop.stop_order) &
+            Q(to_stop__stop_order__gt=from_stop.stop_order)
+        ).filter(seat_object_id=seat_id).exists():
+            rejected.append({'seat_id': seat_id, 'reason': 'booked'})
+            continue
+
+        try:
+            # create or refresh hold (same holder can refresh)
+            obj, created = SeatHold.objects.update_or_create(
+                trip=trip,
+                from_stop=from_stop,
+                to_stop=to_stop,
+                seat_object_id=seat_id,
+                defaults={
+                    'holder_id': holder_id,
+                    'expires_at': expires_at,
+                }
+            )
+
+            held.append(seat_id)
+            
+            # --- REDIS WRITE (primary) ---
+            cache.set(
+                seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id),
+                {"holder_id": holder_id, "expires_at": expires_at.isoformat()},
+                timeout=getattr(settings, "SEAT_HOLD_SECONDS", 300),
+            )
+
+            # BROADCAST HOLD EVENT
+            async_to_sync(channel_layer.group_send)(group, {
+                "type": "seat_event",
+                "action": "hold",
+                "seat_id": seat_id,
+                "holder_id": holder_id,
+                "expires_at": expires_at.isoformat(),
+            })
+
+        except IntegrityError:
+            # someone else holds it
+            rejected.append({'seat_id': seat_id, 'reason': 'held'})
+
+    return JsonResponse({'success': True, 'held': held, 'rejected': rejected})
+
+
+@require_POST
+def release_seats_view(request):
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'success': False, 'error': 'Authentication required.'}, status=401)
+
+    data = json.loads(request.body)
+    trip_id = data.get('trip_id')
+    from_stop_id = data.get('from_stop')
+    to_stop_id = data.get('to_stop')
+    seat_ids = data.get('seat_ids', [])
+    
+    holder_id = get_holder_id(request)
+
+    if not all([trip_id, from_stop_id, to_stop_id]) or not seat_ids:
+        return JsonResponse({'success': False, 'error': 'Missing payload.'}, status=400)
+
+    trip = get_object_or_404(Trip, id=trip_id)
+    from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+    to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+
+    group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    channel_layer = get_channel_layer()
+
+    deleted = []
+
+    qs = SeatHold.objects.filter(
+        trip=trip,
+        from_stop=from_stop,
+        to_stop=to_stop,
+        holder_id=holder_id,
+        seat_object_id__in=seat_ids
+    )
+
+    deleted = list(qs.values_list('seat_object_id', flat=True))
+    qs.delete()
+
+    for seat_id in deleted:
+        cache.delete(seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id))
+        
+        async_to_sync(channel_layer.group_send)(group, {
+            "type": "seat_event",
+            "action": "release",
+            "seat_id": seat_id,
+        })
+
+    return JsonResponse({'success': True, 'released': deleted})
+
+
+@require_GET
+def get_passenger_profile_by_phone_view(request):
+    try:
+        phone = (request.GET.get("phone") or "").strip()
+        phone_norm = _normalize_bd_phone(phone)
+
+        # Expect BD normalized format: 8801XXXXXXXXX
+        if not phone_norm.startswith("8801") or len(phone_norm) != 13:
+            return JsonResponse({
+                "success": False,
+                "error": "Invalid phone number."
+            }, status=400)
+
+        phone_local = _to_local_bd_phone(phone)
+        user = User.objects.filter(
+            Q(phone_number=phone_norm) | Q(phone_number=phone_local)
+        ).first()
+
+        if not user:
+            return JsonResponse({
+                "success": True,
+                "found": False
+            })
+
+        full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+        
+        print('user phone:', user.phone_number)
+        print('user first name', user.first_name)
+        print('user first name', user.last_name)
+
+        # Optional gender support (if your User model has gender)
+        user_gender = getattr(user, "gender", None)
+        if user_gender in [0, 1, "0", "1"]:
+            user_gender = str(user_gender)
+        else:
+            user_gender = None
+
+        return JsonResponse({
+            "success": True,
+            "found": True,
+            "data": {
+                "name": full_name,
+                "email": getattr(user, "email", "") or "",
+                "address": getattr(user, "address", "") or "",
+                "gender": user_gender,
+                "phone": phone_norm,
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+        
+        
+def _get_or_create_user_by_bd_phone(phone_raw, defaults=None):
+    """
+    Resolve a user by BD phone in local/880 formats safely.
+    Prefers local format (01...) to avoid duplicate-normalization collisions.
+    Creates a new user only if neither format exists.
+    Returns: (user, created, phone_local)
+    """
+    defaults = defaults or {}
+
+    phone_local = _to_local_bd_phone(phone_raw)
+    if not phone_local or not phone_local.startswith("01") or len(phone_local) != 11:
+        return None, False, None
+
+    phone_880 = _normalize_bd_phone(phone_local)
+
+    # ✅ Prefer local format first
+    user_local = User.objects.filter(phone_number=phone_local).first()
+    if user_local:
+        return user_local, False, phone_local
+
+    # Fallback to old 880-stored row
+    user_880 = User.objects.filter(phone_number=phone_880).first()
+    if user_880:
+        # Normalize safely only if local-format row does not exist
+        if (user_880.phone_number or "").strip() != phone_local:
+            if not User.objects.filter(phone_number=phone_local).exclude(id=user_880.id).exists():
+                user_880.phone_number = phone_local
+                user_880.save(update_fields=["phone_number"])
+        return user_880, False, phone_local
+
+    # Create brand new user in local format
+    user = User.objects.create(
+        phone_number=phone_local,
+        **defaults
+    )
+    return user, True, phone_local
+
+
+@login_required
+def my_bookings_view(request):
+    now = timezone.now()
+
+    base_qs = (
+        Booking.objects
+        .filter(user=request.user)
+        .select_related(
+            "trip",
+            "trip__ship",
+            "trip__route",
+            "trip__route__source",
+            "trip__route__destination",
+            "counter",
+        )
+        .prefetch_related(
+            "passengers",
+            Prefetch(
+                "tickets",
+                queryset=Ticket.objects.select_related(
+                    "seat_object",
+                    "from_stop__location",
+                    "to_stop__location",
+                    "passenger",
+                ).order_by("id")
+            ),
+        )
+        .order_by("-trip__departure_datetime", "-created_at")
+    )
+
+    # Split correctly
+    upcoming_bookings = list(
+        base_qs.filter(trip__departure_datetime__gte=now).order_by("trip__departure_datetime")
+    )
+    past_bookings = list(
+        base_qs.filter(trip__departure_datetime__lt=now).order_by("-trip__departure_datetime")
+    )
+
+    # Add seat labels dynamically (for your template's booking.seat_labels)
+    all_bookings = upcoming_bookings + past_bookings
+
+    for booking in all_bookings:
+        # Seat labels (your existing logic)
+        booking.seat_labels = [
+            (t.seat_object.label if getattr(t.seat_object, "label", None) else str(t.seat_object_id))
+            for t in booking.tickets.all()
+        ]
+
+        # [NEW:BOOKING_QR+PUBLIC_URL]
+        # Ensure token exists
+        if not booking.share_token:
+            booking.share_token = uuid.uuid4().hex
+            booking.save(update_fields=["share_token"])
+
+        # Build shareable public URL (token-protected)
+        booking.public_url = request.build_absolute_uri(
+            reverse("ticket_public", args=[booking.booking_ref, booking.share_token])
+        )
+
+        # Ensure QR image exists (generate only if missing)
+        # Your ensure_booking_qr should "do nothing" if already exists
+        ensure_booking_qr(booking, booking.public_url)
+
+        # ✅ NEW: ensure we read the updated field after save
+        booking.refresh_from_db(fields=["qr_image"])
+
+        # booking.qr_src = booking.qr_image.url if booking.qr_image else ""
+        # [/NEW:BOOKING_QR+PUBLIC_URL]
+
+    return render(request, "portal/my_bookings/my_bookings.html", {
+        "upcoming_bookings": upcoming_bookings,
+        "past_bookings": past_bookings,
+    })
+    
+    
+    
+@login_required
+def profile_edit_view(request):
+    if request.method == "GET":
+        return render(request, "portal/profile/profile_edit.html", {
+            "page_title": "My Profile",
+        })
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
+
+    user = request.user
+    form_type = (request.POST.get("form_type") or "").strip()
+
+    if form_type == "profile":
+        first_name = (request.POST.get("first_name") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
+        email = (request.POST.get("email") or "").strip()
+
+        if email:
+            email_conflict = (
+                User.objects
+                .filter(email__iexact=email)
+                .exclude(id=user.id)
+                .exists()
+            )
+            if email_conflict:
+                return JsonResponse(
+                    {"success": False, "error": "This email is already used by another account."},
+                    status=400
+                )
+
+        dirty_fields = []
+
+        if user.first_name != first_name:
+            user.first_name = first_name
+            dirty_fields.append("first_name")
+
+        if user.last_name != last_name:
+            user.last_name = last_name
+            dirty_fields.append("last_name")
+
+        normalized_email = email if email else None
+        if user.email != normalized_email:
+            user.email = normalized_email
+            dirty_fields.append("email")
+
+        if dirty_fields:
+            user.save(update_fields=dirty_fields + ["updated_at"])
+
+        return JsonResponse({
+            "success": True,
+            "message": "Profile updated successfully.",
+            "user": {
+                "first_name": user.first_name or "",
+                "last_name": user.last_name or "",
+                "email": user.email or "",
+                "phone_number": user.phone_number or "",
+                "display_name": (user.get_display_name() or "").strip(),
+            }
+        })
+
+    if form_type == "password":
+        new_password = (request.POST.get("new_password") or "").strip()
+        confirm_password = (request.POST.get("confirm_password") or "").strip()
+
+        if not new_password:
+            return JsonResponse({"success": False, "error": "New password is required."}, status=400)
+
+        if not confirm_password:
+            return JsonResponse({"success": False, "error": "Confirm password is required."}, status=400)
+
+        if len(new_password) < 8:
+            return JsonResponse({"success": False, "error": "New password must be at least 8 characters."}, status=400)
+
+        if new_password != confirm_password:
+            return JsonResponse({"success": False, "error": "New password and confirm password do not match."}, status=400)
+
+        # Optional: prevent setting the same password again
+        if user.check_password(new_password):
+            return JsonResponse({"success": False, "error": "New password must be different from your current password."}, status=400)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password", "updated_at"])
+        update_session_auth_hash(request, user)
+
+        return JsonResponse({"success": True, "message": "Password changed successfully."})
+
+    return JsonResponse({"success": False, "error": "Invalid form submission."}, status=400)
+
+
+@login_required
+def account_view(request):
+    now = timezone.now()
+
+    base_qs = (
+        Booking.objects
+        .filter(user=request.user)
+        .select_related(
+            "trip",
+            "trip__ship",
+            "trip__route",
+            "trip__route__source",
+            "trip__route__destination",
+            "counter",
+        )
+        .prefetch_related(
+            "passengers",
+            Prefetch(
+                "tickets",
+                queryset=Ticket.objects.select_related(
+                    "seat_object",
+                    "from_stop__location",
+                    "to_stop__location",
+                    "passenger",
+                ).order_by("id")
+            ),
+        )
+        .order_by("-trip__departure_datetime", "-created_at")
+    )
+
+    # ✅ counts for tab labels (don't use |length on page_obj)
+    upcoming_qs = base_qs.filter(trip__departure_datetime__gte=now).order_by("trip__departure_datetime")
+    past_qs = base_qs.filter(trip__departure_datetime__lt=now).order_by("-trip__departure_datetime")
+
+    upcoming_count = upcoming_qs.count()
+    past_count = past_qs.count()
+
+    # ✅ pagination (10 per tab)
+    upcoming_paginator = Paginator(upcoming_qs, 10)
+    past_paginator = Paginator(past_qs, 10)
+
+    up_page = request.GET.get("up_page")
+    hist_page = request.GET.get("hist_page")
+
+    upcoming_page_obj = upcoming_paginator.get_page(up_page)
+    past_page_obj = past_paginator.get_page(hist_page)
+
+    # ✅ Only process bookings that are actually displayed (max 20)
+    visible_bookings = list(upcoming_page_obj.object_list) + list(past_page_obj.object_list)
+
+    for booking in visible_bookings:
+        booking.seat_labels = [
+            (t.seat_object.label if getattr(t.seat_object, "label", None) else str(t.seat_object_id))
+            for t in booking.tickets.all()
+        ]
+
+        if not booking.share_token:
+            booking.share_token = uuid.uuid4().hex
+            booking.save(update_fields=["share_token"])
+
+        booking.public_url = request.build_absolute_uri(
+            reverse("ticket_public", args=[booking.booking_ref, booking.share_token])
+        )
+
+        ensure_booking_qr(booking, booking.public_url)
+        booking.refresh_from_db(fields=["qr_image"])
+
+    # main account tabs (bookings/profile)
+    active_tab = request.GET.get("tab") or "bookings"
+    if active_tab not in ("bookings", "profile"):
+        active_tab = "bookings"
+
+    # ✅ booking sub-tabs (upcoming/history) keep active on pagination clicks
+    booking_tab = request.GET.get("booking_tab") or "upcoming"
+    if booking_tab not in ("upcoming", "history"):
+        booking_tab = "upcoming"
+
+    return render(request, "portal/account/account.html", {
+        "page_title": "My Account",
+
+        # ✅ paginated objects (use these in template loops)
+        "upcoming_page_obj": upcoming_page_obj,
+        "past_page_obj": past_page_obj,
+
+        # ✅ counts for labels
+        "upcoming_count": upcoming_count,
+        "past_count": past_count,
+
+        # ✅ which booking sub-tab is active
+        "booking_tab": booking_tab,
+
+        "active_tab": active_tab,
+    })
+    
+    
+def ticket_public_view(request, booking_ref, token):
+    booking = get_object_or_404(
+        Booking.objects.prefetch_related('tickets__seat_object'),
+        booking_ref=booking_ref
+    )
+
+    if not booking.share_token or booking.share_token != token:
+        raise Http404("Invalid ticket link.")
+
+    public_url = request.build_absolute_uri(f"/ticket/{booking.booking_ref}/{booking.share_token}/")
+
+    # If QR is missing for some reason, generate it here too (safe)
+    ensure_booking_qr(booking, public_url)
+
+    return render(request, "portal/schedules/booking_success.html", {
+        "booking": booking,
+        "public_url": public_url,
+    })
+
+
+def booking_qr_png_view(request, booking_ref, token):
+    booking = get_object_or_404(Booking, booking_ref=booking_ref)
+
+    if not booking.share_token or booking.share_token != token:
+        raise Http404("Invalid ticket link.")
+
+    if booking.payment_status != "PAID":
+        raise Http404("Ticket not available yet.")
+
+    public_url = request.build_absolute_uri(booking.get_public_ticket_path())
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=ERROR_CORRECT_M,
+        box_size=10,
+        border=2
+    )
+    qr.add_data(public_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="#0b4a78", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    return HttpResponse(buf.getvalue(), content_type="image/png")
+
+
+def booking_ticket_pdf(request, booking_ref):
+    """
+    Authenticated download (recommended for user dashboard / success page).
+    """
+    booking = get_object_or_404(
+        Booking.objects.prefetch_related("tickets__seat_object__category", "tickets__from_stop__location", "tickets__to_stop__location"),
+        booking_ref=booking_ref
+    )
+
+    # Optional: security (recommended)
+    # Only the owner or staff can download
+    if not request.user.is_authenticated:
+        raise Http404("Not found.")
+    if booking.user_id != request.user.id and not request.user.is_staff:
+        raise Http404("Not found.")
+
+    # Ensure token exists because we show share links inside PDF (optional but nice)
+    if not booking.share_token:
+        booking.share_token = uuid.uuid4().hex
+        booking.save(update_fields=["share_token"])
+
+    public_url = request.build_absolute_uri(f"/ticket/{booking.booking_ref}/{booking.share_token}/")
+
+    html = render_to_string(
+        "portal/my_bookings/booking_invoice_pdf.html",
+        {
+            "booking": booking,
+            "public_url": public_url,
+        },
+        request=request
+    )
+
+    base_url = request.build_absolute_uri("/")  # so relative URLs /static/... resolve
+    pdf_bytes = render_booking_pdf_from_html(html, base_url=base_url)
+
+    filename = f"MK_Ticket_{booking.booking_ref}.pdf"
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp

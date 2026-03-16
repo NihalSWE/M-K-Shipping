@@ -1,291 +1,826 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Electronic Ticket - {{ booking.booking_ref }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        :root {
-            --primary: #4f46e5;
-            --text-dark: #0f172a;
-            --text-light: #64748b;
-            --border-color: #e2e8f0;
+        :root{
+            --heading-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+            --ocean:#167fca;
+            --ocean-dark:#0b4a78;
+            --ink:#0b1220;
+            --muted:#607387;
+
+            --card:#ffffff;
+            --surface:#f6fbff;
+            --border:rgba(10, 60, 95, 0.12);
+
+            --shadow-sm: 0 6px 18px rgba(11, 18, 32, 0.06);
+            --shadow-md: 0 14px 30px rgba(11, 18, 32, 0.10);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background-color: #f1f5f9; 
-            font-family: 'Poppins', sans-serif; 
-            color: var(--text-dark);
-            padding: 20px;
+        *{ box-sizing:border-box; }
+        html, body{ height:100%; }
+        body{
+            margin:0;
+            padding:24px;
+            font-family: var(--heading-font);
+            color: var(--ink);
+            background:
+                radial-gradient(1100px 500px at 15% 0%, rgba(22,127,202,.14), transparent 60%),
+                radial-gradient(900px 420px at 90% 5%, rgba(11,74,120,.12), transparent 55%),
+                var(--surface);
         }
 
-        /* Print Button / Nav */
-        .no-print {
-            max-width: 800px;
-            margin: 0 auto 20px;
-            display: flex;
-            justify-content: space-between;
+        /* Top bar */
+        .no-print{
+            max-width: 920px;
+            margin: 0 auto 16px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
         }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            border: none;
-        }
-
-        .btn-print { background: var(--primary); color: white; }
-        .btn-back { background: white; color: var(--text-light); border: 1px solid var(--border-color); }
-
-        /* Ticket Layout - Optimized for A4 */
-        .ticket-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
+        .btn{
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            padding:10px 14px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        /* Header Area */
-        .header {
-            padding: 30px 40px;
-            border-bottom: 2px solid #f8fafc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand h1 { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-        .brand p { font-size: 12px; color: var(--text-light); }
-
-        .booking-info { text-align: right; }
-        .booking-info h2 { font-size: 18px; color: var(--text-dark); }
-        .booking-info p { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); }
-
-        /* Journey Details Area */
-        .journey-grid {
-            padding: 30px 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-        }
-
-        .route-visual {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            grid-column: span 2;
-        }
-
-        .point h3 { font-size: 24px; color: var(--primary); margin: 0; }
-        .point p { font-size: 13px; color: var(--text-light); font-weight: 500; }
-        .point span { font-size: 11px; color: #94a3b8; }
-
-        .arrow { color: #cbd5e1; font-size: 20px; }
-
-        .meta-item { margin-bottom: 10px; }
-        .meta-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 600; }
-        .meta-value { font-size: 15px; font-weight: 600; }
-
-        /* Passenger Table - Compact for multiple tickets */
-        .manifest-container {
-            padding: 0 40px 30px;
-        }
-
-        .manifest-title {
+            cursor:pointer;
+            text-decoration:none;
+            font-weight:800;
             font-size: 13px;
-            font-weight: 700;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
+            border:1px solid transparent;
+            background: var(--card);
+            color: var(--ink);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn:hover{ transform: translateY(-1px); }
+        .btn:active{ transform: translateY(0); }
+
+        .btn-back{
+            border-color: var(--border);
+        }
+
+        .btn-print{
+            background: var(--ocean);
+            color:#fff;
+            border-color: rgba(255,255,255,.2);
+        }
+
+        /* Main container */
+        .ticket{
+            max-width: 920px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-md);
+            overflow:hidden;
+        }
+
+        /* Header */
+        .ticket__header{
+            padding: 22px 22px 18px;
+            border-bottom: 1px solid var(--border);
+            background:
+                linear-gradient(135deg, rgba(22,127,202,.14), rgba(246,251,255,1) 55%),
+                var(--card);
+            display:flex;
+            gap:14px;
+            align-items:flex-start;
+            justify-content: space-between;
+        }
+
+        .brand{
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+        }
+        .brand__title{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin:0;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: .2px;
+            color: var(--ocean-dark);
+        }
+        .brand__title .dot{
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--ocean);
+            box-shadow: 0 10px 20px rgba(22,127,202,.25);
+        }
+        .brand__sub{
+            margin:0;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .ref{
+            text-align:right;
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            align-items:flex-end;
+        }
+        .ref__label{
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .ref__value{
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--ink);
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 14px;
+        }
+
+        /* Content grid */
+        .ticket__body{
+            padding: 18px 22px 10px;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns: 1.2fr .8fr;
+            gap: 14px;
+        }
+
+        .card{
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+        .card__title{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-weight: 900;
+            font-size: 13px;
+            color: var(--ink);
+            margin:0 0 10px 0;
+        }
+        .card__title i{ color: var(--ocean); }
+
+        /* Route block */
+        .route{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px dashed rgba(10, 60, 95, 0.22);
+            background: linear-gradient(180deg, rgba(246,251,255,1), rgba(246,251,255,.2));
+        }
+        .route__point{
+            min-width: 0;
+        }
+        .route__code{
+            margin:0;
+            font-size: 22px;
+            font-weight: 1000;
+            letter-spacing: .06em;
+            color: var(--ocean-dark);
+        }
+        .route__name{
+            margin:2px 0 0 0;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .route__stop{
+            margin:2px 0 0 0;
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 650;
+        }
+        .route__mid{
+            display:flex;
+            align-items:center;
+            gap: 10px;
+            color: var(--muted);
+            flex: 0 0 auto;
+        }
+        .route__mid .ship{
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow: var(--shadow-sm);
+            color: var(--ocean);
+        }
+
+        /* Meta list */
+        .meta{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .meta__item{
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px;
+            background: #fff;
+        }
+        .meta__label{
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin:0 0 4px 0;
+        }
+        .meta__value{
+            margin:0;
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        /* Table */
+        .table-wrap{
+            margin-top: 14px;
+            padding: 14px;
+        }
+        table{
+            width:100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow:hidden;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: #fff;
+        }
+        thead th{
+            text-align:left;
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            padding: 12px 12px;
+            background: rgba(246,251,255,1);
+            border-bottom: 1px solid var(--border);
+        }
+        tbody td{
+            padding: 12px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+            vertical-align: top;
+        }
+        tbody tr:last-child td{ border-bottom: none; }
+
+        .seat-badge{
+            display:inline-flex;
+            align-items:center;
+            gap: 6px;
+            background: rgba(22,127,202,.12);
+            color: var(--ocean-dark);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 900;
+            border: 1px solid rgba(22,127,202,.25);
+            white-space: nowrap;
+        }
+        .fare{
+            text-align:right;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .subtext{
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 650;
+            margin-top: 3px;
+        }
+
+        /* Footer */
+        .ticket__footer{
+            padding: 16px 22px;
+            border-top: 1px solid var(--border);
+            background: rgba(246,251,255,1);
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            gap: 14px;
+        }
+        .qr{
+            display:flex;
+            align-items:center;
+            gap: 12px;
+            min-width: 0;
+        }
+        .qr__box{
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: #fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color: rgba(10, 60, 95, 0.32);
+            box-shadow: var(--shadow-sm);
+            flex: 0 0 auto;
+        }
+        .qr__text h4{
+            margin:0;
+            font-size: 12px;
+            font-weight: 950;
+            color: var(--ink);
+            letter-spacing: .03em;
+        }
+        .qr__text p{
+            margin:3px 0 0 0;
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 650;
+            max-width: 280px;
+        }
+
+        .total{
+            text-align:right;
+            display:flex;
+            flex-direction:column;
+            gap: 6px;
+            align-items:flex-end;
+        }
+        .total__label{
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+        }
+        .total__price{
+            font-size: 26px;
+            font-weight: 1000;
+            color: var(--ink);
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .total__status{
+            font-size: 12px;
+            font-weight: 900;
+            color: #059669;
+            display:flex;
+            align-items:center;
             gap: 8px;
         }
 
-        .ticket-table {
-            width: 100%;
-            border-collapse: collapse;
+        /* Notes */
+        .ticket__notes{
+            padding: 14px 22px 18px;
+            border-top: 1px dashed rgba(10, 60, 95, 0.25);
+            background: #fff;
         }
-
-        .ticket-table th {
-            text-align: left;
-            font-size: 11px;
-            color: var(--text-light);
-            padding: 10px;
-            background: #fcfcfc;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .ticket-table td {
-            padding: 14px 10px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 13px;
-        }
-
-        .seat-badge {
-            background: #eef2ff;
-            color: var(--primary);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 700;
-            border: 1px solid #e0e7ff;
-        }
-
-        .cabin-type {
+        .ticket__notes p{
+            margin:0;
+            font-size: 10.5px;
+            color: var(--muted);
+            line-height: 1.55;
             font-weight: 600;
-            color: var(--text-dark);
         }
 
-        /* Footer Summary */
-        .footer {
-            padding: 30px 40px;
-            background: #fafafa;
-            border-top: 1px solid var(--border-color);
+        /* [NEW:QR_ZOOM_OVERLAY_CSS] */
+        #qrZoomOverlay{
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+        }
+        .qr-zoom-backdrop{
+            position: absolute;
+            inset: 0;
+            background: rgba(11, 18, 32, 0.55);
+            backdrop-filter: blur(6px);
+        }
+        .qr-zoom-card{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(520px, calc(100vw - 24px));
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .qr-zoom-close{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 38px;
+            height: 38px;
+            border: 0;
+            border-radius: 12px;
+            background: rgba(246, 251, 255, 0.95);
+            color: var(--ink);
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .qr-zoom-inner{
+            padding: 18px;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+            justify-content: center;
+            align-items: center;
         }
+        .qr-zoom-img{
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: #fff;
+        }
+        /* Mobile: larger usable QR */
+        @media (max-width: 640px){
+            .qr-zoom-card{
+                width: calc(100vw - 18px);
+            }
+            .qr-zoom-img{
+                max-width: 520px;
+            }
+        }
+        /* [/NEW:QR_ZOOM_OVERLAY_CSS] */
 
-        .total-box { text-align: right; }
-        .total-box p { font-size: 12px; color: var(--text-light); }
-        .total-box .price { font-size: 26px; font-weight: 800; color: var(--text-dark); }
-        .total-box .paid-status { color: #10b981; font-size: 12px; font-weight: 700; }
+        /* Responsive */
+        @media (max-width: 780px){
 
-        .qr-area { display: flex; align-items: center; gap: 15px; }
-        .qr-mock { width: 60px; height: 60px; border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: white; color: #cbd5e1; }
+            /* 1) Stop squeezing the whole layout */
+            body{
+                padding: 6px !important;          /* almost full-width */
+                background: var(--surface);       /* keep your background */
+            }
 
-        @media print {
-            body { background: white; padding: 0; }
-            .no-print { display: none; }
-            .ticket-container { border: none; box-shadow: none; max-width: 100%; }
-            /* Force table to fit */
-            .ticket-table td { padding: 10px; }
+            .no-print{
+                max-width: 100% !important;
+                margin: 0 auto 10px !important;
+                gap: 8px !important;
+                padding: 0 2px !important;
+            }
+
+            /* 2) Ticket should use full width */
+            .ticket{
+                max-width: 100% !important;
+                margin: 0 !important;
+                border-radius: 14px !important;
+            }
+
+            /* 3) Reduce internal paddings a LOT */
+            .ticket__header{ padding: 10px 10px 8px !important; }
+            .ticket__body{ padding: 8px 10px 6px !important; }
+            .ticket__footer{ padding: 8px 10px !important; }
+            .ticket__notes{ padding: 8px 10px 10px !important; }
+
+            .card{ padding: 10px !important; box-shadow: none !important; }
+            .route{ padding: 10px !important; }
+
+            /* 4) Smaller text for mobile */
+            .brand__title{ font-size: 15px !important; }
+            .brand__sub{ font-size: 11px !important; }
+            .ref__value{ font-size: 15px !important; padding: 6px 10px !important; }
+
+            .route__code{ font-size: 17px !important; }
+            .route__name{ font-size: 12px !important; }
+            .route__stop{ font-size: 10px !important; }
+
+            .meta__label{ font-size: 10px !important; }
+            .meta__value{ font-size: 12px !important; }
+
+            .total__price{ font-size: 20px !important; }
+
+            /* 5) Grid becomes single column (you had this already) */
+            .ticket__header{ flex-direction: column !important; align-items: flex-start !important; }
+            .ref{ align-items: flex-start !important; text-align: left !important; }
+            .grid{ grid-template-columns: 1fr !important; }
+            .meta{ grid-template-columns: 1fr !important; }
+            .ticket__footer{ flex-direction: column !important; align-items: flex-start !important; }
+            .total{ align-items: flex-start !important; text-align: left !important; }
+
+            /* =========================================================
+            PASSENGER SECTION: true mobile cards, NO double borders
+            ========================================================= */
+
+            /* Remove table container padding so it doesn't narrow content */
+            .table-wrap{
+                padding: 0 !important;
+                margin-top: 12px !important;
+            }
+
+            /* Remove table border/radius on mobile to avoid double borders */
+            .table-wrap table{
+                border: none !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+            }
+
+            /* Hide header row */
+            .table-wrap thead{
+                display: none !important;
+            }
+
+            /* Make table elements block-based */
+            .table-wrap table,
+            .table-wrap tbody,
+            .table-wrap tr,
+            .table-wrap td{
+                display: block !important;
+                width: 100% !important;
+            }
+
+            /* Each passenger row becomes a clean card */
+            .table-wrap tr{
+                background: #fff !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 14px !important;
+                padding: 10px 10px !important;
+                margin: 0 0 10px 0 !important;   /* no overlap */
+                box-shadow: none !important;     /* removes "overlapping" look */
+            }
+
+            .table-wrap td{
+                border: none !important;
+                padding: 8px 0 !important;
+                white-space: normal !important;
+
+                /* NEW: use full row width */
+                display: grid !important;
+                grid-template-columns: 128px 1fr !important;
+                column-gap: 10px !important;
+                align-items: start !important;
+            }
+
+            .table-wrap td::before{
+                content: attr(data-label);
+                grid-column: 1 !important;
+                font-size: 10px;
+                font-weight: 900;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                line-height: 1.2;
+                padding-top: 2px;
+            }
+
+            .table-wrap .td-val{
+                grid-column: 2 !important;
+                min-width: 0;
+            }
+
+            /* Hide the # row on mobile (optional, cleaner) */
+            .table-wrap td.td-idx{
+                display: none !important;
+            }
+
+            /* Seat badge stays compact */
+            .seat-badge{
+                display: inline-flex !important;
+                width: auto !important;
+            }
+
+            /* Fare left aligned in stacked layout */
+            .fare{
+                text-align: left !important;
+                white-space: nowrap !important;
+            }
+        }
+        /* [/FIX:MOBILE_PADDING_MORE + MOBILE_TABLE_CARDS] */
+
+        /* Print */
+        @media print{
+            body{
+                background:#fff;
+                padding: 0;
+            }
+            .no-print{ display:none; }
+            .ticket{
+                max-width: 100%;
+                border: none;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .card, table{
+                box-shadow: none !important;
+            }
             @page { margin: 1cm; size: A4; }
         }
     </style>
 </head>
-<body>
 
+<body>
     <div class="no-print">
         <a href="/" class="btn btn-back"><i class="fas fa-arrow-left"></i> Home</a>
-        <button onclick="window.print()" class="btn btn-print"><i class="fas fa-file-pdf"></i> Download Ticket</button>
+        <a href="{% url 'booking_ticket_pdf' booking.booking_ref %}" class="btn btn-print">
+            <i class="fas fa-file-pdf"></i> Download Ticket (PDF)
+        </a>
     </div>
 
-    <div class="ticket-container">
-        <div class="header">
+    <div class="ticket">
+        <div class="ticket__header">
             <div class="brand">
-                <h1><i class="fas fa-anchor"></i> MK Shipping</h1>
-                <p>Digital Booking Receipt & Tax Invoice</p>
+                <h1 class="brand__title"><span class="dot"></span> MK Shipping</h1>
+                <p class="brand__sub">Digital Booking Receipt & Tax Invoice</p>
             </div>
-            <div class="booking-info">
-                <p>Booking Reference</p>
-                <h2>{{ booking.booking_ref }}</h2>
+
+            <div class="ref">
+                <div class="ref__label">Booking Reference</div>
+                <div class="ref__value">{{ booking.booking_ref }}</div>
             </div>
         </div>
 
-        <div class="journey-grid">
-            <div class="route-visual">
-                <div class="point">
-                    <h3>{{ booking.tickets.first.from_stop.location.name|slice:":3"|upper }}</h3>
-                    <p>{{ booking.tickets.first.from_stop.location.name }}</p>
-                    <span>{{ booking.tickets.first.from_stop.name }}</span>
+        <div class="ticket__body">
+            <div class="grid">
+                <div class="card">
+                    <h3 class="card__title"><i class="fa-solid fa-route"></i> Journey</h3>
+
+                    <div class="route">
+                        <div class="route__point">
+                            <p class="route__code">{{ booking.tickets.first.from_stop.location.name|slice:":3"|upper }}</p>
+                            <p class="route__name">{{ booking.tickets.first.from_stop.location.name }}</p>
+                            <p class="route__stop">{{ booking.tickets.first.from_stop.name }}</p>
+                        </div>
+
+                        <div class="route__mid">
+                            <div class="ship"><i class="fa-solid fa-ship"></i></div>
+                            <i class="fa-solid fa-arrow-right-long"></i>
+                        </div>
+
+                        <div class="route__point" style="text-align:right;">
+                            <p class="route__code">{{ booking.tickets.first.to_stop.location.name|slice:":3"|upper }}</p>
+                            <p class="route__name">{{ booking.tickets.first.to_stop.location.name }}</p>
+                            <p class="route__stop">{{ booking.tickets.first.to_stop.name }}</p>
+                        </div>
+                    </div>
+
+                    <div style="height: 12px;"></div>
+
+                    <div class="meta">
+                        <div class="meta__item">
+                            <p class="meta__label">Date of Journey</p>
+                            <p class="meta__value">{{ booking.trip.departure_datetime|date:"l, d M Y" }}</p>
+                        </div>
+                        <div class="meta__item">
+                            <p class="meta__label">Reporting Time</p>
+                            <p class="meta__value">{{ booking.trip.departure_datetime|date:"h:i A" }}</p>
+                        </div>
+                        <div class="meta__item">
+                            <p class="meta__label">Booking Date</p>
+                            <p class="meta__value">{{ booking.created_at|date:"d M Y, h:i A" }}</p>
+                        </div>
+                        <div class="meta__item">
+                            <p class="meta__label">Vessel / Launch</p>
+                            <p class="meta__value">{{ booking.trip.ship.name }}</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="arrow">
-                    <i class="fas fa-long-arrow-alt-right"></i>
-                </div>
-                <div class="point" style="text-align: right;">
-                    <h3>{{ booking.tickets.first.to_stop.location.name|slice:":3"|upper }}</h3>
-                    <p>{{ booking.tickets.first.to_stop.location.name }}</p>
-                    <span>{{ booking.tickets.first.to_stop.name }}</span>
+
+                <div class="card">
+                    <h3 class="card__title"><i class="fa-solid fa-file-invoice"></i> Summary</h3>
+
+                    <div class="meta" style="grid-template-columns: 1fr;">
+                        <div class="meta__item">
+                            <p class="meta__label">Total Amount Paid</p>
+                            <p class="meta__value" style="font-size: 18px; font-weight: 1000; color: var(--ocean-dark);">
+                                {{ booking.total_amount }} BDT
+                            </p>
+                        </div>
+                        <div class="meta__item">
+                            <p class="meta__label">Payment Status</p>
+                            <p class="meta__value" style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#059669; font-weight: 950;">
+                                    <i class="fas fa-check-circle"></i> TRANSACTION SUCCESSFUL
+                                </span>
+                            </p>
+                        </div>
+                        <div class="meta__item">
+                            <p class="meta__label">Ticket Count</p>
+                            <p class="meta__value">{{ booking.tickets.all|length }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <div class="meta-item">
-                    <p class="meta-label">Date of Journey</p>
-                    <p class="meta-value">{{ booking.trip.departure_datetime|date:"l, d M Y" }}</p>
-                </div>
-                <div class="meta-item">
-                    <p class="meta-label">Reporting Time</p>
-                    <p class="meta-value">{{ booking.trip.departure_datetime|date:"h:i A" }}</p>
-                </div>
-            </div>
+            <div class="card table-wrap">
+                <h3 class="card__title"><i class="fas fa-id-card"></i> Passenger & Seat Assignments</h3>
 
-            <div>
-                <div class="meta-item">
-                    <p class="meta-label">Booking Date</p>
-                    <p class="meta-value">{{ booking.created_at|date:"d M Y, h:i A" }}</p>
-                </div>
-                <div class="meta-item">
-                    <p class="meta-label">Vessel / Launch</p>
-                    <p class="meta-value">{{ booking.trip.ship.name }}</p>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="35%">Passenger Name</th>
+                            <th width="25%">Cabin / Class</th>
+                            <th width="15%">Seat No</th>
+                            <th width="20%" style="text-align:right;">Fare</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in booking.tickets.all %}
+                            <tr>
+                                <td data-label="#" class="td-idx">
+                                    <div class="td-val">{{ forloop.counter }}</div>
+                                </td>
+
+                                <td data-label="Passenger Name">
+                                    <div class="td-val">
+                                        <div style="font-weight: 950;">{{ t.passenger_name }}</div>
+                                        <div class="subtext">Adult / Regular</div>
+                                    </div>
+                                </td>
+
+                                <td data-label="Cabin / Class" style="font-weight: 900;">
+                                    <div class="td-val">{{ t.seat_object.category.name }}</div>
+                                </td>
+
+                                <td data-label="Seat No">
+                                    <div class="td-val">
+                                        <span class="seat-badge"><i class="fa-solid fa-chair"></i> {{ t.seat_object.label }}</span>
+                                    </div>
+                                </td>
+
+                                <td data-label="Fare" class="fare">
+                                    <div class="td-val">{{ t.fare_amount }} BDT</div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="manifest-container">
-            <div class="manifest-title"><i class="fas fa-id-card"></i> PASSENGER & SEAT ASSIGNMENTS</div>
-            <table class="ticket-table">
-                <thead>
-                    <tr>
-                        <th width="5%">#</th>
-                        <th width="35%">Passenger Name</th>
-                        <th width="25%">Cabin / Class</th>
-                        <th width="15%">Seat No</th>
-                        <th width="20%" style="text-align: right;">Fare</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in booking.tickets.all %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>
-                            <div style="font-weight: 700;">{{ t.passenger_name }}</div>
-                            <div style="font-size: 10px; color: var(--text-light);">Adult / Regular</div>
-                        </td>
-                        <td class="cabin-type">{{ t.seat_object.category.name }}</td>
-                        <td><span class="seat-badge">{{ t.seat_object.label }}</span></td>
-                        <td style="text-align: right; font-weight: 700;">{{ t.fare_amount }} BDT</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="footer">
-            <div class="qr-area">
-                <div class="qr-mock">
-                    <i class="fas fa-qrcode fa-2x"></i>
+        <div class="ticket__footer">
+            <div class="qr">
+                <div class="qr__box" style="padding:6px;">
+                    {% if booking.qr_image %}
+                        <img
+                            id="ticketQrThumb"
+                            src="{{ booking.qr_image.url }}"
+                            alt="Ticket QR"
+                            style="width:100%; height:100%; object-fit:contain; border-radius:12px; cursor: zoom-in;"
+                        />
+                    {% else %}
+                        <i class="fas fa-qrcode fa-2x"></i>
+                    {% endif %}
                 </div>
-                <div>
-                    <p style="font-size: 11px; font-weight: 700;">SCAN TO VERIFY</p>
-                    <p style="font-size: 10px; color: var(--text-light); max-width: 140px;">Show this QR at the terminal gate for boarding.</p>
+                <div class="qr__text">
+                    <h4>SCAN TO VERIFY</h4>
+                    <p>Show this QR at the terminal gate for boarding.</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <a href="https://wa.me/?text={{ public_url|urlencode }}" target="_blank"
+                        style="text-decoration:none; font-weight:800; font-size:12px; color:var(--ocean-dark);">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </a>
+
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ public_url|urlencode }}" target="_blank"
+                        style="text-decoration:none; font-weight:800; font-size:12px; color:var(--ocean-dark);">
+                            <i class="fa-brands fa-facebook"></i> Facebook
+                        </a>
+
+                        <a href="mailto:?subject={{ 'MK Shipping Ticket '|add:booking.booking_ref|urlencode }}&body={{ public_url|urlencode }}"
+                        style="text-decoration:none; font-weight:800; font-size:12px; color:var(--ocean-dark);">
+                            <i class="fa-solid fa-envelope"></i> Email
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="total-box">
-                <p>Total Amount Paid</p>
-                <div class="price">{{ booking.total_amount }} BDT</div>
-                <div class="paid-status"><i class="fas fa-check-circle"></i> TRANSACTION SUCCESSFUL</div>
+
+            <div class="total">
+                <div class="total__label">Total Amount Paid</div>
+                <div class="total__price">{{ booking.total_amount }} BDT</div>
+                <div class="total__status"><i class="fas fa-check-circle"></i> TRANSACTION SUCCESSFUL</div>
             </div>
         </div>
 
-        <div style="padding: 15px 40px; background: #fff; border-top: 1px dashed var(--border-color);">
-            <p style="font-size: 9px; color: var(--text-light); line-height: 1.4;">
+        <div class="ticket__notes">
+            <p>
                 * This is a computer-generated electronic ticket. No signature is required. <br>
                 * Please carry a valid Photo ID during travel. Tickets are non-refundable within 12 hours of departure. <br>
                 * For support, call 01XXX-XXXXXX or email support@barisalline.com.
@@ -293,5 +828,65 @@
         </div>
     </div>
 
+    <!-- [NEW:QR_ZOOM_OVERLAY] -->
+    <div id="qrZoomOverlay" style="display:none;">
+        <div class="qr-zoom-backdrop"></div>
+        <div class="qr-zoom-card" role="dialog" aria-modal="true" aria-label="QR Code">
+            <button type="button" class="qr-zoom-close" id="qrZoomCloseBtn" aria-label="Close">✕</button>
+
+            <div class="qr-zoom-inner">
+                {% if booking.qr_image %}
+                    <img src="{{ booking.qr_image.url }}" alt="Ticket QR Large" class="qr-zoom-img">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- [/NEW:QR_ZOOM_OVERLAY] -->
+
+
+    <script>
+        /* [NEW:QR_ZOOM_OVERLAY_JS] */
+        (function(){
+            const thumb = document.getElementById('ticketQrThumb');
+            const overlay = document.getElementById('qrZoomOverlay');
+            const closeBtn = document.getElementById('qrZoomCloseBtn');
+
+            if (!thumb || !overlay) return;
+
+            function openQrZoom(){
+                overlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeQrZoom(){
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            thumb.addEventListener('click', openQrZoom);
+            thumb.addEventListener('touchend', function(e){
+                // avoid double-tap zoom conflicts on some browsers
+                e.preventDefault();
+                openQrZoom();
+            }, { passive: false });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeQrZoom);
+
+            // Click backdrop to close
+            overlay.addEventListener('click', function(e){
+                if (e.target.classList.contains('qr-zoom-backdrop')) {
+                    closeQrZoom();
+                }
+            });
+
+            // ESC key
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'Escape' && overlay.style.display === 'block') {
+                    closeQrZoom();
+                }
+            });
+        })();
+        /* [/NEW:QR_ZOOM_OVERLAY_JS] */
+        </script>
 </body>
 </html>

@@ -42,6 +42,18 @@
     <!-- Responsive css-->
     <link rel="stylesheet" type="text/css" href="{% sass_src 'assets/scss/responsive.scss' %}">
 
+    <style>
+        /* Default: icon inherits the link color */
+        .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .simplebar-wrapper .simplebar-mask .simplebar-content-wrapper .simplebar-content > li .sidebar-link .iconify {
+            color: inherit;
+        }
+        /* Make Iconify icon follow active color too */
+        .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .simplebar-wrapper .simplebar-mask .simplebar-content-wrapper .simplebar-content > li .sidebar-link.active .iconify {
+            color: var(--theme-default);
+            transition: all 0.3s ease;
+        }
+    </style>
+
     {% block custom_css %}  {% endblock custom_css %}
   </head>
 

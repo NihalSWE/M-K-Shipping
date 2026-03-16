@@ -10,233 +10,181 @@
 
         body {
             font-family: 'Helvetica', Arial, sans-serif;
-            font-size: 9pt; /* Slightly larger */
+            font-size: 9pt;
             color: #000;
             margin: 0;
             padding: 0;
             line-height: 1.0;
         }
 
-        /* Title */
         .sheet-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 16pt; /* Slightly larger */
-            margin: 0 0 12px 0;
-            padding: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            text-align: center; font-weight: bold; font-size: 16pt;
+            margin: 0 0 12px 0; text-transform: uppercase;
         }
 
-        /* First table - Trip info */
-        .trip-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 12px;
-            table-layout: fixed;
-            font-size: 9pt;
-        }
-
-        .trip-table th {
-            background-color: #e8e8e8;
-            border: 1px solid #000;
-            padding: 5px 4px; /* Slightly more padding */
-            font-weight: bold;
-            text-align: center;
-            font-size: 9pt;
-            height: 26px;
-            vertical-align: middle;
-        }
-
-        .trip-table td {
-            border: 1px solid #000;
-            padding: 5px 4px; /* Slightly more padding */
-            text-align: center;
-            vertical-align: middle;
-            font-size: 9pt;
-            height: 26px;
-            font-weight: normal;
-        }
-
-        /* Main table - Ticket details */
-        .main-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            font-size: 9pt;
-        }
-
-        .main-table th {
-            background-color: #e8e8e8;
-            border: 1px solid #000;
-            padding: 4px 3px; /* Slightly more padding */
-            font-weight: bold;
-            text-align: center;
-            font-size: 8.5pt;
-            height: 30px;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
-        .main-table td {
-            border: 1px solid #000;
-            padding: 4px 3px; /* Slightly more padding */
-            text-align: center;
-            vertical-align: middle;
-            font-size: 9pt;
-            height: 26px;
-            word-wrap: break-word;
-            font-weight: normal;
-        }
-
-        /* EXACT COLUMN WIDTHS - WIDER */
-        /* Trip table: 6 columns */
-        .trip-col-1 { width: 16%; }
-        .trip-col-2 { width: 20%; }
-        .trip-col-3 { width: 16%; }
-        .trip-col-4 { width: 20%; }
-        .trip-col-5 { width: 14%; }
-        .trip-col-6 { width: 14%; }
-
-        /* Main table - WIDER proportions */
-        .col-sl { width: 3%; }
-        .col-ticket { width: 6.5%; }
-        .col-cabin { width: 5.5%; }
-        .col-name { width: 13%; }
-        .col-phone { width: 8.5%; }
-        .col-paid { width: 7%; }      /* Paid column */
-        .col-discount { width: 6.5%; }
-        .col-due { width: 7%; }       /* Due column */
-        .col-from { width: 7.5%; }
-        .col-to { width: 7.5%; }
-        .col-status { width: 8.5%; }
-        .col-booked { width: 8.5%; }
-        .col-issued { width: 8.5%; }
-        .col-remarks { width: 8.5%; }
-
-        /* Text alignment */
-        .text-left { 
-            text-align: left; 
-            padding-left: 5px !important;
+        .info-table, .main-table {
+            width: 100%; border-collapse: collapse; font-size: 9pt;
         }
         
-        .text-right { 
-            text-align: right; 
-            padding-right: 5px !important;
+        .info-table { margin-bottom: 12px; }
+        .info-table th, .main-table th {
+            background-color: #e8e8e8; border: 1px solid #000;
+            padding: 5px; font-weight: bold; text-align: center; vertical-align: middle;
         }
 
-        /* Totals row - INSIDE TABLE, UNDER PAID AND DUE COLUMNS */
-        .totals-row td {
-            border: 1px solid #000;
-            padding: 4px 3px;
-            font-size: 9pt;
-            height: 26px;
-            vertical-align: middle;
-            font-weight: normal;
+        /* Standard cell */
+        .cell-normal {
+            border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;
         }
 
-        .total-paid-cell {
-            text-align: right !important;
-            padding-right: 5px !important;
-            font-weight: bold !important;
+        /* --- VISUAL MERGE CSS --- */
+        /* Tricks the eye into seeing a rowspan without crashing the PDF generator */
+        .merge-single {
+            border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;
         }
-
-        .total-due-cell {
-            text-align: right !important;
-            padding-right: 5px !important;
-            font-weight: bold !important;
+        .merge-top {
+            border-top: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: none;
+            padding: 4px; text-align: center; vertical-align: top;
         }
-
-        .empty-cell {
-            border: none !important;
-            background-color: transparent !important;
+        .merge-mid {
+            border-top: none; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: none;
+            padding: 4px; text-align: center;
+        }
+        .merge-bot {
+            border-top: none; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000;
+            padding: 4px; text-align: center;
         }
         
-        .border-cell {
-            border: 1px solid #000 !important;
-        }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
     </style>
 </head>
 <body>
 
-    <!-- Title -->
     <div class="sheet-title">TRIP SHEET</div>
 
-    <!-- Trip Information Table - 6 COLUMNS -->
-    <table class="trip-table">
+    <table class="info-table">
         <tr>
-            <th class="trip-col-1">Launch</th>
-            <th class="trip-col-2">Route</th>
-            <th class="trip-col-3">Starting Place</th>
-            <th class="trip-col-4">Journey Date Time</th>
-            <th class="trip-col-5">Ticket Sold</th>
-            <th class="trip-col-6">Seats Sold</th>
+            <th>Launch</th><th>Route</th><th>Starting Place</th>
+            <th>Journey Date Time</th><th>Ticket Sold</th><th>Seats Sold</th>
         </tr>
         <tr>
-            <td>{{ trip.ship.name }}</td>
-            <td>{{ trip.route.name }}</td>
-            <td>{{ trip.route.source.name }}</td>
-            <td>{{ trip.departure_datetime|date:"Y-m-d H:i" }}</td>
-            <td>{{ total_tickets }}</td>
-            <td>{{ total_tickets }}</td>
+            <td class="cell-normal">{{ trip.ship.name }}</td>
+            <td class="cell-normal">{{ trip.route.name }}</td>
+            <td class="cell-normal">{{ trip.route.source.name }}</td>
+            <td class="cell-normal">{{ trip.departure_datetime|date:"Y-m-d H:i" }}</td>
+            <td class="cell-normal">{{ total_tickets }}</td>
+            <td class="cell-normal">{{ total_tickets }}</td>
         </tr>
     </table>
 
-    <!-- Main Ticket Table -->
     <table class="main-table">
         <thead>
             <tr>
-                <th class="col-sl">SL</th>
-                <th class="col-ticket">Ticket No</th>
-                <th class="col-cabin">Cabin</th>
-                <th class="col-name">Pass. Name</th>
-                <th class="col-phone">Phone No</th>
-                <th class="col-paid">Paid</th>
-                <th class="col-discount">Discount</th>
-                <th class="col-due">Due</th>
-                <th class="col-from">From Station</th>
-                <th class="col-to">To Station</th>
-                <th class="col-status">Ticket Status</th>
-                <th class="col-booked">Booked By</th>
-                <th class="col-issued">Issued By</th>
-                <th class="col-remarks">Remarks</th>
+                <th style="width: 3%;">SL</th>
+                <th style="width: 6.5%;">Ticket No</th>
+                <th style="width: 5.5%;">Cabin</th>
+                <th style="width: 13%;">Pass. Name</th>
+                <th style="width: 8.5%;">Phone No</th>
+                <th style="width: 7%;">Paid</th>
+                <th style="width: 6.5%;">Discount</th>
+                <th style="width: 7%;">Due</th>
+                <th style="width: 7.5%;">From Station</th>
+                <th style="width: 7.5%;">To Station</th>
+                <th style="width: 8.5%;">Ticket Status</th>
+                <th style="width: 8.5%;">Booked By</th>
+                <th style="width: 8.5%;">Issued By</th>
+                <th style="width: 8.5%;">Remarks</th>
             </tr>
         </thead>
         <tbody>
-            {% for ticket in tickets %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ ticket.id }}</td>
-                <td>{{ ticket.seat_object.seat_identifier|default:ticket.seat_object.label }}</td>
-                <td class="text-left">{{ ticket.booking.passenger_name|default:"-" }}</td>
-                <td>{{ ticket.booking.user.phone_number|default:"0" }}</td>
-                <td class="text-right">{{ ticket.fare_amount|floatformat:0 }}</td>
-                <td>0</td>
-                <td>0</td>
-                <td>{{ ticket.from_stop.location.name }}</td>
-                <td>{{ ticket.to_stop.location.name }}</td>
-                <td>Confirmed</td>
-                <td>{{ current_user.first_name|default:"Admin" }}</td>
-                <td>{{ current_user.first_name|default:"Admin" }}</td>
-                <td>N/A</td>
-            </tr>
+            {% for row in pdf_rows %}
+                {% if row.is_header %}
+                    <tr>
+                        <td colspan="14" style="background-color: #e8f4f8; font-weight: bold; border: 1px solid #000; padding: 4px; text-align: left;">
+                            Booking #{{ row.booking_id }} (Ref: {{ row.booking_ref }}) 
+                            - Total Fare: {{ row.total_fare|floatformat:0 }}
+                            - Paid: {{ row.paid_amount|floatformat:0 }}
+                            - Due: {{ row.due_amount|floatformat:0 }}
+                            {% if row.status == 'PENDING' %}<span style="color: orange;"> - PENDING</span>{% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr {% if row.status == 'PENDING' %}style="background-color: #fffcf2;"{% endif %}>
+                        <td class="cell-normal">{{ row.sl }}</td>
+                        <td class="cell-normal">{{ row.ticket_id }}</td>
+                        <td class="cell-normal">{{ row.cabin }}</td>
+                        <td class="cell-normal text-left">{{ row.pass_name }}</td>
+                        <td class="cell-normal">{{ row.phone }}</td>
+
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}<strong style="color: green;">{{ row.group_paid|floatformat:0 }}</strong>{% endif %}
+                        </td>
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}0{% endif %}
+                        </td>
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}<strong style="{% if row.group_due > 0 %}color: red;{% endif %}">{{ row.group_due|floatformat:0 }}</strong>{% endif %}
+                        </td>
+
+                        <td class="cell-normal">{{ row.from_station }}</td>
+                        <td class="cell-normal">{{ row.to_station }}</td>
+
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}
+                                <span style="color: {% if row.status == 'CONFIRMED' %}green{% else %}orange{% endif %};">
+                                    {{ row.status|title }}
+                                </span><br>
+                                <span style="font-size: 7pt; color: #555;">{{ row.payment_label }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}{{ row.booked_by }}{% endif %}
+                        </td>
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}{{ current_user.first_name|default:"Admin" }}{% endif %}
+                        </td>
+                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
+                            {% if row.is_first %}
+                                {% if row.status == 'PENDING' and row.time_stopped %}
+                                    Timer Stopped
+                                {% elif row.group_due > 0 %}
+                                    Due
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
             {% endfor %}
 
-            <!-- TOTALS ROW - INSIDE TABLE, UNDER PAID AND DUE COLUMNS -->
-            <tr class="totals-row">
-                <td colspan="5" class="empty-cell"></td>
-                <td class="total-paid-cell border-cell">
-                    Total Paid: {{ total_paid|floatformat:0 }}
+            <tr>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                
+                <td class="cell-normal" style="font-weight: bold; color: green; text-align: center; vertical-align: middle;">
+                    Total<br>Paid:<br>{{ total_paid|floatformat:0 }}
                 </td>
-                <td class="empty-cell"></td>
-                <td class="total-due-cell border-cell">
-                    Total Due: {{ total_due }}
+                
+                <td class="cell-normal">&nbsp;</td>
+                
+                <td class="cell-normal" style="font-weight: bold; {% if total_due > 0 %}color: red;{% else %}color: #000;{% endif %} text-align: center; vertical-align: middle;">
+                    Total<br>Due:<br>{{ total_due|floatformat:0 }}
                 </td>
-                <td colspan="6" class="empty-cell"></td>
+                
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
+                <td class="cell-normal">&nbsp;</td>
             </tr>
         </tbody>
     </table>
-
 
 </body>
 </html>

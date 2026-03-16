@@ -1,129 +1,182 @@
 {% load static %}
 {% load trip_extras %}
 
-<div class="deck-selection-container p-4">
-    <h3 class="deck-header text-center">Deck Selection</h3>
+<div class="deck-selection-container">
+    {% comment %} <h3 class="deck-header text-center">Deck Selection</h3> {% endcomment %}
 
     <div class="deck-selection-wrapper">
-        <ul class="nav nav-pills modern-tabs px-3" id="deckTabs" role="tablist">
-            {% for deck in decks %}
-            <li class="nav-item">
-                <button class="nav-link {% if forloop.first %}active{% endif %}" 
-                        id="deck-tab-{{ deck.id }}"
-                        data-bs-toggle="pill" 
-                        data-bs-target="#deck-{{ deck.id }}" 
-                        type="button">
-                    {{ deck.name }}
-                </button>
-            </li>
-            {% endfor %}
-        </ul>
-
         <div class="legend-container mb-4">
             <div class="legend-card shadow-sm border">
                 <div class="legend-section border-bottom">
                     <span class="legend-label">Seat Status:</span>
                     <div class="legend-items">
                         <div class="l-item"><span class="l-box available"></span>Available</div>
-                        <div class="l-item"><span class="l-box selected"></span>Selected</div>
-                        <div class="l-item"><span class="l-box occupied"></span>Booked</div>
+                        <div class="l-item"><span class="l-box selected"></span>Booked</div>
+
+                        <div class="l-item"><span class="l-box occupied-male"></span>Issued (Male)</div>
+                        <div class="l-item"><span class="l-box occupied-female"></span>Issued (Female)</div>
+
                         <div class="l-item"><span class="l-box on-hold"></span>On Hold</div>
-                        <div class="l-item"><span class="l-box non-bookable"></span>Facility</div>
+                        {% comment %} <div class="l-item"><span class="l-box non-bookable"></span>Facility</div> {% endcomment %}
                     </div>
                 </div>
                 
                 <div class="legend-section">
                     <span class="legend-label" style="font-size: 12px;">Icons:</span>
                     <div class="legend-items">
-                        {% regroup decks.0.layout_objects.all|dictsort:"category.name" by category as category_list %}
-                        {% for item in category_list %}
-                            {% if item.grouper.is_bookable %} <div class="l-item">
-                                    {% if item.grouper.icon %}
-                                        <iconify-icon icon="{{ item.grouper.icon.iconify_code }}" 
-                                                    style="color: {{ item.grouper.color_code }}; font-size: 18px;">
-                                        </iconify-icon>
-                                    {% endif %}
-                                    <span style="font-size: 12px; font-weight: 500; color: #475569;">{{ item.grouper.name }}</span>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-content w-100" id="deckTabContent">
-            {% for deck in decks %}
-            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="deck-{{ deck.id }}">
-                <div class="deck-scroll-container d-flex justify-content-center">
-                    <div class="grid-canvas" 
-                            style="display: grid; 
-                                    /* COMPACT START */
-                                    grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
-                                    grid-template-rows: repeat({{ deck.total_rows }}, 50px);
-                                    gap: 8px;
-                                    padding: 20px;
-                                    /* COMPACT END */
-                                    background: #fff;
-                                    max-width: 100%;">
-                        
-                        {% for obj in deck.layout_objects.all %}
-                            <div class="layout-item 
-                                        {% if not obj.category.is_bookable %}non-bookable
-                                        {% elif obj.id in occupied_seats %}occupied
-                                        {% else %}available{% endif %}"
-                                        style="grid-column: {{ obj.col_index }} / span {{ obj.col_span }}; 
-                                        grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
-                                        {% if obj.category.is_bookable and obj.id not in occupied_seats %}--category-color: {{ obj.category.color_code }};{% endif %}"
-                                data-id="{{ obj.id }}"
-                                data-label="{{ obj.label }}"
-                                data-price="{% get_segment_price trip obj.category from_stop to_stop %}"
-                                data-category="{{ obj.category.name }}">
-                                
-                                <div class="item-content-wrapper">
-                                    {% if obj.category.icon %}
-                                        <iconify-icon 
-                                            icon="{{ obj.category.icon.iconify_code }}" 
-                                            class="obj-icon"
-                                            style="color: {{ obj.category.color_code }};">
-                                        </iconify-icon>
-                                    {% endif %}
-                                    
-                                    {% if obj.label %}
-                                        <span class="obj-label-modern">{{ obj.label }}</span>
-                                    {% endif %}
-                                </div>
-
-                                <div class="hover-details">
-                                    <div class="d-flex align-items-center mb-1">
-                                        {% if obj.category.icon %}
-                                            <iconify-icon icon="{{ obj.category.icon.iconify_code }}" class="me-2"></iconify-icon>
-                                        {% endif %}
-                                        <strong>{{ obj.label }}</strong>
-                                    </div>
-                                    
-                                    {% if obj.category.is_bookable %}
-                                        <small class="text-muted d-block mb-1">{{ obj.category.name }}</small>
-                                        {% if obj.id in occupied_seats %}
-                                            <span class="badge bg-secondary">Occupied</span>
-                                        {% else %}
-                                            {% get_segment_price trip obj.category from_stop to_stop as price %}
-                                            <span class="badge bg-success">৳{{ price|floatformat:2 }}</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <small class="text-info">Building Facility</small>
-                                    {% endif %}
-                                </div>
+                        {% for cat in legend_categories %}
+                            <div class="l-item">
+                                {% if cat.icon %}
+                                    <iconify-icon icon="{{ cat.icon.iconify_code }}"
+                                                style="color: {{ cat.color_code }}; font-size: 18px;">
+                                    </iconify-icon>
+                                {% endif %}
+                                <span style="font-size: 12px; font-weight: 500; color: #475569;">{{ cat.name }}</span>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
-                <div style="height: 160px; width: 100%; display: block; clear: both;"></div>
             </div>
+        </div>
+
+        <!-- Selected Items Panel -->
+            <div id="selectedItemsPanel" class="selected-items-panel" style="display: none;">
+                <div class="selected-items-panel__head">
+                    <div class="selected-items-panel__title">
+                        <i class="fa-solid fa-list-check me-1"></i> Selected
+                    </div>
+
+                    <div class="selected-items-panel__head-right">
+                        <div class="selected-items-panel__count" id="selectedItemsCount">0</div>
+                        <div class="selected-items-panel__subtotal">
+                            <span class="selected-items-panel__subtotal-label">Subtotal</span>
+                            <span class="selected-items-panel__subtotal-value" id="selectedItemsSubtotal">৳0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="selectedItemsListLive" class="selected-items-panel__list"></div>
+            </div>
+        <!-- Selected Items Panel -->
+
+        <div class="deck-topbar">
+            <ul class="nav nav-pills modern-tabs px-3" id="deckTabs" role="tablist">
+                {% for deck in decks %}
+                    <li class="nav-item">
+                        <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                                id="deck-tab-{{ deck.id }}"
+                                data-bs-toggle="pill" 
+                                data-bs-target="#deck-{{ deck.id }}" 
+                                type="button">
+                            {{ deck.name }}
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Zoom Controls -->
+            <div class="deck-zoom-toolbar">
+                <button type="button" class="deck-zoom-btn deck-zoom-out" title="Zoom out">−</button>
+                <span class="deck-zoom-label">100%</span>
+                <button type="button" class="deck-zoom-btn deck-zoom-in" title="Zoom in">+</button>
+            </div>
+            <!-- Zoom Controls -->
+        </div>
+
+        <div class="tab-content w-100" id="deckTabContent">
+            {% for deck in decks %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="deck-{{ deck.id }}">
+                    <!-- Zoom Controls -->
+                    {% comment %} <div class="deck-zoom-toolbar">
+                        <button type="button" class="deck-zoom-btn deck-zoom-out" title="Zoom out">−</button>
+                        <span class="deck-zoom-label">100%</span>
+                        <button type="button" class="deck-zoom-btn deck-zoom-in" title="Zoom in">+</button>
+                    </div> {% endcomment %}
+                    <!-- Zoom Controls -->
+
+                    <div class="deck-scroll-container">
+                        <div class="deck-scroll-scale-wrap">
+                            <div class="grid-canvas" 
+                                    style="display: grid; 
+                                            /* COMPACT START */
+                                            grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
+                                            grid-template-rows: repeat({{ deck.total_rows }}, 50px);
+                                            gap: 8px;
+                                            padding: 20px;
+                                            /* COMPACT END */
+                                            background: #fff;
+                                            width: max-content;
+                                            max-width: none;
+                                            box-sizing: border-box;">
+                                
+                                {% for obj in deck.layout_objects.all %}
+                                    <div class="layout-item
+                                            {% if not obj.category.is_bookable %}non-bookable
+                                            {% elif obj.id in occupied_seats %}
+                                                {% with g=occupied_seat_genders|get_item:obj.id %}
+                                                    {% if g == "0" %}occupied occupied-male
+                                                    {% elif g == "1" %}occupied occupied-female
+                                                    {% else %}occupied
+                                                    {% endif %}
+                                                {% endwith %}
+                                            {% elif obj.id in held_seats %}on-hold
+                                            {% else %}available{% endif %}"
+                                        style="grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
+                                            grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
+                                            {% if obj.category.is_bookable and obj.id not in occupied_seats %}--category-color: {{ obj.category.color_code }};{% endif %}"
+                                        data-id="{{ obj.id }}"
+                                        data-label="{{ obj.label }}"
+                                        data-price="{% get_segment_price trip obj.category from_stop to_stop %}"
+                                        data-category="{{ obj.category.name }}"
+                                        data-holder-id="{{ held_holder_ids|get_item:obj.id|default:'' }}"
+                                        data-hold-exp="{{ held_expires|get_item:obj.id|default:'' }}">
+                                        
+                                        <div class="item-content-wrapper">
+                                            {% if obj.category.icon %}
+                                                <iconify-icon 
+                                                    icon="{{ obj.category.icon.iconify_code }}" 
+                                                    class="obj-icon"
+                                                    style="color: {{ obj.category.color_code }};">
+                                                </iconify-icon>
+                                            {% endif %}
+                                            
+                                            {% if obj.label %}
+                                                <span class="obj-label-modern">{{ obj.label }}</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="hover-details">
+                                            <div class="d-flex align-items-center mb-1">
+                                                {% if obj.category.icon %}
+                                                    <iconify-icon icon="{{ obj.category.icon.iconify_code }}" class="me-2"></iconify-icon>
+                                                {% endif %}
+                                                <strong>{{ obj.label }}</strong>
+                                            </div>
+                                            
+                                            {% if obj.category.is_bookable %}
+                                                <small class="text-muted d-block mb-1">{{ obj.category.name }}</small>
+                                                {% if obj.id in occupied_seats %}
+                                                    <span class="badge bg-secondary">Occupied</span>
+                                                {% else %}
+                                                    {% get_segment_price trip obj.category from_stop to_stop as price %}
+                                                    <span class="badge bg-success">৳{{ price|floatformat:2 }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <small class="text-info">Building Facility</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div style="height: 160px; width: 100%; display: block; clear: both;"></div> {% endcomment %}
+                </div>
             {% endfor %}
         </div>
     </div>
 </div>
+
 
 {% comment %} <div class="modern-booking-footer">
     <div class="footer-info-group">

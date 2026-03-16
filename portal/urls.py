@@ -28,5 +28,23 @@ urlpatterns = [
     
     # booking
     path('booking/save/', views.save_booking_view, name='save_booking'),
+    path("booking/send-otp/", views.send_booking_otp_view, name="send_booking_otp"),
+    path("booking/verify-otp/", views.verify_booking_otp_view, name="verify_booking_otp"),
+    # path("booking/otp/verify-login/", views.verify_booking_otp_login_view, name="verify_booking_otp_login"),
     path('booking/success/<str:booking_ref>/', views.booking_success, name='booking_success'),
+    path("seats/hold/", views.hold_seats_view, name="hold_seats"),
+    path("seats/release/", views.release_seats_view, name="release_seats"),
+    path('booking/passenger-profile-by-phone/', views.get_passenger_profile_by_phone_view, name='passenger_profile_by_phone'),
+    
+    # my bookings
+    path('my-bookings/', views.my_bookings_view, name='my_bookings'),
+    
+    # profile
+    path("profile/edit/", views.profile_edit_view, name="profile_edit"),
+    path("account/", views.account_view, name="account"),
+    
+    # tickets
+    path("ticket/<str:booking_ref>/<str:token>/", views.ticket_public_view, name="ticket_public"),
+    path("ticket/<str:booking_ref>/<str:token>/qr.png", views.booking_qr_png_view, name="ticket_qr_png"),
+    path("booking/<str:booking_ref>/ticket.pdf/", views.booking_ticket_pdf, name="booking_ticket_pdf"),
 ]

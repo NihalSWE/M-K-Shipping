@@ -1,0 +1,599 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{% static 'portal/assets/css/schedule.css' %}" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'portal/assets/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'portal/assets/css/my_bookings.css' %}">
+
+    <style>
+        /* [NEW:ACCOUNT_TABS_STYLE] */
+        #accountTabs{
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 6px !important;
+            gap: 6px;
+            box-shadow: var(--shadow-sm);
+
+            /* ✅ CENTER THE WHOLE TAB BAR */
+            display: flex;                 /* was inline-flex */
+            width: fit-content;            /* shrink to content so it can be centered */
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 0 auto 12px;           /* centers in body */
+
+            /* keep bootstrap pills spacing clean */
+            list-style: none;
+        }
+
+        #accountTabs .nav-link{
+            border: 0 !important;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 900;
+            font-size: 13px;
+            line-height: 1;
+            color: var(--muted);
+            background: transparent;
+            transition: transform .15s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #accountTabs .nav-link:hover{
+            background: rgba(22,127,202,0.08);
+            color: var(--ocean-dark);
+            transform: translateY(-1px);
+        }
+
+        #accountTabs .nav-link.active{
+            background: linear-gradient(135deg, var(--ocean), var(--ocean-dark));
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(22,127,202,.20);
+        }
+
+        /* subtle focus ring */
+        #accountTabs .nav-link:focus{
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(22,127,202,.18);
+        }
+
+        /* Make tabs full width on small screens */
+        @media (max-width: 640px){
+            #accountTabs{
+                width: 100% !important;    /* ✅ override fit-content */
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                border-radius: 14px;
+                margin: 0 0 12px 0;        /* ✅ full width, no auto-centering needed */
+            }
+            #accountTabs .nav-item{ width: 100%; }
+            #accountTabs .nav-link{
+                width: 100%;
+                justify-content: center;
+                padding: 10px 10px;
+                font-size: 12px;
+            }
+        }
+        /* [/NEW:ACCOUNT_TABS_STYLE] */
+
+        /* [NEW:ACCOUNT_HORIZONTAL_SLIDER] */
+
+        .account-slider{
+            background: transparent;
+            overflow: hidden;                /* hides off-screen pane */
+            border-radius: 16px;
+        }
+
+        /* Track holds both panes side-by-side */
+        .account-slider__track{
+            display: flex;
+            width: 200%;                     /* 2 panes */
+            transform: translateX(0%);       /* bookings visible */
+            transition: transform .38s cubic-bezier(.22,1,.36,1);
+            will-change: transform;
+        }
+
+        /* Each pane is full width of container */
+        .account-slider__pane{
+            width: 50%;                      /* since track is 200% */
+            flex: 0 0 50%;
+        }
+
+        /* Optional: add a little depth / smoothness */
+        .account-slider__pane{
+            padding-top: 12px;               /* matches your old margin */
+        }
+
+        /* When showing profile, slide track left */
+        .account-slider[data-active="profile"] .account-slider__track{
+            transform: translateX(-50%);
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce){
+            .account-slider__track{
+                transition: none !important;
+            }
+        }
+        /* [/NEW:ACCOUNT_HORIZONTAL_SLIDER] */
+    </style>
+{% endblock custom_css %}
+
+{% block content %}
+<div class="container py-3">
+    <ul class="nav nav-pills mb-3" id="accountTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'bookings' %}active{% endif %}"
+                    id="tab-bookings"
+                    data-bs-toggle="pill"
+                    data-bs-target="#pane-bookings"
+                    type="button"
+                    role="tab"
+                    aria-controls="pane-bookings"
+                    aria-selected="{% if active_tab == 'bookings' %}true{% else %}false{% endif %}">
+                My Bookings
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'profile' %}active{% endif %}"
+                    id="tab-profile"
+                    data-bs-toggle="pill"
+                    data-bs-target="#pane-profile"
+                    type="button"
+                    role="tab"
+                    aria-controls="pane-profile"
+                    aria-selected="{% if active_tab == 'profile' %}true{% else %}false{% endif %}">
+                Profile
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content account-slider" id="accountTabContent">
+        <div class="account-slider__track" id="accountSliderTrack">
+            <div class="account-slider__pane" data-pane="bookings">
+                {% include "portal/account/_my_bookings_tab.html" %}
+            </div>
+
+            <div class="account-slider__pane" data-pane="profile">
+                {% include "portal/account/_profile_tab.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+
+
+{% block custom_js %}
+
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    (function () {
+        const profileForm = document.getElementById("prfProfileForm");
+        const passwordForm = document.getElementById("prfPasswordForm");
+
+        const profileBtn = document.getElementById("prfProfileSubmitBtn");
+        const passwordBtn = document.getElementById("prfPasswordSubmitBtn");
+
+        const profileAlert = document.getElementById("prfProfileAlert");
+        const profileAlertIcon = document.getElementById("prfProfileAlertIcon");
+        const profileAlertText = document.getElementById("prfProfileAlertText");
+
+        const passwordAlert = document.getElementById("prfPasswordAlert");
+        const passwordAlertIcon = document.getElementById("prfPasswordAlertIcon");
+        const passwordAlertText = document.getElementById("prfPasswordAlertText");
+
+        const displayNameText = document.getElementById("prfDisplayNameText");
+        const emailText = document.getElementById("prfEmailText");
+
+        function getCsrfToken(formEl) {
+            const el = formEl.querySelector("input[name='csrfmiddlewaretoken']");
+            return el ? el.value : "";
+        }
+
+        function hideAlert(alertEl) {
+            if (!alertEl) return;
+            alertEl.className = "prf-alert";
+            alertEl.classList.remove(
+                "prf-alert-show",
+                "prf-alert-success",
+                "prf-alert-error",
+                "prf-alert-info"
+            );
+        }
+
+        function showAlert(target, type, message) {
+            let alertEl, iconEl, textEl;
+
+            if (target === "password") {
+                alertEl = passwordAlert;
+                iconEl = passwordAlertIcon;
+                textEl = passwordAlertText;
+            } else {
+                alertEl = profileAlert;
+                iconEl = profileAlertIcon;
+                textEl = profileAlertText;
+            }
+
+            if (!alertEl || !iconEl || !textEl) return;
+
+            alertEl.className = "prf-alert";
+
+            if (type === "success") {
+                alertEl.classList.add("prf-alert-success");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === "error") {
+                alertEl.classList.add("prf-alert-error");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                alertEl.classList.add("prf-alert-info");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            textEl.textContent = message || "Something happened.";
+            alertEl.classList.add("prf-alert-show");
+
+            window.scrollTo({
+                top: alertEl.getBoundingClientRect().top + window.pageYOffset - 90,
+                behavior: "smooth"
+            });
+        }
+
+        function setBtnState(btn, loading, loadingText, normalText) {
+            if (!btn) return;
+
+            const textSpan = btn.querySelector("span");
+            btn.disabled = loading;
+            btn.classList.toggle("prf-loading-state", loading);
+
+            if (textSpan) {
+                textSpan.textContent = loading ? loadingText : normalText;
+            }
+        }
+
+        async function submitWithFetch(formEl, btn, loadingText, normalText, alertTarget) {
+            setBtnState(btn, true, loadingText, normalText);
+
+            try {
+                const formData = new FormData(formEl);
+
+                const response = await fetch("{% url 'profile_edit' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(formEl),
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: formData
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = { success: false, error: "Invalid server response." };
+                }
+
+                if (!response.ok || !data.success) {
+                    showAlert(alertTarget, "error", data.error || "Request failed.");
+                    return { ok: false, data: data };
+                }
+
+                showAlert(alertTarget, "success", data.message || "Success.");
+                return { ok: true, data: data };
+            } catch (err) {
+                showAlert(alertTarget, "error", "Network error. Please try again.");
+                return { ok: false, data: null };
+            } finally {
+                setBtnState(btn, false, loadingText, normalText);
+            }
+        }
+
+        if (profileForm) {
+            profileForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(profileAlert);
+
+                const result = await submitWithFetch(
+                    profileForm,
+                    profileBtn,
+                    "Saving...",
+                    "Save Profile",
+                    "profile"
+                );
+
+                if (result.ok && result.data && result.data.user) {
+                    const user = result.data.user;
+                    const displayName = (user.display_name || "").trim() || (user.phone_number || "");
+
+                    if (displayNameText) {
+                        displayNameText.textContent = displayName || "N/A";
+                    }
+
+                    if (emailText) {
+                        emailText.textContent = (user.email || "").trim() ? user.email : "N/A";
+                    }
+                }
+            });
+        }
+
+        if (passwordForm) {
+            passwordForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(passwordAlert);
+
+                const newPassword = (document.getElementById("prfNewPassword")?.value || "").trim();
+                const confirmPassword = (document.getElementById("prfConfirmPassword")?.value || "").trim();
+
+                if (newPassword !== confirmPassword) {
+                    showAlert("password", "error", "New password and confirm password do not match.");
+                    return;
+                }
+
+                const result = await submitWithFetch(
+                    passwordForm,
+                    passwordBtn,
+                    "Updating...",
+                    "Update Password",
+                    "password"
+                );
+
+                if (result.ok) {
+                    passwordForm.reset();
+                }
+            });
+        }
+    })();
+</script>
+
+
+<!-- booking tab script starts -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const collapseButtons = document.querySelectorAll(".mbx-collapse-btn");
+
+        collapseButtons.forEach(function (btn) {
+            const targetSelector = btn.getAttribute("data-bs-target");
+            const targetEl = document.querySelector(targetSelector);
+
+            if (!targetEl) {
+                return;
+            }
+
+            targetEl.addEventListener("show.bs.collapse", function () {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-up me-1"></i>Hide Details';
+            });
+
+            targetEl.addEventListener("hide.bs.collapse", function () {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down me-1"></i>View Details';
+            });
+        });
+    });
+</script>
+<!-- booking tab script ends -->
+
+
+<script>
+    (function () {
+        const profileForm = document.getElementById("prfProfileForm");
+        const passwordForm = document.getElementById("prfPasswordForm");
+
+        const profileBtn = document.getElementById("prfProfileSubmitBtn");
+        const passwordBtn = document.getElementById("prfPasswordSubmitBtn");
+
+        const profileAlert = document.getElementById("prfProfileAlert");
+        const profileAlertIcon = document.getElementById("prfProfileAlertIcon");
+        const profileAlertText = document.getElementById("prfProfileAlertText");
+
+        const passwordAlert = document.getElementById("prfPasswordAlert");
+        const passwordAlertIcon = document.getElementById("prfPasswordAlertIcon");
+        const passwordAlertText = document.getElementById("prfPasswordAlertText");
+
+        const displayNameText = document.getElementById("prfDisplayNameText");
+        const emailText = document.getElementById("prfEmailText");
+
+        function getCsrfToken(formEl) {
+            const el = formEl.querySelector("input[name='csrfmiddlewaretoken']");
+            return el ? el.value : "";
+        }
+
+        function hideAlert(alertEl) {
+            if (!alertEl) return;
+            alertEl.className = "prf-alert";
+            alertEl.classList.remove(
+                "prf-alert-show",
+                "prf-alert-success",
+                "prf-alert-error",
+                "prf-alert-info"
+            );
+        }
+
+        function showAlert(target, type, message) {
+            let alertEl, iconEl, textEl;
+
+            if (target === "password") {
+                alertEl = passwordAlert;
+                iconEl = passwordAlertIcon;
+                textEl = passwordAlertText;
+            } else {
+                alertEl = profileAlert;
+                iconEl = profileAlertIcon;
+                textEl = profileAlertText;
+            }
+
+            if (!alertEl || !iconEl || !textEl) return;
+
+            alertEl.className = "prf-alert";
+
+            if (type === "success") {
+                alertEl.classList.add("prf-alert-success");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === "error") {
+                alertEl.classList.add("prf-alert-error");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                alertEl.classList.add("prf-alert-info");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            textEl.textContent = message || "Something happened.";
+            alertEl.classList.add("prf-alert-show");
+
+            window.scrollTo({
+                top: alertEl.getBoundingClientRect().top + window.pageYOffset - 90,
+                behavior: "smooth"
+            });
+        }
+
+        function setBtnState(btn, loading, loadingText, normalText) {
+            if (!btn) return;
+
+            const textSpan = btn.querySelector("span");
+            btn.disabled = loading;
+            btn.classList.toggle("prf-loading-state", loading);
+
+            if (textSpan) {
+                textSpan.textContent = loading ? loadingText : normalText;
+            }
+        }
+
+        async function submitWithFetch(formEl, btn, loadingText, normalText, alertTarget) {
+            setBtnState(btn, true, loadingText, normalText);
+
+            try {
+                const formData = new FormData(formEl);
+
+                const response = await fetch("{% url 'profile_edit' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(formEl),
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: formData
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = { success: false, error: "Invalid server response." };
+                }
+
+                if (!response.ok || !data.success) {
+                    showAlert(alertTarget, "error", data.error || "Request failed.");
+                    return { ok: false, data: data };
+                }
+
+                showAlert(alertTarget, "success", data.message || "Success.");
+                return { ok: true, data: data };
+            } catch (err) {
+                showAlert(alertTarget, "error", "Network error. Please try again.");
+                return { ok: false, data: null };
+            } finally {
+                setBtnState(btn, false, loadingText, normalText);
+            }
+        }
+
+        if (profileForm) {
+            profileForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(profileAlert);
+
+                const result = await submitWithFetch(
+                    profileForm,
+                    profileBtn,
+                    "Saving...",
+                    "Save Profile",
+                    "profile"
+                );
+
+                if (result.ok && result.data && result.data.user) {
+                    const user = result.data.user;
+                    const displayName = (user.display_name || "").trim() || (user.phone_number || "");
+
+                    if (displayNameText) {
+                        displayNameText.textContent = displayName || "N/A";
+                    }
+
+                    if (emailText) {
+                        emailText.textContent = (user.email || "").trim() ? user.email : "N/A";
+                    }
+                }
+            });
+        }
+
+        if (passwordForm) {
+            passwordForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(passwordAlert);
+
+                const newPassword = (document.getElementById("prfNewPassword")?.value || "").trim();
+                const confirmPassword = (document.getElementById("prfConfirmPassword")?.value || "").trim();
+
+                if (newPassword !== confirmPassword) {
+                    showAlert("password", "error", "New password and confirm password do not match.");
+                    return;
+                }
+
+                const result = await submitWithFetch(
+                    passwordForm,
+                    passwordBtn,
+                    "Updating...",
+                    "Update Password",
+                    "password"
+                );
+
+                if (result.ok) {
+                    passwordForm.reset();
+                }
+            });
+        }
+    })();
+</script>
+
+
+<script>
+    (function () {
+        const slider = document.getElementById('accountTabContent');
+        const tabs = document.querySelectorAll('#accountTabs [data-bs-toggle="pill"]');
+        if (!slider || !tabs.length) return;
+
+        // initial state from server variable (active_tab)
+        const initial = "{{ active_tab|default:'bookings' }}";
+        slider.setAttribute('data-active', initial);
+
+        tabs.forEach(btn => {
+            btn.addEventListener('click', function () {
+                // figure out which tab was clicked from its target
+                const targetSel = btn.getAttribute('data-bs-target'); // #pane-bookings / #pane-profile
+                const next = (targetSel === '#pane-profile') ? 'profile' : 'bookings';
+
+                // move slider immediately (Bootstrap will still update active class on buttons)
+                slider.setAttribute('data-active', next);
+            });
+        });
+
+        // also handle programmatic tab changes (show.bs.tab)
+        tabs.forEach(btn => {
+            btn.addEventListener('show.bs.tab', function (e) {
+                const targetSel = e.target.getAttribute('data-bs-target');
+                const next = (targetSel === '#pane-profile') ? 'profile' : 'bookings';
+                slider.setAttribute('data-active', next);
+            });
+        });
+    })();
+</script>
+{% endblock custom_js %}

@@ -104,6 +104,7 @@
                                     <th>S/L</th>
                                     <th>Counter Name</th>
                                     <th>Location</th>
+                                    <th>Assigned Users</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -114,7 +115,26 @@
                                     <td>{{ counter.name }}</td>
                                     <td><span class="badge badge-light-primary">{{ counter.location.name }}</span></td>
                                     <td>
+                                        {% if counter.users.all %}
+                                            {% for u in counter.users.all %}
+                                                <span class="badge badge-light-secondary me-1 mb-1">
+                                                    {{ u.get_display_name|default:u.phone_number }}
+                                                </span>
+                                            {% empty %}
+                                                <span class="text-muted">None</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
                                         <ul class="action">
+                                            <li class="view me-2" title="View Sales">
+                                                <a href="{% url 'counter_sales_report' counter.id %}" class="text-info">
+                                                    <i class="fa-solid fa-chart-line edit-icon"></i>
+                                                </a>
+                                            </li>
+
                                             <li class="edit">
                                                 <span class="edit-icon-span">
                                                     <i class="fa-regular fa-pen-to-square edit-icon"
@@ -123,6 +143,7 @@
                                                         data-location="{{ counter.location.id }}"></i>
                                                 </span>
                                             </li>
+
                                             <li class="delete" data-id="{{ counter.id }}">
                                                 <span class="delete-icon-span">
                                                     <i class="fa-solid fa-trash-can delete-icon"
@@ -167,6 +188,19 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Assign Users (Admin/Staff)</label>
+                                    <select class="form-select" id="add-users" multiple size="6">
+                                        {% for u in assignable_users %}
+                                            <option value="{{ u.id }}">
+                                                {{ u.get_display_name|default:u.phone_number }} ({{ u.phone_number }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">Hold Ctrl (Windows) / Cmd (Mac) to select multiple users.</small>
+                                </div>
+
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
                                 <div class="error-success-div p-6"></div>
@@ -206,6 +240,19 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Assign Users (Admin/Staff)</label>
+                                    <select class="form-select" id="edit-users" multiple size="6">
+                                        {% for u in assignable_users %}
+                                            <option value="{{ u.id }}">
+                                                {{ u.get_display_name|default:u.phone_number }} ({{ u.phone_number }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">Hold Ctrl (Windows) / Cmd (Mac) to select multiple users.</small>
+                                </div>
+
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
                                 <div class="error-success-div p-6"></div>
@@ -274,6 +321,8 @@
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
 
 <script>
+    const COUNTER_USERS_MAP = {{ counters_users_map|safe }};
+    
     function showMessage(type, message) {
         const div = $(".error-success-div");
         function expand() {
@@ -285,6 +334,20 @@
         else { expand(); }
     }
 
+
+    function getSelectedValues(selector) {
+        return Array.from(document.querySelector(selector).selectedOptions).map(opt => parseInt(opt.value));
+    }
+
+    function setMultiSelectValues(selector, values) {
+        const select = document.querySelector(selector);
+        if (!select) return;
+        const setVals = new Set((values || []).map(v => String(v)));
+        Array.from(select.options).forEach(opt => {
+            opt.selected = setVals.has(String(opt.value));
+        });
+    }
+
     // ADD
     $("#addModal form").on("submit", e => {
         e.preventDefault();
@@ -294,7 +357,8 @@
             body: JSON.stringify({
                 action: "add",
                 name: $("#name").val(),
-                location_id: $("#location").val()
+                location_id: $("#location").val(),
+                user_ids: getSelectedValues("#add-users")
             })
         })
             .then(r => r.json())
@@ -308,6 +372,9 @@
         editId = id;
         $("#edit-name").val(name);
         $("#edit-location").val(location);
+
+        const assigned = COUNTER_USERS_MAP[String(id)] || [];
+        setMultiSelectValues("#edit-users", assigned);
     });
 
     $("#editModal form").on("submit", e => {
@@ -319,7 +386,8 @@
                 action: "edit",
                 id: editId,
                 name: $("#edit-name").val(),
-                location_id: $("#edit-location").val()
+                location_id: $("#edit-location").val(),
+                user_ids: getSelectedValues("#edit-users")
             })
         })
             .then(r => r.json())

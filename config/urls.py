@@ -28,6 +28,7 @@ urlpatterns = [
     path('ticketing/', include('ticketing.urls')),
     path('', include('portal.urls')),
     path('accounts/', include('accounts.urls')),
+    path('payment/', include('payment.urls')),
     # path('accounts/', include('users.urls')),
     path('api-auth/', include('rest_framework.urls'))
 ]

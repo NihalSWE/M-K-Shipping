@@ -18,6 +18,11 @@ def auto_cancel_booking(booking_id):
     try:
         booking = Booking.objects.get(id=booking_id)
         
+         # NEW: Check if time is stopped - don't auto-cancel!
+        if booking.time_stopped:
+            print(f"Time stopped for Booking #{booking.id} - skipping auto-cancel")
+            return f"Time stopped for booking {booking.id}, not cancelled"
+        
         # ONLY Cancel if it is still PENDING
         if booking.status == 'PENDING':
             print(f"Time is up! Auto-expiring Booking #{booking.id}")

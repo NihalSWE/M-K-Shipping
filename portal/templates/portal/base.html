@@ -127,7 +127,590 @@
             opacity: 1;
         }
     }
-    </style>
+
+    /* header styles overrides */
+    /* Modern Header Dropdown Styles */
+/* Modern Header Dropdown Styles */
+/* --- USER DROPDOWN TOGGLE --- */
+.user-dropdown-toggle {
+    cursor: pointer !important;
+    background: #f8fafd !important;
+    padding: 8px 16px !important;
+    border-radius: 50px !important;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.25s ease !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.user-dropdown-toggle:hover {
+    background: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+
+.user-name-label {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.user-icon-wrapper {
+    color: #0b4a78 !important;
+    margin-right: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.caret-icon {
+    font-size: 10px !important;
+    color: #94a3b8 !important;
+    transition: transform 0.3s ease !important;
+}
+
+.dropdown.show .caret-icon {
+    transform: rotate(180deg) !important;
+}
+
+/* --- DROPDOWN MENU CONTAINER --- */
+.modern-user-menu {
+    border: 1px solid #f1f5f9 !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    min-width: 220px !important;
+    margin-top: 12px !important;
+    background-color: #ffffff !important;
+}
+
+/* --- MENU ITEMS & TYPOGRAPHY --- */
+.modern-user-menu .dropdown-item {
+    padding: 12px 14px !important; /* Forces breathing room */
+    display: flex !important;
+    align-items: center !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    background: transparent !important;
+    border: none !important;
+    /* Forces modern typography */
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    text-transform: none !important; 
+    letter-spacing: normal !important;
+    line-height: 1.2 !important;
+}
+
+.modern-user-menu .dropdown-item:hover {
+    background-color: #f1f5f9 !important;
+    color: #167fca !important;
+    transform: translateX(4px) !important;
+}
+
+/* Icons inside items */
+.modern-user-menu .dropdown-item i {
+    width: 20px !important;
+    margin-right: 12px !important;
+    font-size: 16px !important;
+    color: #94a3b8 !important;
+    text-align: center !important;
+}
+
+.modern-user-menu .dropdown-item:hover i {
+    color: #167fca !important;
+}
+
+/* --- LOGOUT & DIVIDER --- */
+.modern-user-menu .dropdown-divider {
+    margin: 8px 0 !important;
+    border-top: 1px solid #f1f5f9 !important;
+    opacity: 1 !important;
+}
+
+.logout-link:hover {
+    background-color: #fff5f5 !important;
+}
+
+.logout-link:hover, .logout-link:hover i {
+    color: #dc2626 !important;
+}
+
+
+
+/* -----------------------------
+   MOBILE BOTTOM NAV (Modern)
+------------------------------ */
+.mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.92);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -10px 24px rgba(11, 18, 32, 0.08);
+}
+
+.mbn-item {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    text-decoration: none;
+    color: var(--muted);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 6px;
+    border-radius: 14px;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.mbn-item .iconify {
+    font-size: 22px;
+    color: var(--muted);
+}
+
+.mbn-text {
+    font-size: 11px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+.mbn-item:hover,
+.mbn-item:focus {
+    background: rgba(22, 127, 202, 0.10);
+    color: var(--ocean);
+}
+
+.mbn-item:hover .iconify,
+.mbn-item:focus .iconify {
+    color: var(--ocean);
+}
+
+.mbn-more-btn {
+    cursor: pointer;
+}
+
+
+
+/* Mobile menu sty starts */
+
+/* -----------------------------
+   MOBILE BOTTOM NAV (Modern)
+------------------------------ */
+.mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.92);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -10px 24px rgba(11, 18, 32, 0.08);
+}
+
+.mbn-item {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    text-decoration: none;
+    color: var(--muted);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 6px;
+    border-radius: 14px;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mbn-item .iconify {
+    font-size: 22px;
+    color: var(--muted);
+}
+
+.mbn-text {
+    font-size: 11px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+.mbn-item:hover,
+.mbn-item:focus {
+    background: rgba(22, 127, 202, 0.10);
+    color: var(--ocean);
+}
+
+.mbn-item:hover .iconify,
+.mbn-item:focus .iconify {
+    color: var(--ocean);
+}
+
+.mbn-more-btn {
+    cursor: pointer;
+}
+
+/* ✅ ACTIVE: colored pill + colored icon/text */
+.mbn-item.is-active {
+    background: rgba(22, 127, 202, 0.14);
+    color: var(--ocean);
+    box-shadow: 0 6px 14px rgba(22, 127, 202, 0.15);
+}
+
+.mbn-item.is-active .iconify {
+    color: var(--ocean);
+}
+
+/* Mobile menu sty starts */
+/* ==============================
+   MOBILE BOTTOM NAV v2 (unique)
+   ============================== */
+
+/* page spacing so content doesn't hide behind bar */
+/* Give page bottom spacing so content doesn't go behind nav */
+:root{
+    --mbn2-bar-h: 78px; /* must match your bottom nav visual height */
+}
+
+/* page spacing so content doesn't hide behind bar */
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: var(--mbn2-bar-h);
+    }
+}
+
+/* ---- Bottom bar ---- */
+#mbn2Bar.mbn2-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147483000;
+
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.92);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -10px 24px rgba(11, 18, 32, 0.08);
+}
+
+#mbn2Bar .mbn2-item {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    text-decoration: none !important;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 6px;
+    border-radius: 14px;
+
+    color: var(--muted) !important;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#mbn2Bar .mbn2-ic {
+    font-size: 22px;
+    color: var(--muted) !important;
+}
+
+#mbn2Bar .mbn2-tx {
+    font-size: 11px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+#mbn2Bar .mbn2-item:hover,
+#mbn2Bar .mbn2-item:focus {
+    background: rgba(22, 127, 202, 0.10) !important;
+    color: var(--ocean) !important;
+}
+
+#mbn2Bar .mbn2-item:hover .mbn2-ic,
+#mbn2Bar .mbn2-item:focus .mbn2-ic {
+    color: var(--ocean) !important;
+}
+
+/* ✅ active pill */
+#mbn2Bar .mbn2-item.mbn2-active {
+    background: rgba(22, 127, 202, 0.16) !important;
+    color: var(--ocean) !important;
+    box-shadow: 0 6px 14px rgba(22, 127, 202, 0.15) !important;
+}
+
+#mbn2Bar .mbn2-item.mbn2-active .mbn2-ic {
+    color: var(--ocean) !important;
+}
+
+#mbn2Bar .mbn2-more {
+    cursor: pointer;
+}
+
+/* ---- Backdrop ---- */
+#mbn2Backdrop.mbn2-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2147482990;
+
+    background: rgba(11, 18, 32, 0.65); /* stronger, NOT transparent */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+
+    /* force consistent rendering */
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    mix-blend-mode: normal !important;
+    isolation: isolate;
+}
+
+#mbn2Backdrop.mbn2-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ---- Drawer ---- */
+#mbn2Drawer.mbn2-drawer {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 88px; /* above bar */
+    z-index: 2147483010;
+
+    background: #ffffff; /* force solid */
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(18px);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+
+    max-height: calc(100vh - 120px);
+    overflow: hidden;
+
+    /* force consistent rendering */
+    filter: none !important;
+    backdrop-filter: none !important;
+    mix-blend-mode: normal !important;
+    isolation: isolate;
+}
+
+#mbn2Drawer.mbn2-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* header */
+#mbn2Drawer .mbn2-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;                 /* ✅ add */
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(246, 251, 255, 1) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+#mbn2Drawer .mbn2-title {
+    flex: 1 1 auto;            /* ✅ add */
+    min-width: 0;              /* ✅ add */
+    font-weight: 800;
+    color: var(--ink);
+    font-size: 14px;
+}
+
+#mbn2Drawer .mbn2-close {
+    flex: 0 0 auto;            /* ✅ add */
+    width: 40px;               /* ✅ add */
+    height: 40px;              /* ✅ add */
+
+    display: inline-flex;      /* ✅ add */
+    align-items: center;       /* ✅ add */
+    justify-content: center;   /* ✅ add */
+
+    border: 0;
+    background: rgba(11, 18, 32, 0.06);
+    border-radius: 12px;
+    padding: 0;                /* ✅ change (was 8px 10px) */
+    cursor: pointer;
+    line-height: 1;            /* ✅ add */
+}
+
+#mbn2Drawer .mbn2-close .iconify {
+    font-size: 18px;
+    color: var(--ink);
+}
+
+/* body scroll so never cut */
+#mbn2Drawer .mbn2-body {
+    padding: 12px 12px 14px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 180px);
+}
+
+/* sections */
+#mbn2Drawer .mbn2-sec + .mbn2-sec {
+    margin-top: 12px;
+}
+
+#mbn2Drawer .mbn2-sec-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+
+/* list */
+#mbn2Drawer .mbn2-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#mbn2Drawer .mbn2-list li + li {
+    margin-top: 8px;
+}
+
+#mbn2Drawer .mbn2-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    text-decoration: none !important;
+    color: var(--ink) !important;
+    font-weight: 700;
+
+    padding: 12px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(10, 60, 95, 0.10);
+    background: rgba(246, 251, 255, 0.7);
+    transition: background 0.2s ease, border 0.2s ease;
+}
+
+#mbn2Drawer .mbn2-link .iconify {
+    font-size: 20px;
+    color: var(--ocean) !important;
+}
+
+#mbn2Drawer .mbn2-link:hover {
+    background: rgba(22, 127, 202, 0.10);
+    border-color: rgba(22, 127, 202, 0.25);
+}
+
+/* account chip */
+#mbn2Drawer .mbn2-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(10, 60, 95, 0.10);
+    background: rgba(246, 251, 255, 0.7);
+    margin-bottom: 10px;
+}
+
+#mbn2Drawer .mbn2-chip .iconify {
+    font-size: 22px;
+    color: var(--ocean) !important;
+}
+
+#mbn2Drawer .mbn2-chip-name {
+    font-weight: 800;
+    color: var(--ink);
+}
+
+/* logout */
+#mbn2Drawer .mbn2-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(220, 38, 38, 0.18);
+    background: rgba(220, 38, 38, 0.08);
+
+    font-weight: 800;
+    color: #dc2626;
+    cursor: pointer;
+}
+
+#mbn2Drawer .mbn2-logout .iconify {
+    font-size: 20px;
+    color: #dc2626;
+}
+
+/* ==============================
+   CRITICAL FIX FOR HOME PAGE
+   Stop parent transforms/filters only while menu open
+   ============================== */
+html.mbn2-open,
+html.mbn2-open body {
+    overflow: hidden !important;
+}
+
+/* neutralize common “home hero” effects while open */
+html.mbn2-open body * {
+    mix-blend-mode: normal !important;
+}
+
+/* if your theme uses wrappers that transform the page, neutralize them while open */
+html.mbn2-open .rts-banner-area,
+html.mbn2-open .banner-area,
+html.mbn2-open .swiper,
+html.mbn2-open .swiper-wrapper,
+html.mbn2-open .swiper-slide,
+html.mbn2-open .hero,
+html.mbn2-open .home-hero,
+html.mbn2-open .main-wrapper,
+html.mbn2-open .page-wrapper,
+html.mbn2-open .site-wrapper {
+    transform: none !important;
+    filter: none !important;
+}
+/* Mobile menu sty ends */
+
+.rts-footer-area-one.tour-marketplace {
+    background: #f0f9ff !important;
+}
+</style>
 
 
 
@@ -143,69 +726,7 @@
     {% include "portal/partial/footer.html" %}
     <!-- rts footer area end -->
 
-    <div id="side-bar" class="side-bar header-two header-eight" style="
-    background: #fff;
-">
-        <button class="close-icon-menu"><i class="fa-sharp fa-thin fa-xmark"></i></button>
-        <a class="logo" href="index.html"><img src="{% static 'portal/assets/images/logo/logo5.jpg'%}" alt=""></a>
-        <!-- mobile menu area start -->
-        <div class="mobile-menu-main">
-            <nav class="nav-main mainmenu-nav mt--30">
-                 <ul class="mainmenu metismenu" id="mobile-menu-active">
-                    <li>
-                        <a href="{% url 'home' %}" class="main">Home</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'aboutUs' %}" class="main">About Us</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'services' %}" class="main">Services</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'technology_innovation' %}" class="main">Technology & Innovation</a>
-                    </li>
-                    {% comment %} <li class="has-droupdown">
-                        <a href="#" class="main">Tour</a>
-                        <ul class="submenu mm-collapse">
-                            <li><a class="mobile-menu-link" href="tour.html">Tour One</a></li>
-                            <li><a class="mobile-menu-link" href="tour-two.html">Tour Two</a></li>
-                            <li><a class="mobile-menu-link" href="tour-three.html">Tour Three</a></li>
-                            <li><a class="mobile-menu-link" href="tour-four.html">Tour Four</a></li>
-                            <li><a class="mobile-menu-link" href="tour-five.html">Tour Five</a></li>
-                            <li><a class="mobile-menu-link" href="tour-details.html">Tour Details</a></li>
-                        </ul>
-                    </li> {% endcomment %}
-                    {% comment %} <li class="has-droupdown">
-                        <a href="#" class="main">Destinations</a>
-                        <ul class="submenu mm-collapse">
-                            <li><a class="mobile-menu-link" href="destination.html">Destinations</a></li>
-                            <li><a class="mobile-menu-link" href="destination-details.html">Destinations Details</a></li>
-                        </ul>
-                    </li> {% endcomment %}
-                    <li class="has-droupdown">
-                        <a href="#" class="main">Pages</a>
-                        <ul class="submenu mm-collapse">
-                            <li><a class="mobile-menu-link" href="{% url 'signin' %}">Log In</a></li>
-                            <li><a class="mobile-menu-link" href="{% url 'signup' %}">Sign Up</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="{% url 'contact' %}" class="main">Contact Us</a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="follow-us">
-                <ul>
-                    <li><a href="#" aria-label="Facebook"><i class="fab fa-facebook-f" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
-                    <li><a href="#" aria-label="twitter"><i class="fab fa-twitter" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
-                    <li><a href="#" aria-label="instagram"><i class="fab fa-instagram" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
-                    <li><a href="#" aria-label="linkdin"><i class="fa-brands fa-linkedin-in" style="font-family: &quot;Font Awesome 6 Brands&quot;, Bangla867, sans-serif;"></i></a></li>
-                </ul>
-            </div>
-        </div>
-        <!-- mobile menu area end -->
-    </div>
+    
 
 
     <div id="anywhere-home" class="">
@@ -224,7 +745,106 @@
 
     
 
+<div class="mbn2-bar d-lg-none" id="mbn2Bar">
+    <a href="{% url 'home' %}" class="mbn2-item" data-mbn2-path="{% url 'home' %}">
+        <span class="iconify mbn2-ic" data-icon="mdi:home-outline"></span>
+        <span class="mbn2-tx">Home</span>
+    </a>
 
+    <a href="{% url 'services' %}" class="mbn2-item" data-mbn2-path="{% url 'services' %}">
+        <span class="iconify mbn2-ic" data-icon="mdi:briefcase-outline"></span>
+        <span class="mbn2-tx">Services</span>
+    </a>
+
+    <a href="{% url 'contact' %}" class="mbn2-item" data-mbn2-path="{% url 'contact' %}">
+        <span class="iconify mbn2-ic" data-icon="mdi:phone-outline"></span>
+        <span class="mbn2-tx">Contact</span>
+    </a>
+
+    {% if user.is_authenticated %}
+        <a href="{% url 'account' %}" class="mbn2-item" data-mbn2-path="{% url 'account' %}">
+            <span class="iconify mbn2-ic" data-icon="mdi:account-outline"></span>
+            <span class="mbn2-tx">Account</span>
+        </a>
+    {% else %}
+        <a href="{% url 'signin' %}" class="mbn2-item" data-mbn2-path="{% url 'signin' %}">
+            <span class="iconify mbn2-ic" data-icon="mdi:login-variant"></span>
+            <span class="mbn2-tx">Login</span>
+        </a>
+    {% endif %}
+
+    <button type="button" class="mbn2-item mbn2-more" id="mbn2MoreBtn" aria-label="More">
+        <span class="iconify mbn2-ic" data-icon="mdi:dots-horizontal"></span>
+        <span class="mbn2-tx">More</span>
+    </button>
+</div>
+
+<div class="mbn2-backdrop d-lg-none" id="mbn2Backdrop" aria-hidden="true"></div>
+
+<div class="mbn2-drawer d-lg-none" id="mbn2Drawer" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="mbn2-head">
+        <div class="mbn2-title">More</div>
+        <button type="button" class="mbn2-close" id="mbn2CloseBtn" aria-label="Close">
+            <span class="iconify" data-icon="mdi:close"></span>
+        </button>
+    </div>
+
+    <div class="mbn2-body">
+        <div class="mbn2-sec">
+            <div class="mbn2-sec-title">Pages</div>
+            <ul class="mbn2-list">
+                <li><a class="mbn2-link" href="{% url 'aboutUs' %}"><span class="iconify" data-icon="mdi:information-outline"></span>About</a></li>
+                <li><a class="mbn2-link" href="{% url 'technology_innovation' %}"><span class="iconify" data-icon="mdi:chip"></span>Technology &amp; Innovation</a></li>
+                <li><a class="mbn2-link" href="{% url 'team' %}"><span class="iconify" data-icon="mdi:account-group-outline"></span>Leadership Profile</a></li>
+                <li><a class="mbn2-link" href="{% url 'blog' %}"><span class="iconify" data-icon="mdi:post-outline"></span>Blog</a></li>
+            </ul>
+        </div>
+
+        <div class="mbn2-sec">
+            <div class="mbn2-sec-title">Account</div>
+
+            {% if user.is_authenticated %}
+                <div class="mbn2-chip">
+                    <span class="iconify" data-icon="mdi:account-circle-outline"></span>
+                    <span class="mbn2-chip-name">{{ user.first_name|default:user.phone_number }}</span>
+                </div>
+
+                <ul class="mbn2-list">
+                    <li>
+                        <a class="mbn2-link" href="{% url 'account' %}">
+                            <span class="iconify" data-icon="mdi:calendar-check-outline"></span>
+                            Bookings &amp; Profile
+                        </a>
+                    </li>
+                    <li>
+                        <form action="{% url 'logout' %}" method="post" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="mbn2-logout">
+                                <span class="iconify" data-icon="mdi:logout-variant"></span>
+                                Log Out
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            {% else %}
+                <ul class="mbn2-list">
+                    <li>
+                        <a class="mbn2-link" href="{% url 'signin' %}">
+                            <span class="iconify" data-icon="mdi:login-variant"></span>
+                            Log In
+                        </a>
+                    </li>
+                    <li>
+                        <a class="mbn2-link" href="{% url 'signup' %}">
+                            <span class="iconify" data-icon="mdi:account-plus-outline"></span>
+                            Sign Up
+                        </a>
+                    </li>
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
    <!-- jquery js -->
 <script src="{% static 'portal/assets/js/plugins/jquery.min.js' %}"></script>
@@ -240,6 +860,102 @@
 <script src="{% static 'portal/assets/js/plugins/isotop.js' %}"></script>
 <script src="{% static 'portal/assets/js/plugins/contact-form.js' %}"></script>
 <script src="{% static 'portal/assets/js/main.js' %}"></script>
+
+<!-- Iconify (icons) -->
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+
+<script>
+    (function() {
+        const bar = document.getElementById('mbn2Bar');
+        const moreBtn = document.getElementById('mbn2MoreBtn');
+        const drawer = document.getElementById('mbn2Drawer');
+        const backdrop = document.getElementById('mbn2Backdrop');
+        const closeBtn = document.getElementById('mbn2CloseBtn');
+
+        function normalizePath(p) {
+            const x = (p || '/').split('?')[0].split('#')[0];
+            return (x.replace(/\/+$/, '') || '/');
+        }
+
+        function setActiveBottomNav() {
+            if (!bar) return;
+            const items = bar.querySelectorAll('.mbn2-item[data-mbn2-path]');
+            if (!items.length) return;
+
+            const currentPath = normalizePath(window.location.pathname);
+            let bestMatch = null;
+            let bestLen = -1;
+
+            items.forEach((el) => {
+                el.classList.remove('mbn2-active');
+                const p = normalizePath(el.getAttribute('data-mbn2-path'));
+
+                if (currentPath === p || (p !== '/' && currentPath.startsWith(p + '/'))) {
+                    if (p.length > bestLen) {
+                        bestMatch = el;
+                        bestLen = p.length;
+                    }
+                }
+
+                if (p === '/' && currentPath === '/') {
+                    bestMatch = el;
+                    bestLen = 1;
+                }
+            });
+
+            if (bestMatch) {
+                bestMatch.classList.add('mbn2-active');
+            }
+        }
+
+        setActiveBottomNav();
+
+        if (!moreBtn || !drawer || !backdrop || !closeBtn) {
+            return;
+        }
+
+        function openDrawer() {
+            drawer.classList.add('mbn2-open');
+            backdrop.classList.add('mbn2-open');
+            drawer.setAttribute('aria-hidden', 'false');
+            backdrop.setAttribute('aria-hidden', 'false');
+
+            // show More as active while open
+            moreBtn.classList.add('mbn2-active');
+
+            // CRITICAL: fix home page rendering by stopping blending/transforms
+            document.documentElement.classList.add('mbn2-open');
+        }
+
+        function closeDrawer() {
+            drawer.classList.remove('mbn2-open');
+            backdrop.classList.remove('mbn2-open');
+            drawer.setAttribute('aria-hidden', 'true');
+            backdrop.setAttribute('aria-hidden', 'true');
+
+            moreBtn.classList.remove('mbn2-active');
+
+            document.documentElement.classList.remove('mbn2-open');
+        }
+
+        moreBtn.addEventListener('click', function() {
+            if (drawer.classList.contains('mbn2-open')) {
+                closeDrawer();
+            } else {
+                openDrawer();
+            }
+        });
+
+        closeBtn.addEventListener('click', closeDrawer);
+        backdrop.addEventListener('click', closeDrawer);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDrawer();
+            }
+        });
+    })();
+</script>
 
 {% block custom_js %}
 

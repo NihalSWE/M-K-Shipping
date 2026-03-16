@@ -155,7 +155,7 @@ class TripPricingAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('booking_ref', 'user', 'trip', 'status', 'total_amount', 'created_at')
+    list_display = ('booking_ref', 'user', 'trip', 'status', 'paid_amount','total_amount', 'created_at')
     list_filter = ('status', 'sales_channel', 'created_at')
     search_fields = ('booking_ref', 'user__username', 'user__email', 'user__first_name')
     readonly_fields = ('booking_ref',)
@@ -174,3 +174,102 @@ class TicketAdmin(admin.ModelAdmin):
     list_filter = ('status', 'trip__departure_datetime')
     search_fields = ('passenger_name', 'booking__booking_ref', 'seat_object__label')
     autocomplete_fields = ('booking', 'trip', 'seat_object')
+    
+    
+    
+@admin.register(SeatHold)
+class SeatHoldAdmin(admin.ModelAdmin):
+    # 1. Controls what columns appear in the list view
+    list_display = (
+        "id",
+        "holder_id",
+        "trip",
+        "seat_object",
+        "segment_display", # Custom method for cleaner UI
+        "expires_at",
+        "is_active_status", # Custom boolean method
+        "created_at",
+    )
+
+    # 2. sidebar filters to slice data
+    list_filter = (
+        "expires_at",
+        "trip",
+        "created_at",
+    )
+
+    # 3. Search bar functionality
+    # Note: Ensure referenced relations (trip, seat_object) have readable string representations
+    search_fields = (
+        "holder_id",
+        "trip__id",       # Assuming Trip has an ID or Name
+        # "trip__name",   # Uncomment if Trip has a name field
+    )
+
+    # 4. Fields that cannot be edited
+    readonly_fields = ("created_at", "updated_at", "is_active_status")
+
+    # 5. Optimize database queries (prevents N+1 problem)
+    # This fetches the related objects in the same query as the list
+    list_select_related = ("trip", "from_stop", "to_stop", "seat_object")
+
+    # 6. Organize the edit form into logical groups
+    fieldsets = (
+        ("Hold Details", {
+            "fields": ("holder_id", "trip", "seat_object")
+        }),
+        ("Segment Info", {
+            "fields": (("from_stop", "to_stop"),), # Tuple inside tuple makes them display on one line
+            "classes": ("collapse",), # Optional: makes this section collapsible
+        }),
+        ("Timing", {
+            "fields": ("expires_at", "created_at", "updated_at", "is_active_status")
+        }),
+    )
+
+    # --- Custom Display Methods ---
+
+    @admin.display(boolean=True, description="Active")
+    def is_active_status(self, obj):
+        """
+        Wraps the model method to display a nice Green Check / Red X icon.
+        """
+        return obj.is_active()
+
+    @admin.display(description="Route Segment")
+    def segment_display(self, obj):
+        """
+        Combines from/to stops into a single readable column.
+        """
+        return f"{obj.from_stop} → {obj.to_stop}"
+    
+    
+@admin.register(Passenger)
+class PassengerAdmin(admin.ModelAdmin):
+    # 1. Columns to display in the list view
+    list_display = ('name', 'booking', 'user', 'gender_display', 'phone', 'email')
+    
+    # 2. Sidebar filters for quick navigation
+    list_filter = ('gender', 'booking__status') # Assuming Booking has a status field
+    
+    # 3. Search functionality (searches related fields too)
+    search_fields = ('name', 'email', 'phone', 'user__username', 'booking__reference_number')
+    
+    # 4. Organizing fields into sections in the edit view
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'gender', 'address')
+        }),
+        ('Contact Details', {
+            'fields': ('phone', 'email')
+        }),
+        ('Relationships', {
+            'description': 'Associated booking and system user accounts.',
+            'fields': ('booking', 'user')
+        }),
+    )
+
+    # Custom method to show the text label of the gender choice instead of the integer
+    def gender_display(self, obj):
+        return obj.get_gender_display()
+    gender_display.short_description = 'Gender'

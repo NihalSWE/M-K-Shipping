@@ -229,8 +229,9 @@
                             <label class="form-label text-muted small">Route Path</label>
                             <select name="route_id" class="form-select select2" required>
                                 {% for route in routes %}
-                                    <option value="{{ route.id }}">{{ route.source.name }} &rarr; {{ route.destination.name }}</option>
-                                {% endfor %}
+                                    {% comment %} <option value="{{ route.id }}">{{ route.source.name }} &rarr; {{ route.destination.name }}</option> {% endcomment %}
+                                    <option value="{{ route.id }}">{{ route.name }}</option>
+                                    {% endfor %}
                             </select>
                         </div>
 
@@ -245,6 +246,23 @@
                             <label class="form-label text-muted small">Departure Time</label>
                             <input type="text" id="timePicker" name="departure_time" class="form-control" 
                                 placeholder="Pick time" required style="background-color: #f8fafc; border-radius: 10px;">
+                        </div>
+
+                        <div class="col-md-6 col-12">
+                            <label class="form-label text-muted small">Booking Close Offset (Minutes)</label>
+                            <input
+                                type="number"
+                                name="booking_close_offset_minutes"
+                                class="form-control"
+                                min="0"
+                                max="10080"
+                                step="1"
+                                placeholder="Leave blank for default 5 minutes before departure"
+                                style="background-color: #f8fafc; border-radius: 10px;"
+                            >
+                            <small class="text-muted">
+                                Example: 120 means this trip stops showing for booking 120 minutes before departure.
+                            </small>
                         </div>
 
                         {% comment %} <div class="col-md-6">
@@ -342,7 +360,7 @@
                 responseDiv.style.backgroundColor = "rgba(220, 53, 69, 0.15)"; // Red with opacity
                 responseDiv.style.color = "#a71d2a";
                 responseDiv.style.padding = "15px";
-                responseDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle me-2"></i> ${error.message}`;
+                responseDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle me-2"></i> ${String(error.message).replaceAll('|', '<br>')}`;
                 submitBtn.disabled = false;
                 submitBtn.querySelector('.spinner-border').classList.add('d-none');
             });

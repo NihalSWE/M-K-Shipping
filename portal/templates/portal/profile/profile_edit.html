@@ -1,0 +1,818 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --prf-font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --prf-color-primary: #167fca;
+        --prf-color-primary-deep: #0b4a78;
+        --prf-color-text: #0b1220;
+        --prf-color-muted: #607387;
+        --prf-color-card: #ffffff;
+        --prf-color-surface: #f6fbff;
+        --prf-color-border: rgba(10, 60, 95, 0.12);
+        --prf-shadow-sm: 0 8px 22px rgba(11, 18, 32, 0.07);
+        --prf-shadow-md: 0 16px 34px rgba(11, 18, 32, 0.11);
+        --prf-radius-lg: 18px;
+        --prf-radius-md: 14px;
+        --prf-radius-sm: 12px;
+    }
+
+    .prf-page {
+        font-family: var(--prf-font-family);
+        background: linear-gradient(180deg, #f8fbff 0%, #f4f9ff 100%);
+        min-height: 100%;
+        padding: 28px 0 50px;
+    }
+
+    .prf-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .prf-hero {
+        background: linear-gradient(135deg, rgba(22, 127, 202, 0.10), rgba(11, 74, 120, 0.08));
+        border: 1px solid var(--prf-color-border);
+        border-radius: var(--prf-radius-lg);
+        box-shadow: var(--prf-shadow-sm);
+        padding: 20px 22px;
+        margin-bottom: 16px;
+        animation: prfFadeUp .35s ease;
+    }
+
+    .prf-hero-title {
+        margin: 0;
+        color: var(--prf-color-text);
+        font-weight: 800;
+        font-size: 3.1rem !important;
+        line-height: 1.12 !important;
+    }
+
+    .prf-hero-subtitle {
+        margin: 8px 0 0;
+        color: var(--prf-color-muted);
+        font-weight: 500;
+        font-size: 1.7rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .prf-alert {
+        display: none;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 16px 18px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .prf-alert-show {
+        display: flex !important;
+    }
+
+    .prf-alert-icon {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+        font-size: 1.75rem !important;
+        line-height: 1 !important;
+        margin-top: 0 !important;
+    }
+
+    .prf-alert-text {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 34px !important;
+        font-size: 1.9rem !important;
+        line-height: 1.25 !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+    }
+
+    .prf-alert-success {
+        background: rgba(25, 135, 84, 0.08);
+        border-color: rgba(25, 135, 84, 0.20);
+        color: #0f7a45;
+    }
+
+    .prf-alert-error {
+        background: rgba(220, 53, 69, 0.08);
+        border-color: rgba(220, 53, 69, 0.20);
+        color: #b02a37;
+    }
+
+    .prf-alert-info {
+        background: rgba(22, 127, 202, 0.08);
+        border-color: rgba(22, 127, 202, 0.20);
+        color: var(--prf-color-primary-deep);
+    }
+
+    .prf-card {
+        background: var(--prf-color-card);
+        border: 1px solid var(--prf-color-border);
+        border-radius: var(--prf-radius-lg);
+        box-shadow: var(--prf-shadow-sm);
+        overflow: hidden;
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        animation: prfFadeUp .45s ease;
+        height: 100%;
+    }
+
+    .prf-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(22, 127, 202, 0.20);
+        box-shadow: var(--prf-shadow-md);
+    }
+
+    .prf-card-header {
+        padding: 16px 18px;
+        border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+        background: linear-gradient(180deg, rgba(22, 127, 202, 0.04), rgba(22, 127, 202, 0.01));
+    }
+
+    .prf-card-title {
+        margin: 0;
+        color: var(--prf-color-text);
+        font-weight: 800;
+        font-size: 2.1rem !important;
+        line-height: 1.15 !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .prf-card-subtitle {
+        margin: 6px 0 0;
+        color: var(--prf-color-muted);
+        font-size: 1.35rem !important;
+        line-height: 1.35 !important;
+        font-weight: 500;
+    }
+
+    .prf-card-body {
+        padding: 16px 18px 18px;
+    }
+
+    .prf-field-wrap {
+        margin-bottom: 14px;
+    }
+
+    .prf-field-label {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--prf-color-text);
+        font-size: 1.35rem !important;
+        font-weight: 700 !important;
+        line-height: 1.2;
+    }
+
+    .prf-input {
+        width: 100%;
+        border: 1px solid rgba(10, 60, 95, 0.18);
+        border-radius: 12px;
+        background: #fff;
+        color: var(--prf-color-text);
+        font-size: 1.35rem !important;
+        font-weight: 500;
+        line-height: 1.35 !important;
+        padding: 0.95rem 1.05rem !important;
+        outline: none;
+        transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        display: block;
+    }
+
+    .prf-input:focus {
+        border-color: rgba(22, 127, 202, 0.45);
+        box-shadow: 0 0 0 0.22rem rgba(22, 127, 202, 0.14);
+    }
+
+    .prf-input[disabled] {
+        background: #eef5fb;
+        color: #53697d;
+        cursor: not-allowed;
+        opacity: 1;
+    }
+
+    .prf-field-help {
+        margin-top: 6px;
+        color: var(--prf-color-muted);
+        font-size: 1.2rem !important;
+        line-height: 1.35 !important;
+        font-weight: 500;
+    }
+
+    .prf-password-note {
+        background: rgba(255, 193, 7, 0.10);
+        border: 1px solid rgba(255, 193, 7, 0.24);
+        color: #7a5b00;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 1.22rem !important;
+        line-height: 1.35 !important;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .prf-btn {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        padding: 0.82rem 1rem;
+        font-size: 1.25rem !important;
+        font-weight: 700;
+        line-height: 1.2 !important;
+        transition: all .2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    .prf-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .prf-btn-primary {
+        background: linear-gradient(135deg, var(--prf-color-primary), var(--prf-color-primary-deep));
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(22, 127, 202, 0.20);
+    }
+
+    .prf-btn-primary:hover {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(22, 127, 202, 0.26);
+    }
+
+    .prf-btn-secondary {
+        background: rgba(22, 127, 202, 0.06);
+        border-color: rgba(22, 127, 202, 0.18);
+        color: var(--prf-color-primary-deep);
+    }
+
+    .prf-btn-secondary:hover {
+        background: rgba(22, 127, 202, 0.12);
+        color: var(--prf-color-primary-deep);
+    }
+
+    .prf-mini-card {
+        margin-top: 14px;
+        background: var(--prf-color-card);
+        border: 1px solid var(--prf-color-border);
+        border-radius: var(--prf-radius-lg);
+        box-shadow: var(--prf-shadow-sm);
+        padding: 14px 16px;
+    }
+
+    .prf-mini-line {
+        font-size: 1.25rem !important;
+        color: var(--prf-color-muted);
+        font-weight: 500;
+        line-height: 1.5 !important;
+    }
+
+    .prf-mini-line strong {
+        color: var(--prf-color-text);
+        font-weight: 700;
+    }
+
+    .prf-loading-state {
+        opacity: 0.75;
+        pointer-events: none;
+    }
+
+    @keyframes prfFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (min-width: 992px) {
+        .prf-left-col {
+            padding-right: 10px;
+        }
+
+        .prf-right-col {
+            padding-left: 10px;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .prf-hero-title {
+            font-size: 2.6rem !important;
+        }
+
+        .prf-hero-subtitle {
+            font-size: 1.45rem !important;
+        }
+
+        .prf-card-title {
+            font-size: 1.8rem !important;
+        }
+
+        .prf-card-subtitle {
+            font-size: 1.2rem !important;
+        }
+
+        .prf-field-label {
+            font-size: 1.22rem !important;
+        }
+
+        .prf-input {
+            font-size: 1.22rem !important;
+        }
+
+        .prf-field-help {
+            font-size: 1.08rem !important;
+        }
+
+        .prf-password-note {
+            font-size: 1.1rem !important;
+        }
+
+        .prf-btn {
+            font-size: 1.15rem !important;
+        }
+
+        .prf-mini-line {
+            font-size: 1.15rem !important;
+        }
+
+        .prf-alert-text {
+            font-size: 1.55rem !important;
+        }
+
+        .prf-alert-icon {
+            font-size: 1.45rem !important;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .prf-page {
+            padding: 16px 0 28px;
+        }
+
+        .prf-hero {
+            padding: 14px;
+            border-radius: 14px;
+        }
+
+        .prf-hero-title {
+            font-size: 2.2rem !important;
+        }
+
+        .prf-hero-subtitle {
+            font-size: 1.25rem !important;
+        }
+
+        .prf-card {
+            border-radius: 14px;
+        }
+
+        .prf-card-header,
+        .prf-card-body {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .prf-card-title {
+            font-size: 1.55rem !important;
+        }
+
+        .prf-card-subtitle {
+            font-size: 1.1rem !important;
+        }
+
+        .prf-field-label {
+            font-size: 1.1rem !important;
+        }
+
+        .prf-input {
+            font-size: 1.12rem !important;
+            padding: 0.85rem 0.9rem !important;
+        }
+
+        .prf-field-help {
+            font-size: 1rem !important;
+        }
+
+        .prf-password-note {
+            font-size: 1.02rem !important;
+        }
+
+        .prf-mini-line {
+            font-size: 1.02rem !important;
+        }
+
+        .prf-btn {
+            font-size: 1.06rem !important;
+            padding: 0.85rem 0.9rem !important;
+        }
+
+        .prf-mini-card {
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .prf-alert {
+            padding: 12px 14px !important;
+            gap: 10px !important;
+        }
+
+        .prf-alert-icon {
+            width: 28px !important;
+            height: 28px !important;
+            min-width: 28px !important;
+            font-size: 1.25rem !important;
+        }
+
+        .prf-alert-text {
+            min-height: 28px !important;
+            font-size: 1.15rem !important;
+            line-height: 1.3 !important;
+        }
+    }
+
+    .prf-page h1,
+    .prf-page h2,
+    .prf-page h3,
+    .prf-page h4,
+    .prf-page h5,
+    .prf-page h6,
+    .prf-page .h1,
+    .prf-page .h2,
+    .prf-page .h3,
+    .prf-page .h4,
+    .prf-page .h5,
+    .prf-page .h6 {
+        font-family: var(--prf-font-family) !important;
+        line-height: 1.15 !important;
+        letter-spacing: normal !important;
+        word-break: normal !important;
+        color: var(--prf-color-text) !important;
+    }
+
+    .prf-hero-title,
+    .prf-card-title {
+        font-family: var(--prf-font-family) !important;
+        line-height: 1.12 !important;
+        letter-spacing: -0.01em !important;
+        word-break: normal !important;
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<div class="prf-page">
+    <div class="container prf-container">
+        <div class="prf-hero">
+            <h1 class="prf-hero-title">Edit Profile</h1>
+            <p class="prf-hero-subtitle">Update your basic information and change your password.</p>
+        </div>
+
+        <!-- Bootstrap grid: side-by-side on lg+, full width on mobile -->
+        <div class="row g-3">
+            <div class="col-12 col-lg-7 prf-left-col">
+                <div class="prf-card">
+                    <div class="prf-card-header">
+                        <h2 class="prf-card-title">
+                            <i class="fa-solid fa-user-pen"></i>
+                            Profile Information
+                        </h2>
+                        <p class="prf-card-subtitle">Edit your account details below.</p>
+                    </div>
+
+                    <div class="prf-card-body">
+                        <form id="prfProfileForm" method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="profile">
+
+                            <div class="row">
+                                <div class="col-12 col-md-6">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfFirstName">First Name</label>
+                                        <input
+                                            id="prfFirstName"
+                                            name="first_name"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.first_name|default:'' }}"
+                                            placeholder="Enter first name"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfLastName">Last Name</label>
+                                        <input
+                                            id="prfLastName"
+                                            name="last_name"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.last_name|default:'' }}"
+                                            placeholder="Enter last name"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfEmail">Email</label>
+                                        <input
+                                            id="prfEmail"
+                                            name="email"
+                                            type="email"
+                                            class="prf-input"
+                                            value="{{ request.user.email|default:'' }}"
+                                            placeholder="Enter email (optional)"
+                                        >
+                                        <div class="prf-field-help">Email is optional, but if provided it must be unique.</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfPhone">Phone Number</label>
+                                        <input
+                                            id="prfPhone"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.phone_number }}"
+                                            disabled
+                                        >
+                                        <div class="prf-field-help">Phone number cannot be changed from this page.</div>
+                                    </div>
+                                </div>
+
+                                <div id="prfProfileAlert" class="prf-alert mb-4" role="alert" aria-live="polite">
+                                    <div id="prfProfileAlertIcon" class="prf-alert-icon"></div>
+                                    <div id="prfProfileAlertText" class="prf-alert-text"></div>
+                                </div>
+
+                                <div class="col-12">
+                                    <button id="prfProfileSubmitBtn" type="submit" class="prf-btn prf-btn-primary">
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                        <span>Save Profile</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5 prf-right-col">
+                <div class="prf-card">
+                    <div class="prf-card-header">
+                        <h2 class="prf-card-title">
+                            <i class="fa-solid fa-lock"></i>
+                            Change Password
+                        </h2>
+                        <p class="prf-card-subtitle">Use a strong password to keep your account secure.</p>
+                    </div>
+
+                    <div class="prf-card-body">
+                        <div class="prf-password-note">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            Password must be at least 8 characters.
+                        </div>
+
+                        <form id="prfPasswordForm" method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="password">
+
+                            <div class="prf-field-wrap">
+                                <label class="prf-field-label" for="prfNewPassword">New Password</label>
+                                <input
+                                    id="prfNewPassword"
+                                    name="new_password"
+                                    type="password"
+                                    class="prf-input"
+                                    placeholder="Enter new password"
+                                    required
+                                >
+                            </div>
+
+                            <div class="prf-field-wrap">
+                                <label class="prf-field-label" for="prfConfirmPassword">Confirm New Password</label>
+                                <input
+                                    id="prfConfirmPassword"
+                                    name="confirm_password"
+                                    type="password"
+                                    class="prf-input"
+                                    placeholder="Confirm new password"
+                                    required
+                                >
+                            </div>
+
+                            <div id="prfPasswordAlert" class="prf-alert mb-4" role="alert" aria-live="polite">
+                                <div id="prfPasswordAlertIcon" class="prf-alert-icon"></div>
+                                <div id="prfPasswordAlertText" class="prf-alert-text"></div>
+                            </div>
+
+                            <button id="prfPasswordSubmitBtn" type="submit" class="prf-btn prf-btn-secondary">
+                                <i class="fa-solid fa-key"></i>
+                                <span>Update Password</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    (function () {
+        const profileForm = document.getElementById("prfProfileForm");
+        const passwordForm = document.getElementById("prfPasswordForm");
+
+        const profileBtn = document.getElementById("prfProfileSubmitBtn");
+        const passwordBtn = document.getElementById("prfPasswordSubmitBtn");
+
+        const profileAlert = document.getElementById("prfProfileAlert");
+        const profileAlertIcon = document.getElementById("prfProfileAlertIcon");
+        const profileAlertText = document.getElementById("prfProfileAlertText");
+
+        const passwordAlert = document.getElementById("prfPasswordAlert");
+        const passwordAlertIcon = document.getElementById("prfPasswordAlertIcon");
+        const passwordAlertText = document.getElementById("prfPasswordAlertText");
+
+        const displayNameText = document.getElementById("prfDisplayNameText");
+        const emailText = document.getElementById("prfEmailText");
+
+        function getCsrfToken(formEl) {
+            const el = formEl.querySelector("input[name='csrfmiddlewaretoken']");
+            return el ? el.value : "";
+        }
+
+        function hideAlert(alertEl) {
+            if (!alertEl) return;
+            alertEl.className = "prf-alert";
+            alertEl.classList.remove(
+                "prf-alert-show",
+                "prf-alert-success",
+                "prf-alert-error",
+                "prf-alert-info"
+            );
+        }
+
+        function showAlert(target, type, message) {
+            let alertEl, iconEl, textEl;
+
+            if (target === "password") {
+                alertEl = passwordAlert;
+                iconEl = passwordAlertIcon;
+                textEl = passwordAlertText;
+            } else {
+                alertEl = profileAlert;
+                iconEl = profileAlertIcon;
+                textEl = profileAlertText;
+            }
+
+            if (!alertEl || !iconEl || !textEl) return;
+
+            alertEl.className = "prf-alert";
+
+            if (type === "success") {
+                alertEl.classList.add("prf-alert-success");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === "error") {
+                alertEl.classList.add("prf-alert-error");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                alertEl.classList.add("prf-alert-info");
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            textEl.textContent = message || "Something happened.";
+            alertEl.classList.add("prf-alert-show");
+
+            window.scrollTo({
+                top: alertEl.getBoundingClientRect().top + window.pageYOffset - 90,
+                behavior: "smooth"
+            });
+        }
+
+        function setBtnState(btn, loading, loadingText, normalText) {
+            if (!btn) return;
+
+            const textSpan = btn.querySelector("span");
+            btn.disabled = loading;
+            btn.classList.toggle("prf-loading-state", loading);
+
+            if (textSpan) {
+                textSpan.textContent = loading ? loadingText : normalText;
+            }
+        }
+
+        async function submitWithFetch(formEl, btn, loadingText, normalText, alertTarget) {
+            setBtnState(btn, true, loadingText, normalText);
+
+            try {
+                const formData = new FormData(formEl);
+
+                const response = await fetch("{% url 'profile_edit' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(formEl),
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: formData
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = { success: false, error: "Invalid server response." };
+                }
+
+                if (!response.ok || !data.success) {
+                    showAlert(alertTarget, "error", data.error || "Request failed.");
+                    return { ok: false, data: data };
+                }
+
+                showAlert(alertTarget, "success", data.message || "Success.");
+                return { ok: true, data: data };
+            } catch (err) {
+                showAlert(alertTarget, "error", "Network error. Please try again.");
+                return { ok: false, data: null };
+            } finally {
+                setBtnState(btn, false, loadingText, normalText);
+            }
+        }
+
+        if (profileForm) {
+            profileForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(profileAlert);
+
+                const result = await submitWithFetch(
+                    profileForm,
+                    profileBtn,
+                    "Saving...",
+                    "Save Profile",
+                    "profile"
+                );
+
+                if (result.ok && result.data && result.data.user) {
+                    const user = result.data.user;
+                    const displayName = (user.display_name || "").trim() || (user.phone_number || "");
+
+                    if (displayNameText) {
+                        displayNameText.textContent = displayName || "N/A";
+                    }
+
+                    if (emailText) {
+                        emailText.textContent = (user.email || "").trim() ? user.email : "N/A";
+                    }
+                }
+            });
+        }
+
+        if (passwordForm) {
+            passwordForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                hideAlert(passwordAlert);
+
+                const newPassword = (document.getElementById("prfNewPassword")?.value || "").trim();
+                const confirmPassword = (document.getElementById("prfConfirmPassword")?.value || "").trim();
+
+                if (newPassword !== confirmPassword) {
+                    showAlert("password", "error", "New password and confirm password do not match.");
+                    return;
+                }
+
+                const result = await submitWithFetch(
+                    passwordForm,
+                    passwordBtn,
+                    "Updating...",
+                    "Update Password",
+                    "password"
+                );
+
+                if (result.ok) {
+                    passwordForm.reset();
+                }
+            });
+        }
+    })();
+</script>
+{% endblock custom_js %}

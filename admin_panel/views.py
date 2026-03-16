@@ -8,6 +8,13 @@ from django.db.models import F
 from datetime import timedelta, datetime
 from django.utils.crypto import get_random_string
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone            # <--- NEW IMPORT
+from .tasks import send_sms_task, auto_cancel_booking  # <--- NEW IMPORT
+import csv
+from decimal import Decimal
+from django.db.models import Sum, Q, Count, F, DecimalField, ExpressionWrapper, Value
+from django.db.models.functions import Coalesce, TruncDate
+from django.http import HttpResponse
 import uuid 
 import json
 from .models import *
@@ -15,13 +22,21 @@ from django.db.models import Max
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.db import transaction
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout
 from .services import sync_route_prices
 from .services import generate_smart_trips
 from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm, AdminUserPermissionsForm
 from accounts.forms import AdminUserEditForm
 from django.urls import reverse
-from .utils import send_booking_sms
+from .utils import send_booking_sms, get_logged_in_counter
+from portal.utils import seat_hold_key, get_holder_id
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+from django.db.models import Sum, Q
+
 
 
 
@@ -34,7 +49,246 @@ User = get_user_model()
 
 @login_required
 def dashboard(request):
-    return render(request, 'admin_panel/dashboard/dashboard.html')
+    now = timezone.now()
+    today = now.date()
+
+    # -----------------------------
+    # Date ranges
+    # -----------------------------
+    start_today = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+    end_today = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.max.time()))
+
+    first_day_of_month = today.replace(day=1)
+    start_month = timezone.make_aware(timezone.datetime.combine(first_day_of_month, timezone.datetime.min.time()))
+    end_month = end_today
+
+    # -----------------------------
+    # 1) KPI cards
+    # -----------------------------
+    bookings_today = Booking.objects.filter(created_at__date=today).count()
+
+    paid_revenue_month = Booking.objects.filter(
+        payment_status='PAID',
+        created_at__gte=start_month,
+        created_at__lte=end_month
+    ).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
+
+    active_trips_today = Trip.objects.filter(
+        departure_datetime__date=today,
+        is_published=True
+    ).count()
+
+    active_seat_holds = SeatHold.objects.filter(expires_at__gt=now).count()
+
+    pending_bookings = Booking.objects.filter(status='PENDING').count()
+
+    expired_bookings = Booking.objects.filter(status='EXPIRED').count()
+
+    # -----------------------------
+    # 2) Occupancy (today average)
+    # -----------------------------
+    today_trips = Trip.objects.filter(departure_datetime__date=today).select_related('ship', 'route')
+    today_trip_ids = list(today_trips.values_list('id', flat=True))
+
+    booked_tickets_counts = (
+        Ticket.objects.filter(
+            trip_id__in=today_trip_ids,
+            status='BOOKED'
+        )
+        .values('trip_id')
+        .annotate(cnt=Count('id'))
+    )
+    booked_map = {item['trip_id']: item['cnt'] for item in booked_tickets_counts}
+
+    occupancy_values = []
+    for trip in today_trips:
+        capacity = trip.ship.total_capacity or 0
+        if capacity > 0:
+            sold = booked_map.get(trip.id, 0)
+            occupancy_values.append((sold / capacity) * 100)
+
+    avg_occupancy_today = round(sum(occupancy_values) / len(occupancy_values), 2) if occupancy_values else 0
+
+    # -----------------------------
+    # 3) Booking trend chart (last 14 days)
+    # -----------------------------
+    last_14_days_start = today - timezone.timedelta(days=13)
+
+    bookings_trend_qs = (
+        Booking.objects.filter(created_at__date__gte=last_14_days_start, created_at__date__lte=today)
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(total=Count('id'))
+        .order_by('day')
+    )
+    bookings_trend_map = {item['day']: item['total'] for item in bookings_trend_qs}
+
+    revenue_trend_qs = (
+        Booking.objects.filter(
+            payment_status='PAID',
+            created_at__date__gte=last_14_days_start,
+            created_at__date__lte=today
+        )
+        .annotate(day=TruncDate('created_at'))
+        .values('day')
+        .annotate(total=Sum('paid_amount'))
+        .order_by('day')
+    )
+    revenue_trend_map = {item['day']: float(item['total'] or 0) for item in revenue_trend_qs}
+
+    trend_labels = []
+    trend_bookings = []
+    trend_revenue = []
+
+    for i in range(14):
+        d = last_14_days_start + timezone.timedelta(days=i)
+        trend_labels.append(d.strftime('%d %b'))
+        trend_bookings.append(bookings_trend_map.get(d, 0))
+        trend_revenue.append(revenue_trend_map.get(d, 0))
+
+    # -----------------------------
+    # 4) Booking status chart
+    # -----------------------------
+    booking_status_counts = Booking.objects.values('status').annotate(total=Count('id'))
+    status_map = {item['status']: item['total'] for item in booking_status_counts}
+
+    booking_status_labels = ['PENDING', 'CONFIRMED', 'CANCELLED', 'EXPIRED', 'LOCKED']
+    booking_status_series = [status_map.get(label, 0) for label in booking_status_labels]
+
+    # -----------------------------
+    # 5) Sales channel chart
+    # -----------------------------
+    sales_channel_counts = Booking.objects.values('sales_channel').annotate(total=Count('id'))
+    channel_map = {item['sales_channel']: item['total'] for item in sales_channel_counts}
+
+    sales_channel_labels = ['ONLINE', 'COUNTER']
+    sales_channel_series = [channel_map.get(label, 0) for label in sales_channel_labels]
+
+    # -----------------------------
+    # 6) Top routes (by booked tickets)
+    # -----------------------------
+    top_routes = (
+        Ticket.objects.filter(status='BOOKED')
+        .values('trip__route__name')
+        .annotate(
+            tickets_sold=Count('id'),
+            revenue=Sum('fare_amount')
+        )
+        .order_by('-tickets_sold')[:5]
+    )
+
+    top_routes_data = [
+        {
+            'route_name': item['trip__route__name'] or 'N/A',
+            'tickets_sold': item['tickets_sold'],
+            'revenue': float(item['revenue'] or 0),
+        }
+        for item in top_routes
+    ]
+
+    # -----------------------------
+    # 7) Upcoming trips (next 6)
+    # -----------------------------
+    upcoming_trips_qs = (
+        Trip.objects.filter(departure_datetime__gte=now, is_published=True)
+        .select_related('ship', 'route')
+        .order_by('departure_datetime')[:6]
+    )
+
+    upcoming_trip_ids = [trip.id for trip in upcoming_trips_qs]
+    upcoming_ticket_counts = (
+        Ticket.objects.filter(trip_id__in=upcoming_trip_ids, status='BOOKED')
+        .values('trip_id')
+        .annotate(cnt=Count('id'))
+    )
+    upcoming_ticket_map = {item['trip_id']: item['cnt'] for item in upcoming_ticket_counts}
+
+    upcoming_trips = []
+    for trip in upcoming_trips_qs:
+        sold = upcoming_ticket_map.get(trip.id, 0)
+        capacity = trip.ship.total_capacity or 0
+        occupancy = round((sold / capacity) * 100, 1) if capacity > 0 else 0
+
+        upcoming_trips.append({
+            'ship': trip.ship.name,
+            'route': trip.route.name,
+            'departure': timezone.localtime(trip.departure_datetime).strftime('%d %b %Y, %I:%M %p'),
+            'sold': sold,
+            'capacity': capacity,
+            'occupancy': occupancy,
+        })
+
+    # -----------------------------
+    # 8) Top ships (by revenue)
+    # -----------------------------
+    top_ships = (
+        Ticket.objects.filter(status='BOOKED')
+        .values('trip__ship__name')
+        .annotate(
+            tickets_sold=Count('id'),
+            revenue=Sum('fare_amount')
+        )
+        .order_by('-revenue')[:5]
+    )
+
+    top_ships_data = [
+        {
+            'ship_name': item['trip__ship__name'] or 'N/A',
+            'tickets_sold': item['tickets_sold'],
+            'revenue': float(item['revenue'] or 0),
+        }
+        for item in top_ships
+    ]
+
+    # -----------------------------
+    # 9) Alert module (small operational block)
+    # -----------------------------
+    trips_departing_6h = Trip.objects.filter(
+        departure_datetime__gte=now,
+        departure_datetime__lte=now + timezone.timedelta(hours=6),
+        is_published=True
+    ).count()
+
+    overdue_pending = Booking.objects.filter(
+        status='PENDING',
+        expiry_at__isnull=False,
+        expiry_at__lt=now
+    ).count()
+
+    context = {
+        # KPI
+        'bookings_today': bookings_today,
+        'paid_revenue_month': float(paid_revenue_month),
+        'active_trips_today': active_trips_today,
+        'active_seat_holds': active_seat_holds,
+        'pending_bookings': pending_bookings,
+        'expired_bookings': expired_bookings,
+        'avg_occupancy_today': avg_occupancy_today,
+
+        # Modules
+        'top_routes_data': top_routes_data,
+        'upcoming_trips': upcoming_trips,
+        'top_ships_data': top_ships_data,
+        'trips_departing_6h': trips_departing_6h,
+        'overdue_pending': overdue_pending,
+
+        # Charts (JSON)
+        'trend_labels_json': json.dumps(trend_labels),
+        'trend_bookings_json': json.dumps(trend_bookings),
+        'trend_revenue_json': json.dumps(trend_revenue),
+        'booking_status_labels_json': json.dumps(booking_status_labels),
+        'booking_status_series_json': json.dumps(booking_status_series),
+        'sales_channel_labels_json': json.dumps(sales_channel_labels),
+        'sales_channel_series_json': json.dumps(sales_channel_series),
+    }
+    return render(request, 'admin_panel/dashboard/dashboard.html', context)
+
+
+@require_POST
+def admin_logout(request):
+    logout(request)
+    return redirect(reverse("signin"))  # -> /accounts/signin/
+
 
 import base64
 from django.core.files.base import ContentFile
@@ -604,38 +858,97 @@ def counters(request):
         try:
             data = json.loads(request.body)
             action = data.get('action')
-            
+
             if action == 'add':
-                name = data.get('name')
+                name = (data.get('name') or '').strip()
                 location_id = data.get('location_id')
-                Counter.objects.create(name=name, location_id=location_id)
+                user_ids = data.get('user_ids', [])  # NEW
+
+                if not name:
+                    return JsonResponse({'status': 'error', 'message': 'Counter name is required.'}, status=400)
+                if not location_id:
+                    return JsonResponse({'status': 'error', 'message': 'Location is required.'}, status=400)
+
+                with transaction.atomic():
+                    counter = Counter.objects.create(name=name, location_id=location_id)
+
+                    # Assign selected users to this counter
+                    if user_ids:
+                        User.objects.filter(
+                            id__in=user_ids,
+                            user_type__in=[0, 2]  # Admin / Staff only
+                        ).update(assigned_counter=counter)
+
                 return JsonResponse({'status': 'success', 'message': 'Counter added successfully!'})
-            
+
             elif action == 'edit':
                 c_id = data.get('id')
-                counter = get_object_or_404(Counter, id=c_id)
-                counter.name = data.get('name')
-                counter.location_id = data.get('location_id')
-                counter.save()
+                name = (data.get('name') or '').strip()
+                location_id = data.get('location_id')
+                user_ids = data.get('user_ids', [])  # NEW
+
+                if not c_id:
+                    return JsonResponse({'status': 'error', 'message': 'Counter ID missing.'}, status=400)
+                if not name:
+                    return JsonResponse({'status': 'error', 'message': 'Counter name is required.'}, status=400)
+                if not location_id:
+                    return JsonResponse({'status': 'error', 'message': 'Location is required.'}, status=400)
+
+                with transaction.atomic():
+                    counter = get_object_or_404(Counter, id=c_id)
+                    counter.name = name
+                    counter.location_id = location_id
+                    counter.save()
+
+                    # Clear old assignments from this counter first
+                    User.objects.filter(assigned_counter=counter).update(assigned_counter=None)
+
+                    # Reassign selected users
+                    if user_ids:
+                        User.objects.filter(
+                            id__in=user_ids,
+                            user_type__in=[0, 2]
+                        ).update(assigned_counter=counter)
+
                 return JsonResponse({'status': 'success', 'message': 'Counter updated successfully!'})
-            
+
             elif action == 'delete':
                 c_id = data.get('id')
                 counter = get_object_or_404(Counter, id=c_id)
-                counter.delete()
+
+                with transaction.atomic():
+                    # Unassign users first (safe + clean)
+                    User.objects.filter(assigned_counter=counter).update(assigned_counter=None)
+                    counter.delete()
+
                 return JsonResponse({'status': 'success', 'message': 'Counter deleted successfully!'})
-                
+
+            return JsonResponse({'status': 'error', 'message': 'Invalid action.'}, status=400)
+
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
-    counters = Counter.objects.select_related('location').all().order_by('location__name', 'name')
+    counters = Counter.objects.select_related('location').prefetch_related('users').all().order_by('location__name', 'name')
     locations = Location.objects.all().order_by('name')
+
+    # Assignable users = Admin + Staff only (exclude customers)
+    assignable_users = User.objects.filter(user_type__in=[0, 2]).order_by('first_name', 'phone_number')
+
+    # Build JSON for frontend edit modal prefill
+    counters_users_map = {
+        str(counter.id): list(counter.users.values_list('id', flat=True))
+        for counter in counters
+    }
+
     context = {
         'counters': counters,
         'locations': locations,
-        'locations_json': json.dumps(list(locations.values('id', 'name')))
+        'assignable_users': assignable_users,  # NEW
+        'counters_users_map': json.dumps(counters_users_map),  # NEW
     }
     return render(request, 'admin_panel/routes/counters.html', context)
+
+
 
 @login_required
 def routes(request):
@@ -646,13 +959,20 @@ def routes(request):
             
             # --- ACTION: ADD ---
             if action == 'add':
-                name = data.get('name')
+                name = (data.get('name') or '').strip()
                 source_id = int(data.get('source_id'))
                 dest_id = int(data.get('destination_id'))
+                arrival_offset_minutes = int(data.get('arrival_offset_minutes') or 0)
                 
                 # Validation
+                if not name:
+                    return JsonResponse({'status': 'error', 'message': 'Route name is required.'}, status=400)
+
                 if source_id == dest_id:
-                     return JsonResponse({'status': 'error', 'message': 'Source and Destination cannot be the same.'}, status=400)
+                    return JsonResponse({'status': 'error', 'message': 'Source and Destination cannot be the same.'}, status=400)
+
+                if arrival_offset_minutes <= 0:
+                    return JsonResponse({'status': 'error', 'message': 'Arrival offset must be greater than 0 minutes.'}, status=400)
 
                 with transaction.atomic():
                     route = Route.objects.create(
@@ -660,45 +980,87 @@ def routes(request):
                         source_id=source_id,
                         destination_id=dest_id
                     )
-                    # Create skeleton stops
-                    RouteStop.objects.create(route=route, location_id=source_id, stop_order=0)
-                    RouteStop.objects.create(route=route, location_id=dest_id, stop_order=1)
-                
+
+                    # Source stop (always 0 minutes from start)
+                    RouteStop.objects.create(
+                        route=route,
+                        location_id=source_id,
+                        stop_order=0,
+                        time_offset_minutes=0
+                    )
+
+                    # Destination stop (total duration from source)
+                    RouteStop.objects.create(
+                        route=route,
+                        location_id=dest_id,
+                        stop_order=1,
+                        time_offset_minutes=arrival_offset_minutes
+                    )
+
+                # Optional but recommended: generate route segment price skeleton immediately
+                sync_route_prices(route)
+
                 return JsonResponse({'status': 'success', 'message': 'Route created successfully!'})
             
             # --- ACTION: EDIT ---
             elif action == 'edit':
                 r_id = data.get('id')
+                new_name = (data.get('name') or '').strip()
                 new_source_id = int(data.get('source_id'))
                 new_dest_id = int(data.get('destination_id'))
+                arrival_offset_minutes = int(data.get('arrival_offset_minutes') or 0)
                 
                 route = get_object_or_404(Route, id=r_id)
                 
                 # Validation
+                if not new_name:
+                    return JsonResponse({'status': 'error', 'message': 'Route name is required.'}, status=400)
+
                 if new_source_id == new_dest_id:
-                     return JsonResponse({'status': 'error', 'message': 'Source and Destination cannot be the same.'}, status=400)
+                    return JsonResponse({'status': 'error', 'message': 'Source and Destination cannot be the same.'}, status=400)
+
+                if arrival_offset_minutes <= 0:
+                    return JsonResponse({'status': 'error', 'message': 'Destination arrival offset must be greater than 0 minutes.'}, status=400)
 
                 old_source_id = route.source_id
-                old_dest_id = route.destination_id # Keep for reference if needed, but we use logic now
+                old_dest_id = route.destination_id
                 
                 with transaction.atomic():
-                    # 1. Update Route Metadata
-                    route.name = data.get('name')
+                    # 1. Update Route metadata
+                    route.name = new_name
                     route.source_id = new_source_id
-                    route.destination_id = new_dest_id 
+                    route.destination_id = new_dest_id
                     route.save()
 
-                    # 2. Sync Source Stop (Always order 0)
-                    if old_source_id != new_source_id:
-                        RouteStop.objects.filter(route=route, stop_order=0).update(location_id=new_source_id)
+                    # 2. Sync Source stop (always stop_order=0)
+                    source_stop = RouteStop.objects.select_for_update().get(route=route, stop_order=0)
+                    source_stop.location_id = new_source_id
+                    source_stop.time_offset_minutes = 0
+                    source_stop.save(update_fields=['location_id', 'time_offset_minutes'])
 
-                    # 3. Sync Destination Stop (Always the last one)
-                    if route.destination_id != new_dest_id: # Check if changed
-                         # Get the very last stop logically
-                        last_stop = RouteStop.objects.filter(route=route).order_by('-stop_order').first()
-                        if last_stop:
-                            last_stop.location_id = new_dest_id
-                            last_stop.save()
+                    # 3. Sync Destination stop (always the last stop)
+                    dest_stop = RouteStop.objects.select_for_update().filter(route=route).order_by('-stop_order').first()
+                    if not dest_stop:
+                        return JsonResponse({'status': 'error', 'message': 'Route has no destination stop.'}, status=400)
+
+                    # Validate destination offset against all previous stops
+                    max_previous_offset = RouteStop.objects.filter(
+                        route=route,
+                        stop_order__lt=dest_stop.stop_order
+                    ).aggregate(max_offset=models.Max('time_offset_minutes'))['max_offset'] or 0
+
+                    if arrival_offset_minutes <= max_previous_offset:
+                        return JsonResponse(
+                            {
+                                'status': 'error',
+                                'message': f'Destination time offset must be greater than {max_previous_offset} minutes.'
+                            },
+                            status=400
+                        )
+
+                    dest_stop.location_id = new_dest_id
+                    dest_stop.time_offset_minutes = arrival_offset_minutes
+                    dest_stop.save(update_fields=['location_id', 'time_offset_minutes'])
 
                 return JsonResponse({'status': 'success', 'message': 'Route updated successfully!'})
             
@@ -713,7 +1075,24 @@ def routes(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
     # GET Request
-    routes = Route.objects.select_related('source', 'destination').all().order_by('name')
+    routes = Route.objects.select_related('source', 'destination').prefetch_related('stops').all().order_by('name')
+
+    # Attach timing metadata for edit modal
+    for r in routes:
+        route_stops = list(r.stops.all().order_by('stop_order'))
+
+        if len(route_stops) >= 1:
+            # Destination is always the last stop logically
+            dest_stop = route_stops[-1]
+            r.destination_stop_offset = dest_stop.time_offset_minutes or 0
+
+            # Highest offset among all previous stops (source + intermediates)
+            previous_stops = route_stops[:-1]
+            r.max_non_dest_offset = max((s.time_offset_minutes or 0) for s in previous_stops) if previous_stops else 0
+        else:
+            r.destination_stop_offset = 0
+            r.max_non_dest_offset = 0
+            
     locations = Location.objects.all().order_by('name')
     return render(request, 'admin_panel/routes/routes.html', {
         'routes': routes,
@@ -894,44 +1273,226 @@ def trip_schedule_list(request):
     return render(request, 'admin_panel/trips/trip_schedule_list.html', context)
 
     
-@login_required    
+@login_required
 def save_trip_schedule(request):
     if request.method == "POST":
         ship_id = request.POST.get('ship_id')
         route_id = request.POST.get('route_id')
         departure_time_str = request.POST.get('departure_time')
-        arrival_time_str = request.POST.get('arrival_time') # Might be empty now
         date_list_str = request.POST.get('date_range')
+        booking_close_offset_str = (request.POST.get('booking_close_offset_minutes') or '').strip()
         is_active = request.POST.get('is_active') == 'on'
 
         try:
+            if not ship_id or not route_id or not departure_time_str:
+                return JsonResponse(
+                    {'success': False, 'message': 'Ship, route, and departure time are required.'},
+                    status=400
+                )
+
             dep_time_obj = datetime.strptime(departure_time_str, "%I:%M %p").time()
-            
-            # 3. PINPOINT CHANGE: HANDLE OPTIONAL ARRIVAL TIME
-            if arrival_time_str:
-                arr_time_obj = datetime.strptime(arrival_time_str, "%I:%M %p").time()
-            else:
-                # Default to departure time if not provided
-                arr_time_obj = dep_time_obj 
+
+            booking_close_offset_minutes = None
+            if booking_close_offset_str:
+                try:
+                    booking_close_offset_minutes = int(booking_close_offset_str)
+                except (TypeError, ValueError):
+                    return JsonResponse(
+                        {'success': False, 'message': 'Booking close offset must be a valid whole number.'},
+                        status=400
+                    )
+
+                if booking_close_offset_minutes < 0:
+                    return JsonResponse(
+                        {'success': False, 'message': 'Booking close offset cannot be negative.'},
+                        status=400
+                    )
+
+                if booking_close_offset_minutes > 10080:
+                    return JsonResponse(
+                        {'success': False, 'message': 'Booking close offset is too large. Maximum allowed is 10080 minutes (7 days).'},
+                        status=400
+                    )
+
+            # ✅ Get destination stop and compute destination_offset_minutes
+            route = get_object_or_404(Route, id=route_id)
+            dest_stop = RouteStop.objects.filter(route=route).order_by('-stop_order').first()
+
+            if not dest_stop:
+                return JsonResponse({'success': False, 'message': 'Route has no stops configured.'}, status=400)
+
+            destination_offset_minutes = dest_stop.time_offset_minutes or 0
+            if destination_offset_minutes <= 0:
+                return JsonResponse(
+                    {'success': False, 'message': 'Destination time offset must be greater than 0 for this route.'},
+                    status=400
+                )
+
+            # ✅ Parse selected dates
+            selected_dates = [d.strip() for d in (date_list_str or '').split(',') if d.strip()]
+            if not selected_dates:
+                return JsonResponse({'success': False, 'message': 'Please select at least one trip date.'}, status=400)
+
+            # ✅ Build windows + validate conflicts first
+            proposed_trip_windows = []
+            conflict_messages = []
+
+            for date_str in selected_dates:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+                departure_dt = datetime.combine(date_obj, dep_time_obj)
+                arrival_dt = departure_dt + timedelta(minutes=destination_offset_minutes)
+
+                conflicting_trip = Trip.objects.filter(
+                    ship_id=ship_id,
+                    departure_datetime__lt=arrival_dt,
+                    arrival_datetime__gt=departure_dt
+                ).select_related('route').order_by('departure_datetime').first()
+
+                if conflicting_trip:
+                    conflict_messages.append(
+                        f"{date_str}: Ship already assigned to {conflicting_trip.route.name} "
+                        f"({conflicting_trip.departure_datetime.strftime('%Y-%m-%d %I:%M %p')} - "
+                        f"{conflicting_trip.arrival_datetime.strftime('%Y-%m-%d %I:%M %p')})"
+                    )
+                else:
+                    proposed_trip_windows.append((departure_dt, arrival_dt))
+
+            if conflict_messages:
+                return JsonResponse({
+                    'success': False,
+                    'message': "Cannot create schedule. Ship timing conflict found: " + " | ".join(conflict_messages)
+                }, status=400)
+
+            # ✅ Derive schedule.arrival_time from destination offset (not manual input)
+            base_departure_dt = datetime.combine(datetime.today().date(), dep_time_obj)
+            derived_arrival_dt = base_departure_dt + timedelta(minutes=destination_offset_minutes)
 
             schedule = TripSchedule.objects.create(
                 ship_id=ship_id,
                 route_id=route_id,
                 departure_time=dep_time_obj,
-                arrival_time=arr_time_obj,
-                is_active=is_active
+                arrival_time=derived_arrival_dt.time(),
+                is_active=is_active,
+                booking_close_offset_minutes=booking_close_offset_minutes
             )
 
-            selected_dates = [d.strip() for d in date_list_str.split(',')]
+            # ✅ Create trips from validated windows
+            for departure_dt, arrival_dt in proposed_trip_windows:
+                Trip.objects.create(
+                    schedule=schedule,
+                    ship_id=ship_id,
+                    route_id=route_id,
+                    departure_datetime=departure_dt,
+                    arrival_datetime=arrival_dt,
+                    is_published=True,
+                    booking_close_offset_minutes=booking_close_offset_minutes
+                )
+
+            return JsonResponse({'success': True, 'message': 'Schedule and trips created successfully!'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+    ships = Ship.objects.all()
+    routes = Route.objects.all()
+
+    days_mapping = [
+        ('monday', 'Mon'), ('tuesday', 'Tue'), ('wednesday', 'Wed'),
+        ('thursday', 'Thu'), ('friday', 'Fri'), ('saturday', 'Sat'), ('sunday', 'Sun')
+    ]
+
+    context = {
+        'ships': ships,
+        'routes': routes,
+        'days_mapping': days_mapping
+    }
+
+    return render(request, 'admin_panel/trips/create_trip_schedule.html', context)
+
+
+@login_required
+def update_trip_schedule(request, schedule_id):
+    schedule = get_object_or_404(TripSchedule, id=schedule_id)
+
+    if request.method == "POST":
+        ship_id = request.POST.get('ship_id')
+        route_id = request.POST.get('route_id')
+        departure_time_str = request.POST.get('departure_time')
+        date_list_str = request.POST.get('date_range')
+        is_active = request.POST.get('is_active') == 'on'
+
+        try:
+            if not ship_id or not route_id or not departure_time_str:
+                return JsonResponse({'success': False, 'message': 'Ship, route, and departure time are required.'}, status=400)
+
+            dep_time_obj = datetime.strptime(departure_time_str, "%I:%M %p").time()
+
+            # ✅ Get destination stop and compute destination_offset_minutes
+            route = get_object_or_404(Route, id=route_id)
+            dest_stop = RouteStop.objects.filter(route=route).order_by('-stop_order').first()
+
+            if not dest_stop:
+                return JsonResponse({'success': False, 'message': 'Route has no stops configured.'}, status=400)
+
+            destination_offset_minutes = dest_stop.time_offset_minutes or 0
+            if destination_offset_minutes <= 0:
+                return JsonResponse(
+                    {'success': False, 'message': 'Destination time offset must be greater than 0 for this route.'},
+                    status=400
+                )
+
+            # ✅ Parse selected dates
+            selected_dates = [d.strip() for d in (date_list_str or '').split(',') if d.strip()]
+            if not selected_dates:
+                return JsonResponse({'success': False, 'message': 'Please select at least one trip date.'}, status=400)
+
+            # ✅ Build windows + validate conflicts (excluding this schedule)
+            proposed_trip_windows = []
+            conflict_messages = []
+
             for date_str in selected_dates:
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
                 departure_dt = datetime.combine(date_obj, dep_time_obj)
-                
-                arrival_dt = datetime.combine(date_obj, arr_time_obj)
-                # Only add a day if arrival time exists and is earlier than departure
-                if arrival_time_str and arr_time_obj < dep_time_obj:
-                    arrival_dt += timedelta(days=1)
+                arrival_dt = departure_dt + timedelta(minutes=destination_offset_minutes)
 
+                conflicting_trip = Trip.objects.filter(
+                    ship_id=ship_id,
+                    departure_datetime__lt=arrival_dt,
+                    arrival_datetime__gt=departure_dt
+                ).exclude(
+                    schedule=schedule
+                ).select_related('route').order_by('departure_datetime').first()
+
+                if conflicting_trip:
+                    conflict_messages.append(
+                        f"{date_str}: Ship already assigned to {conflicting_trip.route.name} "
+                        f"({conflicting_trip.departure_datetime.strftime('%Y-%m-%d %I:%M %p')} - "
+                        f"{conflicting_trip.arrival_datetime.strftime('%Y-%m-%d %I:%M %p')})"
+                    )
+                else:
+                    proposed_trip_windows.append((departure_dt, arrival_dt))
+
+            if conflict_messages:
+                return JsonResponse({
+                    'success': False,
+                    'message': "Cannot update schedule. Ship timing conflict found: " + " | ".join(conflict_messages)
+                }, status=400)
+
+            # ✅ Save schedule metadata
+            base_departure_dt = datetime.combine(datetime.today().date(), dep_time_obj)
+            derived_arrival_dt = base_departure_dt + timedelta(minutes=destination_offset_minutes)
+
+            schedule.ship_id = ship_id
+            schedule.route_id = route_id
+            schedule.departure_time = dep_time_obj
+            schedule.arrival_time = derived_arrival_dt.time()
+            schedule.is_active = is_active
+            schedule.save()
+
+            # ✅ Rebuild generated trips
+            schedule.generated_trips.all().delete()
+
+            for departure_dt, arrival_dt in proposed_trip_windows:
                 Trip.objects.create(
                     schedule=schedule,
                     ship_id=ship_id,
@@ -941,71 +1502,11 @@ def save_trip_schedule(request):
                     is_published=True
                 )
 
-            return JsonResponse({'success': True, 'message': 'Schedule and trips created successfully!'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)}, status=400)
-
-    # Data for the form
-    ships = Ship.objects.all()
-    routes = Route.objects.all()
-    
-    # List for the Day-Picker loop in HTML
-    days_mapping = [
-        ('monday', 'Mon'), ('tuesday', 'Tue'), ('wednesday', 'Wed'),
-        ('thursday', 'Thu'), ('friday', 'Fri'), ('saturday', 'Sat'), ('sunday', 'Sun')
-    ]
-    
-    context = {
-        'ships': ships,
-        'routes': routes,
-        'days_mapping': days_mapping
-    }
-    
-    return render(request, 'admin_panel/trips/create_trip_schedule.html', context)
-
-
-@login_required
-def update_trip_schedule(request, schedule_id):
-    schedule = get_object_or_404(TripSchedule, id=schedule_id)
-    
-    if request.method == "POST":
-        ship_id = request.POST.get('ship_id')
-        route_id = request.POST.get('route_id')
-        departure_time_str = request.POST.get('departure_time')
-        date_list_str = request.POST.get('date_range')
-        is_active = request.POST.get('is_active') == 'on'
-
-        try:
-            dep_time_obj = datetime.strptime(departure_time_str, "%I:%M %p").time()
-            
-            schedule.ship_id = ship_id
-            schedule.route_id = route_id
-            schedule.departure_time = dep_time_obj
-            schedule.is_active = is_active
-            schedule.save()
-
-            # 1. FIX: Use 'generated_trips' instead of 'trips'
-            selected_dates = [d.strip() for d in date_list_str.split(',')]
-            schedule.generated_trips.all().delete() 
-
-            for date_str in selected_dates:
-                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-                departure_dt = datetime.combine(date_obj, dep_time_obj)
-                
-                Trip.objects.create(
-                    schedule=schedule,
-                    ship_id=ship_id,
-                    route_id=route_id,
-                    departure_datetime=departure_dt,
-                    arrival_datetime=departure_dt,
-                    is_published=True
-                )
-
             return JsonResponse({'success': True, 'message': 'Schedule and trips updated successfully!'})
+
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
-    # 2. FIX: Use 'generated_trips' here as well
     existing_dates = schedule.generated_trips.values_list('departure_datetime__date', flat=True)
     formatted_dates = ", ".join([d.strftime('%Y-%m-%d') for d in existing_dates])
 
@@ -1065,68 +1566,155 @@ def individual_trip_management(request):
 
 @login_required
 def update_trip(request, trip_id):
-    # Fetch trip with related data for optimization
     trip = get_object_or_404(Trip.objects.select_related('ship', 'route'), id=trip_id)
-    
-    # Get all stops for this route to calculate itinerary
+
     route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
-    
-    # Base segments for pricing overrides
+
     base_segments = RouteSegmentPricing.objects.filter(route=trip.route).select_related(
         'seat_category', 'from_stop__location', 'to_stop__location'
     )
 
-    # Check for existing bookings
     has_bookings = trip.tickets.filter(status__in=['BOOKED', 'LOCKED']).exists()
 
     if request.method == 'POST':
         try:
             with transaction.atomic():
+                action = request.POST.get('action', 'save')
+                force_confirm = str(request.POST.get('force_confirm', '')).lower() in ['1', 'true', 'yes']
+
+                # ---------- ACTION: DELETE TRIP ----------
+                if action == 'delete_trip':
+                    if has_bookings and not force_confirm:
+                        return JsonResponse({
+                            'status': 'warning',
+                            'origin': 'Booking Warning',
+                            'message': 'This trip has booked/locked tickets. Deleting it may affect existing bookings. Do you want to continue?',
+                            'requires_confirmation': True,
+                            'confirm_action': 'delete_trip'
+                        }, status=200)
+
+                    trip.delete()
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Trip deleted successfully.',
+                        'redirect_url': reverse('trip_list')  # change if your URL name differs
+                    })
+
+                # ---------- ACTION: TOGGLE STATUS ----------
+                if action == 'toggle_status':
+                    requested_status = str(request.POST.get('is_published', '')).lower() in ['1', 'true', 'on']
+
+                    if has_bookings and not force_confirm:
+                        return JsonResponse({
+                            'status': 'warning',
+                            'origin': 'Booking Warning',
+                            'message': f'This trip has booked/locked tickets. Are you sure you want to {"activate" if requested_status else "deactivate"} this trip?',
+                            'requires_confirmation': True,
+                            'confirm_action': 'toggle_status'
+                        }, status=200)
+
+                    trip.is_published = requested_status
+                    trip.save(update_fields=['is_published', 'updated_at'])
+
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': f'Trip {"activated" if trip.is_published else "deactivated"} successfully.',
+                        'is_published': trip.is_published
+                    })
+
+                # ---------- ACTION: SAVE (default) ----------
                 new_date_str = request.POST.get('departure_datetime')
                 new_multiplier = request.POST.get('price_multiplier', 1.0)
-                # is_published = request.POST.get('is_published') == 'on'
+                booking_close_offset_str = (request.POST.get('booking_close_offset_minutes') or '').strip()
+
+                # Pre-check booking warning for updates (date/time, offsets, pricing, etc.)
+                if has_bookings and not force_confirm:
+                    return JsonResponse({
+                        'status': 'warning',
+                        'origin': 'Booking Warning',
+                        'message': 'This trip has booked/locked tickets. Updating date/time, itinerary offsets, or pricing may affect issued tickets. Do you want to continue?',
+                        'requires_confirmation': True,
+                        'confirm_action': 'save'
+                    }, status=200)
 
                 # --- VALIDATION: Date Change ---
                 if new_date_str:
                     new_date = parse_datetime(new_date_str)
-                    if trip.departure_datetime.strftime('%Y-%m-%d %H:%M') != new_date.strftime('%Y-%m-%d %H:%M'):
-                        if has_bookings:
-                            return JsonResponse({
-                                'status': 'error',
-                                'origin': 'Booking Validator',
-                                'message': 'Cannot change date: Tickets have already been issued for this trip.'
-                            }, status=400)
-                        trip.departure_datetime = new_date
+                    if not new_date:
+                        return JsonResponse({
+                            'status': 'error',
+                            'origin': 'Validation',
+                            'message': 'Invalid departure date/time format.'
+                        }, status=400)
+
+                    trip.departure_datetime = new_date
+                    
+                # --- VALIDATION: Trip-specific booking close offset ---
+                booking_close_offset_minutes = None
+                if booking_close_offset_str:
+                    try:
+                        booking_close_offset_minutes = int(booking_close_offset_str)
+                    except (TypeError, ValueError):
+                        return JsonResponse({
+                            'status': 'error',
+                            'origin': 'Validation',
+                            'message': 'Booking close offset must be a valid whole number.'
+                        }, status=400)
+
+                    if booking_close_offset_minutes < 0:
+                        return JsonResponse({
+                            'status': 'error',
+                            'origin': 'Validation',
+                            'message': 'Booking close offset cannot be negative.'
+                        }, status=400)
+
+                    if booking_close_offset_minutes > 10080:
+                        return JsonResponse({
+                            'status': 'error',
+                            'origin': 'Validation',
+                            'message': 'Booking close offset is too large. Maximum allowed is 10080 minutes (7 days).'
+                        }, status=400)
 
                 # --- UPDATE CORE FIELDS ---
                 trip.price_multiplier = new_multiplier
-                trip.is_published = True
+                trip.booking_close_offset_minutes = booking_close_offset_minutes
+                trip.is_published = True  # keep existing behavior for save if you want
                 trip.save()
-                
-                # --- UPDATE ITINERARY OFFSETS ---
+
+                # --- UPDATE ITINERARY OFFSETS (ROUTE-LEVEL; affects all trips on route) ---
+                # NOTE: This is route master data, not trip-specific.
                 for stop in route_stops:
                     offset_val = request.POST.get(f'offset_{stop.id}')
                     if offset_val is not None:
-                        # We enforce 0 for the first stop regardless of input
                         if stop.stop_order == 0:
                             stop.time_offset_minutes = 0
                         else:
                             stop.time_offset_minutes = int(offset_val)
                         stop.save()
 
+                # Recompute this trip's arrival based on destination offset
+                destination_stop = route_stops.order_by('-stop_order').first()
+                if destination_stop:
+                    trip.arrival_datetime = trip.departure_datetime + timedelta(minutes=(destination_stop.time_offset_minutes or 0))
+                    trip.save(update_fields=['arrival_datetime', 'updated_at'])
+
                 # --- UPDATE PRICING ---
                 for segment in base_segments:
                     price_val = request.POST.get(f'price_override_{segment.id}')
                     if price_val and price_val.strip() != "":
                         TripPricing.objects.update_or_create(
-                            trip=trip, seat_category=segment.seat_category,
-                            from_stop=segment.from_stop, to_stop=segment.to_stop,
+                            trip=trip,
+                            seat_category=segment.seat_category,
+                            from_stop=segment.from_stop,
+                            to_stop=segment.to_stop,
                             defaults={'price': price_val}
                         )
                     else:
                         TripPricing.objects.filter(
-                            trip=trip, seat_category=segment.seat_category,
-                            from_stop=segment.from_stop, to_stop=segment.to_stop
+                            trip=trip,
+                            seat_category=segment.seat_category,
+                            from_stop=segment.from_stop,
+                            to_stop=segment.to_stop
                         ).delete()
 
                 return JsonResponse({
@@ -1136,27 +1724,25 @@ def update_trip(request, trip_id):
 
         except Exception as e:
             return JsonResponse({
-                'status': 'error', 
+                'status': 'error',
                 'origin': 'System Server',
                 'message': str(e)
             }, status=500)
 
     # --- PREPARE DATA FOR DISPLAY ---
-    
-    # 1. Calculate Itinerary (Departure + Offset)
     itinerary = []
+    last_stop = route_stops.last()
     for stop in route_stops:
         arrival_time = trip.departure_datetime + timedelta(minutes=stop.time_offset_minutes)
         itinerary.append({
-            'stop_id': stop.id,  # ADD THIS LINE
+            'stop_id': stop.id,
             'location': stop.location.name,
             'time': arrival_time,
             'offset': stop.time_offset_minutes,
             'is_start': stop.stop_order == 0,
-            'is_end': stop == route_stops.last()
+            'is_end': (last_stop and stop.id == last_stop.id)
         })
 
-    # 2. Map Overrides
     current_overrides = TripPricing.objects.filter(trip=trip)
     override_map = {(p.seat_category_id, p.from_stop_id, p.to_stop_id): p.price for p in current_overrides}
 
@@ -2066,7 +2652,74 @@ def select_seats(request, trip_id):
         Q(to_stop__stop_order__gt=from_stop.stop_order)
     )
     
+     # --- NEW: fetch passengers for gender info ---
+    booked_tickets = booked_tickets.select_related('passenger')
+    
     booked_seat_ids = list(booked_tickets.values_list('seat_object_id', flat=True))
+
+    seat_gender_map = {}
+    for ticket in booked_tickets:
+        if ticket.passenger and ticket.passenger.gender is not None:
+            gender = ticket.passenger.gender
+        else:
+            gender = 0   # Male
+        seat_gender_map[ticket.seat_object_id] = gender
+
+    # 4.5) Active holds for overlapping segment (so admin UI stays in sync)
+    holder_id = get_holder_id(request)
+
+    active_holds = SeatHold.objects.filter(
+        trip=trip,
+        expires_at__gt=timezone.now()
+    ).filter(
+        Q(from_stop__stop_order__lt=to_stop.stop_order) &
+        Q(to_stop__stop_order__gt=from_stop.stop_order)
+    )
+
+    held_seat_ids = list(active_holds.values_list('seat_object_id', flat=True).distinct())
+
+    held_by_map = {
+        h.seat_object_id: h.holder_id
+        for h in active_holds.only('seat_object_id', 'holder_id')
+    }
+    
+    # ========== Debugging Logs ==========
+    print("\n" + "=" * 80)
+    print("ADMIN SELECT_SEATS DEBUG")
+    print(f"Trip ID: {trip.id}")
+    print(f"Route: {trip.route.name}")
+    print(f"Requested segment: {from_stop.location.name} ({from_stop.stop_order}) -> {to_stop.location.name} ({to_stop.stop_order})")
+    print(f"Admin holder_id (current user): {holder_id}")
+
+    # Show ALL active holds on this trip (before overlap filter)
+    all_trip_holds = SeatHold.objects.filter(
+        trip=trip,
+        expires_at__gt=timezone.now()
+    ).select_related('from_stop', 'to_stop', 'seat_object')
+
+    print(f"All active holds on trip: {all_trip_holds.count()}")
+    for h in all_trip_holds:
+        print(
+            f"  HOLD seat_id={h.seat_object_id} label={getattr(h.seat_object, 'label', None)} "
+            f"holder_id={h.holder_id} "
+            f"segment={h.from_stop.location.name}({h.from_stop.stop_order})->{h.to_stop.location.name}({h.to_stop.stop_order}) "
+            f"expires_at={h.expires_at}"
+        )
+
+    # Show only overlapping holds (the ones admin UI should display)
+    overlap_holds = active_holds.select_related('from_stop', 'to_stop', 'seat_object')
+    print(f"Overlapping holds for requested segment: {overlap_holds.count()}")
+    for h in overlap_holds:
+        print(
+            f"  OVERLAP seat_id={h.seat_object_id} label={getattr(h.seat_object, 'label', None)} "
+            f"holder_id={h.holder_id} "
+            f"segment={h.from_stop.location.name}({h.from_stop.stop_order})->{h.to_stop.location.name}({h.to_stop.stop_order})"
+        )
+
+    print(f"held_seat_ids passed to template: {held_seat_ids}")
+    print(f"held_by_map passed to template: {held_by_map}")
+    print("=" * 80 + "\n")
+    # =========== End of Debugging Logs ===========
 
     # 5. Fetch Layout grouped by Deck
     decks = trip.ship.decks.all().order_by('level_order')
@@ -2078,19 +2731,20 @@ def select_seats(request, trip_id):
         'decks': decks,
         'booked_seat_ids': booked_seat_ids,
         'category_prices': category_prices,
+        'seat_gender_map': seat_gender_map,
+        'held_seat_ids': held_seat_ids,
+        'held_by_map': held_by_map,
+        'holder_id': holder_id,
     }
     return render(request, 'admin_panel/book/select_seats.html', context)
 
-
-from django.utils import timezone            # <--- NEW IMPORT
-from .tasks import send_sms_task, auto_cancel_booking  # <--- NEW IMPORT
 
 
 @login_required
 def admin_book_confirm(request):
     if request.method != 'POST':
         return redirect('admin_home')
-
+    gender = int(request.POST.get('passenger_gender', 0))
     # --- 1. GET BASIC DATA ---
     trip_id = request.POST.get('trip_id')
     seat_ids_str = request.POST.get('selected_seats')
@@ -2115,13 +2769,13 @@ def admin_book_confirm(request):
     except (ValueError, TypeError):
         hold_duration_minutes = 120
 
-    # Handle Manual Amount
-    manual_total = None
+    # Handle collected/paid amount (the form field is manual_amount)
+    paid_amount_input = 0.0
     if manual_amount_str:
         try:
-            manual_total = float(manual_amount_str)
+            paid_amount_input = float(manual_amount_str)
         except ValueError:
-            manual_total = 0.0
+            paid_amount_input = 0.0
     
     if not seat_ids_str:
         messages.error(request, "No seats selected.")
@@ -2166,17 +2820,41 @@ def admin_book_confirm(request):
                     )
                 booking_user = user
 
+            # Paid amount comes from "manual_amount" field (Collected Amount input)
+            paid_amount = paid_amount_input
+            
+            # B. Create Booking
+            # Resolve which counter (if any) the logged-in operator belongs to
+            operator_counter = get_logged_in_counter(request.user)
+
             # B. Create Booking
             booking = Booking.objects.create(
-                user=booking_user,
+                user=booking_user,                     # customer/passenger user (KEEP THIS)
                 trip=trip,
                 booking_ref=str(uuid.uuid4())[:12].upper(),
                 status=final_status,
                 payment_status=final_payment_status,
-                expiry_at=expiry_time, # SAVED CORRECTLY HERE
-                sales_channel='COUNTER', 
-                total_amount=0 
+                expiry_at=expiry_time,
+                sales_channel='COUNTER' if operator_counter else 'ONLINE',               # optional to keep; can stay
+                counter=operator_counter,              # NEW: nullable if no counter assigned
+                issued_by=request.user,                # NEW: who created it
+                total_amount=0,
+                paid_amount=paid_amount
             )
+            
+            # --- NEW: Create Passenger (requires name and phone) ---
+            passenger = None
+            if c_name and c_phone:
+                passenger = Passenger.objects.create(
+                    booking=booking,
+                    user=booking_user,
+                    name=c_name,
+                    phone=c_phone,
+                    email=c_email,
+                    gender=gender
+                )
+            else:
+                raise Exception("Passenger name and phone are required")
 
             # C. Create Tickets
             calculated_total = 0
@@ -2186,13 +2864,14 @@ def admin_book_confirm(request):
                 layout_obj = get_object_or_404(LayoutObject, id=seat_id)
                 
                 # Check Availability
-                if not trip.is_seat_available(layout_obj, from_stop, to_stop):
-                    raise Exception(f"Seat {layout_obj.label} was just booked by someone else!")
+                if not trip.is_seat_available_admin(layout_obj, from_stop, to_stop, exclude_user=request.user):
+                    raise Exception(f"Seat {layout_obj.label} is currently held by someone else!")
 
                 price = trip.get_price(layout_obj.category, from_stop, to_stop)
 
                 Ticket.objects.create(
                     booking=booking,
+                    passenger=passenger,   
                     trip=trip,
                     seat_object=layout_obj,
                     from_stop=from_stop,
@@ -2202,19 +2881,53 @@ def admin_book_confirm(request):
                     status='BOOKED',
                     lock_expires_at=timezone.now(),
                 )
+                
+                SeatHold.objects.filter(
+                    trip=trip,
+                    seat_object=layout_obj,
+                    from_stop=from_stop,
+                    to_stop=to_stop
+                ).delete()
+                
                 calculated_total += price
                 booked_seat_labels.append(layout_obj.label)
 
-            # D. Update Total
-            if manual_total is not None:
-                booking.total_amount = manual_total
-            elif final_payment_status == 'UNPAID':
-                booking.total_amount = 0
+            # D. Update amounts (finalize after ticket fares are known)
+            booking.total_amount = calculated_total
+
+            # Clamp paid amount
+            if booking.paid_amount < 0:
+                booking.paid_amount = 0
+
+            if booking.paid_amount > booking.total_amount:
+                booking.paid_amount = booking.total_amount
+
+            # Final status/payment sync based on actual paid vs total
+            if booking.total_amount > 0 and booking.paid_amount >= booking.total_amount:
+                booking.status = 'CONFIRMED'
+                booking.payment_status = 'PAID'
+                booking.expiry_at = None
             else:
-                booking.total_amount = calculated_total
-            
+                booking.status = 'PENDING'
+                booking.payment_status = 'UNPAID'
+                if not booking.expiry_at:
+                    booking.expiry_at = timezone.now() + timedelta(minutes=hold_duration_minutes)
+
             booking.save()
 
+            # channel_layer = get_channel_layer()
+
+            # for seat_id in seat_ids:
+            #     async_to_sync(channel_layer.group_send)(
+            #         f"trip_{trip.id}",
+            #         {
+            #             "type": "seat_update",
+            #             "action": "booked",
+            #             "seat_id": seat_id,
+            #             "user_name": "System"
+            #         }
+            #     )
+            
             # E. Send SMS (Non-blocking)
             if booking_user.phone_number:
                 try:
@@ -2223,23 +2936,452 @@ def admin_book_confirm(request):
                     print(f"SMS Error: {e}")
 
             # F. TRIGGER AUTO-CANCEL (DYNAMIC TIMER)
-            if final_status == 'PENDING':
+            if booking.status == 'PENDING':
                 # Convert minutes to seconds for Celery
                 countdown_seconds = hold_duration_minutes * 60 
                 
                 # Apply the dynamic countdown
                 auto_cancel_booking.apply_async((booking.id,), countdown=countdown_seconds)
 
-            msg_type = "success" if final_status == 'CONFIRMED' else "warning"
-            msg_text = f"Booking {final_status}! Ref: {booking.booking_ref}"
+            msg_type = "success" if booking.status == 'CONFIRMED' else "warning"
+            msg_text = f"Booking {booking.status}! Ref: {booking.booking_ref}"
             messages.add_message(request, getattr(messages, msg_type.upper()), msg_text)
             
-            return redirect('admin_booking_list')
+            return redirect('booking_issue_list')
 
     except Exception as e:
         print(f"Booking Failed: {e}")
         messages.error(request, f"Booking Failed: {e}")
         return redirect(request.META.get('HTTP_REFERER'))
+
+
+
+#-------------------new api endpoint ----------
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@csrf_exempt
+def check_seat_availability(request):
+    """
+    API endpoint to check if a seat is available
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Get values
+            trip_id = data.get('trip_id')
+            seat_id = data.get('seat_id')
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            
+            print(f"Received: trip={trip_id}, seat={seat_id}, from={from_stop_id}, to={to_stop_id}")
+            
+            # Validate
+            if not all([trip_id, seat_id, from_stop_id, to_stop_id]):
+                return JsonResponse({
+                    'available': False,
+                    'error': 'Missing required fields'
+                }, status=400)
+            
+            # Convert to integers
+            trip_id = int(trip_id)
+            seat_id = int(seat_id)
+            from_stop_id = int(from_stop_id)
+            to_stop_id = int(to_stop_id)
+            
+            # Get objects
+            trip = get_object_or_404(Trip, id=trip_id)
+            seat = get_object_or_404(LayoutObject, id=seat_id)
+            from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+            to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+            
+            # Check availability
+            available = trip.is_seat_available_admin(seat, from_stop, to_stop, exclude_user=request.user)
+            
+            if available:
+                return JsonResponse({'available': True})
+            
+            # If not available, find why
+            admin_user_id = get_holder_id(request)
+            
+            # 🔴 FIXED: Use holder_id instead of holder
+            hold = SeatHold.objects.filter(
+                trip=trip,
+                seat_object=seat,
+                expires_at__gt=timezone.now()
+            ).exclude(holder_id=admin_user_id).first()
+            
+            if hold:
+                return JsonResponse({
+                    'available': False,
+                    'message': 'This seat is already held by someone else'
+                })
+            
+            # Check Tickets
+            ticket = Ticket.objects.filter(
+                trip=trip,
+                seat_object=seat,
+                status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+            ).first()
+            
+            if ticket:
+                return JsonResponse({
+                    'available': False,
+                    'message': 'This seat is already booked'
+                })
+            
+            return JsonResponse({
+                'available': False,
+                'message': 'This seat is not available'
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'available': False,
+                'error': 'Invalid JSON'
+            }, status=400)
+        except ValueError as e:
+            return JsonResponse({
+                'available': False,
+                'error': f'Invalid ID format: {str(e)}'
+            }, status=400)
+        except Exception as e:
+            print(f"Error in check_seat_availability: {e}")
+            return JsonResponse({
+                'available': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def create_seat_hold(request):
+    """
+    API endpoint to create a hold on a seat
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            trip_id = data.get('trip_id')
+            seat_id = data.get('seat_id')
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            
+            if not all([trip_id, seat_id, from_stop_id, to_stop_id]):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Missing required fields'
+                }, status=400)
+            
+            # Convert to integers
+            trip_id = int(trip_id)
+            seat_id = int(seat_id)
+            from_stop_id = int(from_stop_id)
+            to_stop_id = int(to_stop_id)
+            
+            trip = get_object_or_404(Trip, id=trip_id)
+            seat = get_object_or_404(LayoutObject, id=seat_id)
+            from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+            to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+            
+            # Check availability
+            if not trip.is_seat_available_admin(seat, from_stop, to_stop, exclude_user=request.user):
+                return JsonResponse({'success': False, 'message': 'Seat is no longer available'})
+            
+            # Convert admin user ID to string
+            admin_user_id = get_holder_id(request)
+            
+            # 🔴 FIXED: Use holder_id, not holder
+            SeatHold.objects.filter(
+                trip=trip,
+                seat_object=seat,
+                holder_id=admin_user_id
+            ).delete()
+            
+            # Create new hold
+            hold = SeatHold.objects.create(
+                trip=trip,
+                seat_object=seat,
+                holder_id=admin_user_id,  # Using holder_id
+                from_stop=from_stop,
+                to_stop=to_stop,
+                expires_at=timezone.now() + timedelta(minutes=5)
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Seat held successfully',
+                'expires_at': hold.expires_at.isoformat()
+            })
+            
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Invalid ID format: {str(e)}'
+            }, status=400)
+        except Exception as e:
+            print(f"Error in create_seat_hold: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def release_seat_hold(request):
+    """
+    API endpoint to release a hold on a seat
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            trip_id = data.get('trip_id')
+            seat_id = data.get('seat_id')
+            
+            # Validate
+            if not trip_id or not seat_id:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Missing required fields'
+                }, status=400)
+            
+            # Convert to integers
+            trip_id = int(trip_id)
+            seat_id = int(seat_id)
+            
+            # Convert admin user ID to string
+            admin_user_id = get_holder_id(request)
+            
+            # 🔴 FIXED: Use holder_id NOT holder
+            deleted_count = SeatHold.objects.filter(
+                trip_id=trip_id,
+                seat_object_id=seat_id,
+                holder_id=admin_user_id  # ✅ CORRECT - using holder_id
+            ).delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Hold released successfully',
+                'deleted': deleted_count[0] if deleted_count else 0
+            })
+            
+        except ValueError as e:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Invalid ID format: {str(e)}'
+            }, status=400)
+        except Exception as e:
+            print(f"Error in release_seat_hold: {e}")
+            return JsonResponse({
+                'success': False, 
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+
+#--------------------------------------------
+@login_required
+@csrf_exempt
+def check_multiple_seats_availability(request):
+    """
+    API endpoint to check multiple seats availability (for frontend compatibility)
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            trip_id = data.get('trip_id')
+            seat_ids = data.get('seat_ids', [])
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            
+            if not all([trip_id, from_stop_id, to_stop_id]) or not seat_ids:
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+            
+            # Convert to integers
+            trip_id = int(trip_id)
+            from_stop_id = int(from_stop_id)
+            to_stop_id = int(to_stop_id)
+            
+            trip = get_object_or_404(Trip, id=trip_id)
+            from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+            to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+            
+            admin_user_id = str(request.user.id)
+            results = {}
+            
+            for seat_id in seat_ids:
+                seat_id = int(seat_id)
+                seat = get_object_or_404(LayoutObject, id=seat_id)
+                
+                # Check availabili
+                available = trip.is_seat_available_admin(seat, from_stop, to_stop, exclude_user=request.user)
+                
+                if available:
+                    results[seat_id] = {'available': True}
+                else:
+                    # Check if held by someone else
+                    hold = SeatHold.objects.filter(
+                        trip=trip,
+                        seat_object=seat,
+                        expires_at__gt=timezone.now()
+                    ).exclude(holder_id=admin_user_id).first()
+                    
+                    if hold:
+                        results[seat_id] = {
+                            'available': False,
+                            'message': 'This seat is held by someone else'
+                        }
+                    else:
+                        ticket = Ticket.objects.filter(
+                            trip=trip,
+                            seat_object=seat,
+                            status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+                        ).first()
+                        
+                        if ticket:
+                            results[seat_id] = {
+                                'available': False,
+                                'message': 'This seat is already booked'
+                            }
+                        else:
+                            results[seat_id] = {
+                                'available': False,
+                                'message': 'This seat is not available'
+                            }
+            
+            return JsonResponse({'results': results})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def create_multiple_seat_holds(request):
+    """
+    API endpoint to create holds for multiple seats (for frontend compatibility)
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            trip_id = data.get('trip_id')
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            seat_ids = data.get('seat_ids', [])
+            
+            if not all([trip_id, from_stop_id, to_stop_id]) or not seat_ids:
+                return JsonResponse({'success': False, 'error': 'Missing required fields'}, status=400)
+            
+            # Convert to integers
+            trip_id = int(trip_id)
+            from_stop_id = int(from_stop_id)
+            to_stop_id = int(to_stop_id)
+            
+            trip = get_object_or_404(Trip, id=trip_id)
+            from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+            to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+            
+            admin_user_id = str(request.user.id)
+            expires_at = timezone.now() + timedelta(minutes=5)
+            
+            held = []
+            rejected = []
+            
+            for seat_id in seat_ids:
+                seat_id = int(seat_id)
+                seat = get_object_or_404(LayoutObject, id=seat_id)
+                
+                # Check availability
+                if not trip.is_seat_available_admin(seat, from_stop, to_stop, exclude_user=request.user):
+                    rejected.append({'seat_id': seat_id, 'reason': 'unavailable'})
+                    continue
+                
+                # Delete any existing holds by this admin for this seat
+                SeatHold.objects.filter(
+                    trip=trip,
+                    seat_object=seat,
+                    holder_id=admin_user_id
+                ).delete()
+                
+                # Create new hold
+                SeatHold.objects.create(
+                    trip=trip,
+                    seat_object=seat,
+                    holder_id=admin_user_id,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    expires_at=expires_at
+                )
+                
+                held.append(seat_id)
+            
+            return JsonResponse({
+                'success': True,
+                'held': held,
+                'rejected': rejected
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def release_multiple_seat_holds(request):
+    """
+    API endpoint to release multiple seat holds (for frontend compatibility)
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            trip_id = data.get('trip_id')
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            seat_ids = data.get('seat_ids', [])
+            
+            if not all([trip_id, from_stop_id, to_stop_id]) or not seat_ids:
+                return JsonResponse({'success': False, 'error': 'Missing required fields'}, status=400)
+            
+            trip_id = int(trip_id)
+            admin_user_id = str(request.user.id)
+            
+            deleted = SeatHold.objects.filter(
+                trip_id=trip_id,
+                seat_object_id__in=seat_ids,
+                holder_id=admin_user_id
+            ).delete()
+            
+            return JsonResponse({
+                'success': True,
+                'released': seat_ids
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+#
+
+
+
+
+
 
 
 
@@ -2286,6 +3428,93 @@ def extend_booking_time_api(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
+@login_required
+@require_POST
+def stop_booking_time(request, booking_id):
+    """
+    Stop the countdown timer for a pending booking.
+    Prevents auto-cancellation without confirming the booking.
+    """
+    try:
+        data = json.loads(request.body) if request.body else {}
+        booking = get_object_or_404(Booking, id=booking_id)
+        
+        # Security: Can only stop time for PENDING bookings
+        if booking.status != 'PENDING':
+            return JsonResponse({
+                'success': False, 
+                'message': 'Can only stop time for PENDING bookings.'
+            })
+        
+        # Check if time is already stopped
+        if booking.time_stopped:
+            return JsonResponse({
+                'success': False,
+                'message': 'Time is already stopped for this booking.'
+            })
+        
+        # Stop the time
+        booking.time_stopped = True
+        booking.stopped_at = timezone.now()
+        booking.stopped_by = request.user
+        booking.save()
+        
+        # Optional: Cancel any pending Celery task
+        # You might need to store task_id in the booking model
+        # if hasattr(booking, 'celery_task_id') and booking.celery_task_id:
+        #     from celery.task.control import revoke
+        #     revoke(booking.celery_task_id, terminate=False)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Timer stopped successfully. Booking will not auto-cancel.',
+            'stopped_at': booking.stopped_at.isoformat()
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def resume_booking_time(request, booking_id):
+    """
+    Resume the countdown timer for a stopped booking.
+    """
+    try:
+        data = json.loads(request.body) or {}
+        minutes_to_add = int(data.get('minutes', 120))  # Default 2 hours
+        
+        booking = get_object_or_404(Booking, id=booking_id)
+        
+        if not booking.time_stopped:
+            return JsonResponse({
+                'success': False,
+                'message': 'Time is not stopped for this booking.'
+            })
+        
+        # Resume with new expiry time
+        booking.time_stopped = False
+        booking.stopped_at = None
+        booking.stopped_by = None
+        booking.expiry_at = timezone.now() + timedelta(minutes=minutes_to_add)
+        booking.save()
+        
+        # Restart Celery task
+        from .tasks import auto_cancel_booking
+        countdown_seconds = minutes_to_add * 60
+        auto_cancel_booking.apply_async((booking.id,), countdown=countdown_seconds)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Timer resumed. New expiry: {booking.expiry_at.isoformat()}',
+            'expiry_at': booking.expiry_at.isoformat()
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
 # --- 2. NEW VIEW: QUICK STATUS UPDATE (For the list page) ---
 @login_required
 def update_booking_status(request, booking_id, new_status):
@@ -2320,7 +3549,7 @@ def update_booking_status(request, booking_id, new_status):
         messages.error(request, "System error while updating status.")
     # -------------------------------
     
-    return redirect('admin_booking_list')
+    return redirect('booking_issue_list')
 
 
 
@@ -2421,7 +3650,7 @@ def toggle_trip_lock(request, trip_id):
 
             for seat in all_seats:
                 # D. Check Availability
-                if trip.is_seat_available(seat, start_stop, end_stop):
+                if trip.is_seat_available_admin(seat, start_stop, end_stop):
                     Ticket.objects.create(
                         booking=booking,
                         trip=trip,
@@ -2572,22 +3801,25 @@ def trip_seat_report(request, trip_id):
 
 from django.db.models import Prefetch
 @login_required
-def booking_list(request):
-    # Optimizing the query to fetch Phone, Seats, and Route locations efficiently
-    bookings = Booking.objects.select_related(
-        'user',              # Gets phone_number
-        'trip__ship',        # Gets ship name
-        'trip__route__source',      # Fallback route source
-        'trip__route__destination'  # Fallback route dest
+def passenger_list(request):
+    """
+    Display all passengers with their booking information
+    """
+    passengers = Passenger.objects.select_related(
+        'user',
+        'booking',
+        'booking__trip',
+        'booking__trip__ship',
+        'booking__trip__route'
     ).prefetch_related(
-        'tickets__seat_object',      # Gets Seat Label (e.g., "A1")
-        'tickets__from_stop__location', # Gets Boarding Station Name
-        'tickets__to_stop__location'    # Gets Dropping Station Name
-    ).order_by('-created_at')
+        'tickets',
+        'tickets__seat_object'
+    ).order_by('-booking__created_at')
     
     context = {
-        'bookings': bookings,
-        'page_title': 'All Bookings'
+        'passengers': passengers,
+        'page_title': 'Passenger List',
+        'is_passenger_page': True  # Flag to use same template
     }
     return render(request, 'admin_panel/book/booking_list.html', context)
 
@@ -2654,18 +3886,22 @@ def booking_expired_list(request):
 def ticket_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     
-    # 👇 THIS IS THE FIX
-    # We try 'tickets' (the custom name) first. 
-    # If that doesn't work, we fall back to 'ticket_set' (the default).
+    # Get all tickets first
     if hasattr(booking, 'tickets'):
-        tickets = booking.tickets.all()
+        all_tickets = booking.tickets.all()
     else:
-        tickets = booking.ticket_set.all()
+        all_tickets = booking.ticket_set.all()
+    
+    # Separate active and cancelled tickets
+    active_tickets = all_tickets.filter(status__in=['BOOKED', 'CONFIRMED', 'LOCKED'])
+    cancelled_tickets = all_tickets.filter(status='CANCELLED')
 
     context = {
         'booking': booking,
-        'tickets': tickets,
-        'seat_count': tickets.count(),
+        'tickets': active_tickets,  # Only active tickets for main display
+        'cancelled_tickets': cancelled_tickets,  # Cancelled tickets for reference
+        'seat_count': active_tickets.count(),
+        'cancelled_count': cancelled_tickets.count(),
     }
     return render(request, 'admin_panel/book/ticket_detail.html', context)
 
@@ -2676,26 +3912,65 @@ def booking_visual_map(request, booking_id):
     trip = booking.trip
     ship = trip.ship
     
-    # 1. Ticket Overlay Map
-    tickets = booking.tickets.all()
-    booked_seats_map = {
-        t.seat_object.id: {
-            'passenger': t.passenger_name,
-            'phone': booking.user.phone_number if booking.user else "N/A",
-            'amount': t.fare_amount
-        } for t in tickets
-    }
+    booked_seats_map = {}
+    cancelled_seats = []
+    
+    # Check if this is an expired booking with snapshot
+    if booking.status == 'EXPIRED' and booking.seat_snapshot:
+        # Parse the snapshot - it might be stored as comma-separated seat labels
+        import re
+        snapshot = booking.seat_snapshot
+        
+        # Try to extract seat labels - format could be "A1, B2, C3" or similar
+        seat_labels = re.findall(r'[A-Z0-9]+', snapshot)
+        
+        # Find matching LayoutObjects by label
+        for label in seat_labels:
+            try:
+                # Find the seat object by label (you might need to adjust this query)
+                seat_obj = LayoutObject.objects.filter(
+                    deck__ship=ship,
+                    label__icontains=label
+                ).first()
+                
+                if seat_obj:
+                    booked_seats_map[seat_obj.id] = {
+                        'passenger': 'Expired Booking',
+                        'phone': booking.user.phone_number if booking.user else "N/A",
+                        'amount': 0,
+                        'status': 'EXPIRED',
+                        'payment_status': 'UNPAID',
+                        'label': seat_obj.label
+                    }
+            except Exception as e:
+                print(f"Error finding seat {label}: {e}")
+                
+    else:
+        # Get ALL tickets for this booking
+        all_tickets = booking.tickets.all()
+        
+        # Build map with status information
+        for t in all_tickets:
+            seat_data = {
+                'passenger': t.passenger_name,
+                'phone': booking.user.phone_number if booking.user else "N/A",
+                'amount': t.fare_amount,
+                'status': t.status,
+                'payment_status': booking.payment_status if t.status in ['BOOKED', 'CONFIRMED', 'PENDING'] else 'N/A'
+            }
+            booked_seats_map[t.seat_object.id] = seat_data
+            
+            # Track cancelled seats separately
+            if t.status == 'CANCELLED':
+                cancelled_seats.append(t.seat_object.id)
 
-    # 2. Build Grid Data
+    # Build Grid Data
     decks_data = []
     decks = ship.decks.all().order_by('level_order')
 
     for deck in decks:
         objects = LayoutObject.objects.filter(deck=deck)
         
-        # --- AUTO-CALCULATE GRID DIMENSIONS ---
-        # We find the furthest item to the right (col_index + col_span)
-        # We assume data is clean. Default to 20 if no objects found.
         max_col_obj = objects.annotate(
             right_edge=F('col_index') + F('col_span')
         ).aggregate(Max('right_edge'))['right_edge__max']
@@ -2704,7 +3979,7 @@ def booking_visual_map(request, booking_id):
 
         decks_data.append({
             'deck_name': deck.name,
-            'grid_cols': calculated_cols,  # <-- Calculated value
+            'grid_cols': calculated_cols,
             'objects': objects
         })
 
@@ -2712,6 +3987,8 @@ def booking_visual_map(request, booking_id):
         'booking': booking,
         'decks_data': decks_data,
         'booked_seats_map': booked_seats_map,
+        'cancelled_seats': cancelled_seats,
+        'is_expired': booking.status == 'EXPIRED'
     }
     
     return render(request, 'admin_panel/book/booking_visual_map.html', context)
@@ -2726,7 +4003,7 @@ def cancel_booking(request, booking_id):
     # Prevent cancelling already cancelled bookings
     if booking.status == 'CANCELLED':
         messages.warning(request, "This booking is already cancelled.")
-        return redirect('admin_booking_list')
+        return redirect('booking_cancel_list')
 
     try:
         with transaction.atomic():
@@ -2757,7 +4034,7 @@ def cancel_booking(request, booking_id):
         messages.error(request, f"Error cancelling booking: {e}")
         print(f"Cancel Error: {e}") # Print error to terminal for debugging
 
-    return redirect('admin_booking_list')
+    return redirect('booking_cancel_list')
     
 
 
@@ -2766,7 +4043,7 @@ from .utils import send_booking_sms, send_partial_cancel_sms  # <--- Make sure t
 @login_required
 def cancel_seats(request):
     if request.method != 'POST':
-        return redirect('admin_booking_list')
+        return redirect('booking_cancel_list')
 
     booking_id = request.POST.get('booking_id')
     selected_ticket_ids = request.POST.getlist('ticket_ids') 
@@ -2830,7 +4107,7 @@ def cancel_seats(request):
         print(f"Cancel Error: {e}")
         messages.error(request, "Error processing cancellation.")
 
-    return redirect('admin_booking_list')
+    return redirect('booking_cancel_list')
     
 
 
@@ -3074,53 +4351,162 @@ def trip_report_list(request):
     return render(request, 'admin_panel/book/trip_list.html', context)
 
 # 2. The Detail View (The Report)
-from django.db.models import Sum
+from django.db.models import Sum, Q
 @login_required
 def trip_passenger_manifest(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
-    
-    # Fetch tickets
+
     tickets = Ticket.objects.filter(
-        trip=trip, 
-        status='BOOKED'
+        trip=trip
+    ).filter(
+        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+        ~Q(status='CANCELLED')
     ).select_related(
+        'booking',
         'booking__user',
         'seat_object',
         'from_stop__location',
         'to_stop__location'
-    ).order_by('seat_object__label')
+    ).order_by('booking_id', 'seat_object__label')
 
-    # Calculate Totals for the Footer
-    # (Assuming fare_amount is what they paid. If you have a separate 'paid' field, swap it here)
-    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
-    total_due = 0  # Set this logic if you have a 'due' field in your DB
-    
+    # Group by booking
+    bookings_dict = {}
+
+    for ticket in tickets:
+        booking = ticket.booking
+        bid = booking.id
+
+        if bid not in bookings_dict:
+            paid_amount = booking.paid_amount or 0
+
+            bookings_dict[bid] = {
+                'booking': booking,
+                'tickets': [],
+                'total_fare': 0,
+                'paid_amount': paid_amount,
+                'due_amount': 0,
+                'payment_label': '',
+            }
+
+        bookings_dict[bid]['tickets'].append(ticket)
+        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+    total_paid = 0
+    total_due = 0
+
+    # Finalize booking totals
+    for bid, data in bookings_dict.items():
+        booking = data['booking']
+        total_fare = data['total_fare']
+        paid_amount = data['paid_amount']
+
+        # Confirmed booking = fully paid (for report display)
+        if booking.status == 'CONFIRMED':
+            paid_amount = total_fare
+            due_amount = 0
+        else:
+            # Pending booking can have partial payment
+            if paid_amount < 0:
+                paid_amount = 0
+            if paid_amount > total_fare:
+                paid_amount = total_fare
+
+            due_amount = total_fare - paid_amount
+
+        data['paid_amount'] = paid_amount
+        data['due_amount'] = due_amount
+
+        if booking.status == 'CONFIRMED':
+            data['payment_label'] = 'Paid'
+        else:
+            if paid_amount == 0:
+                data['payment_label'] = 'Unpaid'
+            elif paid_amount < total_fare:
+                data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else:
+                data['payment_label'] = 'Fully Paid'
+
+        total_paid += paid_amount
+        total_due += due_amount
+
+    # Convert to list (preserve order)
+    booking_groups = list(bookings_dict.values())
+
     context = {
         'trip': trip,
-        'tickets': tickets,
+        'booking_groups': booking_groups,
         'total_tickets': tickets.count(),
         'total_paid': total_paid,
         'total_due': total_due,
-        'print_date': timezone.now()
+        'print_date': timezone.now(),
     }
     return render(request, 'admin_panel/book/passenger_manifest.html', context)
 
 
-
-import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side
-from django.http import HttpResponse
 @login_required
 def export_manifest_xls(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     
-    # 1. Fetch Data (Same logic as main view)
-    tickets = Ticket.objects.filter(trip=trip, status='BOOKED').select_related(
-        'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
-    ).order_by('seat_object__label')
-    
-    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
-    total_due = 0 # Implement your due logic here
+    # 1. Fetch Data (Exact same logic as main view)
+    tickets = Ticket.objects.filter(
+        trip=trip
+    ).filter(
+        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+        ~Q(status='CANCELLED')
+    ).select_related(
+        'booking', 'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
+    ).order_by('booking_id', 'seat_object__label')
+
+    # Group by booking
+    bookings_dict = {}
+    for ticket in tickets:
+        booking = ticket.booking
+        bid = booking.id
+
+        if bid not in bookings_dict:
+            paid_amount = booking.paid_amount or 0
+            bookings_dict[bid] = {
+                'booking': booking,
+                'tickets': [],
+                'total_fare': 0,
+                'paid_amount': paid_amount,
+                'due_amount': 0,
+                'payment_label': '',
+            }
+        bookings_dict[bid]['tickets'].append(ticket)
+        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+    total_paid = 0
+    total_due = 0
+
+    # Finalize booking totals
+    for bid, data in bookings_dict.items():
+        booking = data['booking']
+        total_fare = data['total_fare']
+        paid_amount = data['paid_amount']
+
+        if booking.status == 'CONFIRMED':
+            paid_amount = total_fare
+            due_amount = 0
+        else:
+            if paid_amount < 0: paid_amount = 0
+            if paid_amount > total_fare: paid_amount = total_fare
+            due_amount = total_fare - paid_amount
+
+        data['paid_amount'] = paid_amount
+        data['due_amount'] = due_amount
+        
+        if booking.status == 'CONFIRMED':
+            data['payment_label'] = 'Paid'
+        else:
+            if paid_amount == 0: data['payment_label'] = 'Unpaid'
+            elif paid_amount < total_fare: data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else: data['payment_label'] = 'Fully Paid'
+
+        total_paid += paid_amount
+        total_due += due_amount
+
+    booking_groups = list(bookings_dict.values())
 
     # 2. Create Workbook & Sheet
     wb = openpyxl.Workbook()
@@ -3130,25 +4516,19 @@ def export_manifest_xls(request, trip_id):
     # --- STYLES ---
     bold_font = Font(bold=True)
     center_align = Alignment(horizontal='center', vertical='center')
+    left_align = Alignment(horizontal='left', vertical='center')
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), 
                          top=Side(style='thin'), bottom=Side(style='thin'))
+    fill_group = PatternFill(start_color="E8F4F8", end_color="E8F4F8", fill_type="solid")
 
-    # 3. Write TRIP INFO (Top Table)
-    # Headers
-    headers_top = ['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats']
-    ws.append(headers_top)
-    
-    # Data
-    row_top = [
-        trip.ship.name,
-        trip.route.name,
-        trip.route.source.name,
+    # 3. Write TRIP INFO
+    ws.append(['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats'])
+    ws.append([
+        trip.ship.name, trip.route.name, trip.route.source.name,
         trip.departure_datetime.strftime("%Y-%m-%d %H:%M"),
-        tickets.count(),
-        tickets.count()
-    ]
-    ws.append(row_top)
-    ws.append([]) # Empty row for spacing
+        tickets.count(), tickets.count()
+    ])
+    ws.append([]) # Empty row
 
     # 4. Write PASSENGER TABLE Headers
     headers_main = [
@@ -3157,44 +4537,57 @@ def export_manifest_xls(request, trip_id):
         'Status', 'Booked By', 'Issued By', 'Remarks'
     ]
     ws.append(headers_main)
-
-    # Style the main header row (Row 4)
-    for cell in ws[4]:
+    for cell in ws[ws.max_row]:
         cell.font = bold_font
         cell.alignment = center_align
         cell.border = thin_border
 
-    # 5. Write Passenger Rows
-    for index, ticket in enumerate(tickets, start=1):
-        row = [
-            index,
-            ticket.id,
-            ticket.seat_object.seat_identifier or ticket.seat_object.label,
-            ticket.booking.passenger_name or "-",
-            ticket.booking.user.phone_number or "0",
-            ticket.fare_amount,
-            0, # Discount
-            0, # Due
-            ticket.from_stop.location.name,
-            ticket.to_stop.location.name,
-            "Confirmed",
-            ticket.booking.user.first_name or "Admin",
-            ticket.booking.user.first_name or "Admin",
-            "N/A"
-        ]
-        ws.append(row)
+    # 5. Write Passenger Rows Grouped by Booking
+    for group in booking_groups:
+        booking = group['booking']
         
-        # Apply borders to data rows
-        for cell in ws[ws.max_row]:
-            cell.border = thin_border
-            cell.alignment = center_align
+        # Booking Header Row
+        timer_text = " (Timer Stopped)" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else ""
+        header_text = f"Booking #{booking.id} (Ref: {booking.booking_ref}) - Total Fare: {group['total_fare']:.0f} - Paid: {group['paid_amount']:.0f} - Due: {group['due_amount']:.0f} - {booking.status}{timer_text}"
+        
+        ws.append([header_text] + [''] * 13)
+        ws.merge_cells(start_row=ws.max_row, start_column=1, end_row=ws.max_row, end_column=14)
+        header_cell = ws.cell(row=ws.max_row, column=1)
+        header_cell.font = bold_font
+        header_cell.fill = fill_group
+        header_cell.alignment = left_align
+        for cell in ws[ws.max_row]: cell.border = thin_border
 
-    # 6. Write FOOTER (Totals)
-    # We construct a row with empty strings for alignment
-    footer_row = ['', '', '', '', '', f"Total: {total_paid}", '', f"Due: {total_due}", '', '', '', '', '', '']
+        # Tickets for this booking
+        for index, ticket in enumerate(group['tickets'], start=1):
+            phone = getattr(ticket.passenger, 'phone', None) if hasattr(ticket, 'passenger') else None
+            if not phone:
+                phone = ticket.booking.user.phone_number or "0"
+                
+            row = [
+                index,
+                ticket.id,
+                ticket.seat_object.seat_identifier or ticket.seat_object.label,
+                ticket.passenger_name or "-",
+                phone,
+                group['paid_amount'] if index == 1 else "",  # Show paid only on first row
+                0, # Discount
+                group['due_amount'] if index == 1 else "",   # Show due only on first row
+                ticket.from_stop.location.name,
+                ticket.to_stop.location.name,
+                "Confirmed" if booking.status == 'CONFIRMED' else group['payment_label'],
+                ticket.booking.user.first_name or "Admin",
+                request.user.first_name or "Admin",
+                "Timer Stopped" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else "N/A"
+            ]
+            ws.append(row)
+            for cell in ws[ws.max_row]:
+                cell.border = thin_border
+                cell.alignment = center_align
+
+    # 6. Write FOOTER
+    footer_row = ['', '', '', '', '', f"Total: {total_paid:.0f}", '', f"Due: {total_due:.0f}", '', '', '', '', '', '']
     ws.append(footer_row)
-    
-    # Style Footer
     for cell in ws[ws.max_row]:
         cell.font = bold_font
         cell.border = thin_border
@@ -3204,7 +4597,6 @@ def export_manifest_xls(request, trip_id):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     filename = f"Manifest_{trip.ship.name}_{trip.departure_datetime.date()}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
     wb.save(response)
     return response
 
@@ -3218,23 +4610,118 @@ import io
 def download_manifest_pdf(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     
-    tickets = Ticket.objects.filter(trip=trip, status='BOOKED').select_related(
-        'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
-    ).order_by('seat_object__label')
+    # Fetch exactly like the screen view
+    tickets = Ticket.objects.filter(
+        trip=trip
+    ).filter(
+        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+        ~Q(status='CANCELLED')
+    ).select_related(
+        'booking', 'booking__user', 'seat_object', 
+        'from_stop__location', 'to_stop__location'
+    ).order_by('booking_id', 'seat_object__label')
     
-    total_paid = tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
-    total_tickets = tickets.count()
-    
+    # 1. Group tickets by booking
+    bookings_dict = {}
+    for ticket in tickets:
+        bid = ticket.booking_id
+        if bid not in bookings_dict:
+            bookings_dict[bid] = {'booking': ticket.booking, 'tickets': [], 'total_fare': 0}
+        bookings_dict[bid]['tickets'].append(ticket)
+        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+    # 2. Build the "Flat List" for perfect PDF rendering
+    pdf_rows = []
+    sl_counter = 1
+    total_paid = 0
+    total_due = 0
+
+    for bid, data in bookings_dict.items():
+        booking = data['booking']
+        total_fare = data['total_fare']
+        paid_amount = booking.paid_amount or 0
+
+        # Screen View Financial Logic
+        if booking.status == 'CONFIRMED':
+            paid_amount = total_fare
+            due_amount = 0
+        else:
+            if paid_amount < 0: paid_amount = 0
+            if paid_amount > total_fare: paid_amount = total_fare
+            due_amount = total_fare - paid_amount
+
+        # Determine label
+        payment_label = 'Paid' if booking.status == 'CONFIRMED' else (
+            'Unpaid' if paid_amount == 0 else 
+            f'Partial ({paid_amount:.0f}/{total_fare:.0f})' if paid_amount < total_fare else 'Fully Paid'
+        )
+
+        total_paid += paid_amount
+        total_due += due_amount
+
+        # Add Booking Header Row
+        pdf_rows.append({
+            'is_header': True,
+            'booking_id': booking.id,
+            'booking_ref': getattr(booking, 'booking_ref', 'N/A'),
+            'status': booking.status,
+            'time_stopped': getattr(booking, 'time_stopped', False),
+            'total_fare': total_fare,
+            'paid_amount': paid_amount,
+            'due_amount': due_amount,
+        })
+
+        # Add Ticket Rows (with visual merge flags)
+        num_tickets = len(data['tickets'])
+        for index, ticket in enumerate(data['tickets']):
+            booked_by = booking.user.first_name if booking.user else "Admin"
+            
+            # Safe parsing
+            pass_name = getattr(ticket, 'passenger_name', '') or "-"
+            phone = "0"
+            if hasattr(ticket, 'passenger') and ticket.passenger and ticket.passenger.phone:
+                phone = ticket.passenger.phone
+            elif booking.user and booking.user.phone_number:
+                phone = booking.user.phone_number
+
+            cabin = ticket.seat_object.seat_identifier if getattr(ticket.seat_object, 'seat_identifier', None) else ticket.seat_object.label
+
+            pdf_rows.append({
+                'is_header': False,
+                'sl': sl_counter,
+                'ticket_id': ticket.id,
+                'cabin': cabin,
+                'pass_name': pass_name,
+                'phone': phone,
+                'from_station': ticket.from_stop.location.name if ticket.from_stop else "",
+                'to_station': ticket.to_stop.location.name if ticket.to_stop else "",
+                
+                # Group Data
+                'group_paid': paid_amount,
+                'group_due': due_amount,
+                'payment_label': payment_label,
+                'status': booking.status,
+                'booked_by': booked_by,
+                'time_stopped': getattr(booking, 'time_stopped', False),
+
+                # CSS Flags for "Visual Merging"
+                'is_single': (num_tickets == 1),
+                'is_first': (index == 0),
+                'is_last': (index == num_tickets - 1),
+            })
+            sl_counter += 1
+
     context = {
         'trip': trip,
-        'tickets': tickets,
-        'total_tickets': total_tickets,
+        'pdf_rows': pdf_rows,
+        'total_tickets': tickets.count(),
         'total_paid': total_paid,
-        'total_due': 0,
-        'current_user': request.user,  # Add this line!
+        'total_due': total_due,
+        'current_user': request.user,
     }
 
-    template = get_template('admin_panel/book/manifest_pdf.html')
+    # IMPORTANT: Ensure this path matches where your HTML file actually lives
+    template = get_template('admin_panel/book/manifest_pdf.html') 
     html = template.render(context)
     
     response = HttpResponse(content_type='application/pdf')
@@ -3242,10 +4729,177 @@ def download_manifest_pdf(request, trip_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     pisa_status = pisa.CreatePDF(html, dest=response)
-    
     if pisa_status.err:
         return HttpResponse(f'PDF generation error: {pisa_status.err}')
     
+    return response
+
+
+def _get_counter_sales_queryset(counter, request):
+    qs = Booking.objects.filter(counter=counter).select_related(
+        'trip',
+        'trip__route',
+        'user',
+        'issued_by'
+    ).prefetch_related(
+        'tickets__seat_object'
+    ).order_by('-created_at')
+
+    # Filters
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
+    status = (request.GET.get('status') or '').strip()
+    issued_by_id = (request.GET.get('issued_by') or '').strip()
+
+    if date_from:
+        qs = qs.filter(created_at__date__gte=date_from)
+
+    if date_to:
+        qs = qs.filter(created_at__date__lte=date_to)
+
+    if status:
+        qs = qs.filter(status=status)
+
+    if issued_by_id:
+        qs = qs.filter(issued_by_id=issued_by_id)
+
+    return qs
+
+
+@login_required
+def counter_sales_report(request, counter_id):
+    counter = get_object_or_404(Counter, id=counter_id)
+
+    bookings_qs = _get_counter_sales_queryset(counter, request)
+
+    # Summary totals
+    totals = bookings_qs.aggregate(
+        total_bookings=Count('id'),
+        total_sales=Coalesce(Sum('total_amount'), Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))),
+        total_paid=Coalesce(Sum('paid_amount'), Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))),
+    )
+
+    total_sales = totals['total_sales'] or Decimal('0')
+    total_paid = totals['total_paid'] or Decimal('0')
+    total_due = total_sales - total_paid
+    if total_due < 0:
+        total_due = Decimal('0')
+
+    # Build display rows (seat labels, due, passenger name, etc.)
+    report_rows = []
+    for booking in bookings_qs:
+        seat_labels = list(
+            booking.tickets.all().order_by('seat_object__label').values_list('seat_object__label', flat=True)
+        )
+        seat_labels_str = ", ".join([str(s) for s in seat_labels]) if seat_labels else "-"
+
+        due_amount = (booking.total_amount or Decimal('0')) - (booking.paid_amount or Decimal('0'))
+        if due_amount < 0:
+            due_amount = Decimal('0')
+
+        # Prefer passenger object name, fallback to booking.user display
+        first_passenger = booking.passengers.first() if hasattr(booking, 'passengers') else None
+        if first_passenger and first_passenger.name:
+            passenger_name = first_passenger.name
+            passenger_phone = first_passenger.phone or (booking.user.phone_number if booking.user else '')
+        else:
+            passenger_name = booking.user.get_display_name() if booking.user else 'Unknown'
+            passenger_phone = booking.user.phone_number if booking.user else ''
+
+        report_rows.append({
+            'booking': booking,
+            'passenger_name': passenger_name,
+            'passenger_phone': passenger_phone,
+            'seat_labels': seat_labels_str,
+            'due_amount': due_amount,
+        })
+
+    # Issued-by filter dropdown options (only users used by this counter)
+    issued_by_users = User.objects.filter(
+        issued_bookings__counter=counter
+    ).distinct().order_by('first_name', 'phone_number')
+
+    context = {
+        'counter': counter,
+        'report_rows': report_rows,
+        'total_bookings': totals['total_bookings'] or 0,
+        'total_sales': total_sales,
+        'total_paid': total_paid,
+        'total_due': total_due,
+        'issued_by_users': issued_by_users,
+        'filters': {
+            'date_from': request.GET.get('date_from', ''),
+            'date_to': request.GET.get('date_to', ''),
+            'status': request.GET.get('status', ''),
+            'issued_by': request.GET.get('issued_by', ''),
+        }
+    }
+    return render(request, 'admin_panel/routes/counter_sales_report.html', context)
+
+@login_required
+def counter_sales_report_csv(request, counter_id):
+    counter = get_object_or_404(Counter, id=counter_id)
+    bookings_qs = _get_counter_sales_queryset(counter, request)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="counter_{counter.id}_sales_report.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Booking Ref',
+        'Created At',
+        'Passenger Name',
+        'Passenger Phone',
+        'Trip',
+        'Route',
+        'Seats',
+        'Status',
+        'Payment Status',
+        'Total Amount',
+        'Paid Amount',
+        'Due Amount',
+        'Issued By'
+    ])
+
+    for booking in bookings_qs:
+        seat_labels = list(
+            booking.tickets.all().order_by('seat_object__label').values_list('seat_object__label', flat=True)
+        )
+        seat_labels_str = ", ".join([str(s) for s in seat_labels]) if seat_labels else "-"
+
+        due_amount = (booking.total_amount or Decimal('0')) - (booking.paid_amount or Decimal('0'))
+        if due_amount < 0:
+            due_amount = Decimal('0')
+
+        first_passenger = booking.passengers.first() if hasattr(booking, 'passengers') else None
+        if first_passenger and first_passenger.name:
+            passenger_name = first_passenger.name
+            passenger_phone = first_passenger.phone or (booking.user.phone_number if booking.user else '')
+        else:
+            passenger_name = booking.user.get_display_name() if booking.user else 'Unknown'
+            passenger_phone = booking.user.phone_number if booking.user else ''
+
+        trip_name = str(booking.trip.ship.name) if booking.trip and booking.trip.ship else ''
+        route_name = str(booking.trip.route.name) if booking.trip and booking.trip.route else ''
+
+        issued_by_name = booking.issued_by.get_display_name() if getattr(booking, 'issued_by', None) else ''
+
+        writer.writerow([
+            booking.booking_ref,
+            booking.created_at.strftime('%Y-%m-%d %H:%M:%S') if booking.created_at else '',
+            passenger_name,
+            passenger_phone,
+            trip_name,
+            route_name,
+            seat_labels_str,
+            booking.status,
+            booking.payment_status,
+            booking.total_amount,
+            booking.paid_amount,
+            due_amount,
+            issued_by_name
+        ])
+
     return response
 
 #----------------------------------End---------------------------------------

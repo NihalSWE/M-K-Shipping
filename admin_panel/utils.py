@@ -225,3 +225,9 @@ def send_partial_cancel_sms(booking, cancelled_seat_labels, new_total):
         
     except Exception as e:
         print(f"Error sending Partial SMS: {e}")
+        
+        
+def get_logged_in_counter(user):
+    if not user or not user.is_authenticated:
+        return None
+    return getattr(user, 'assigned_counter', None)

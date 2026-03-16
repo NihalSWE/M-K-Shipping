@@ -41,16 +41,79 @@
 {% block content %}
 <!-- breadcrumb area start -->
 <!-- rts breadcrumb area start -->
-<div class="rts-breadcrumb-area one" 
-    style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
+<div class="rts-breadcrumb-area one"
+     style="background-image: url('{% if banner.background_image %}{{ banner.background_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/01.webp' %}{% endif %}');">
     <div class="container h-100">
-        <div class="breadcrumb-area-wrapper">
-            <div class="nav-bread-crumb">
+        <div class="breadcrumb-area-wrapper breadcrumb-area-wrapper--with-search">
+            {% comment %} <div class="nav-bread-crumb">
                 <a href="{% url 'home' %}">Home</a>
                 <span><i class="fa-regular fa-chevron-right"></i></span>
                 <a href="#" class="current">About</a>
-            </div>
+            </div> {% endcomment %}
+
             <h1 class="title">{{ banner.title|default:"Schedules" }}</h1>
+
+            <!-- ✅ FORM MOVED INTO BANNER -->
+            <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white form-area-v2--in-banner">
+                {% csrf_token %}
+
+                <div class="search-input-group">
+                    <div class="icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#21a2dc"/>
+                        </svg>
+                    </div>
+                    <div class="input-content">
+                        <p class="label-tag">FROM</p>
+                        <select id="search-from" class="search-field select2" name="from">
+                            {% for loc in locations %}
+                                <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.from %}selected{% endif %}>
+                                    {{ loc.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="exchange-icon" id="switch-location">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
+                    </svg>
+                </div>
+
+                <div class="search-input-group">
+                    <div class="icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#21a2dc"/>
+                        </svg>
+                    </div>
+                    <div class="input-content">
+                        <p class="label-tag">TO</p>
+                        <select id="search-to" class="search-field select2" name="to">
+                            {% for loc in locations %}
+                                <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.to %}selected{% endif %}>
+                                    {{ loc.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="search-input-group calendar-trigger">
+                    <div class="input-content ps-3">
+                        <p class="label-tag">JOURNEY DATE</p>
+                        <input type="text" id="journey-date" placeholder="Pick a date"
+                               class="search-field" name="date" value="{{ search_params.date }}" readonly>
+                    </div>
+                </div>
+
+                <div class="button-area">
+                    <button type="submit" class="search-submit-btn" style="background-color:#21a2dc;">
+                        UPDATE SEARCH
+                    </button>
+                </div>
+            </form>
+            <!-- ✅ END FORM -->
         </div>
     </div>
 </div>
@@ -58,227 +121,171 @@
 <!-- breadcrumb area end -->
 
 
-    <!-- rts story area start -->
+<!-- rts story area start -->
 <div class="search-results-wrapper">
     <div class="container">
-        <div class="search-results-header">
-            <div class="container">
-                <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
-                    {% csrf_token %}
-                    <div class="search-input-group">
-                        <div class="icon-box">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#21a2dc"/>
-                            </svg>
-                        </div>
-                        <div class="input-content">
-                            <p class="label-tag">FROM</p>
-                            <select id="search-from" class="search-field select2" name="from">
-                                {% for loc in locations %}
-                                    <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.from %}selected{% endif %}>
-                                        {{ loc.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="exchange-icon" id="switch-location">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
-                        </svg>
-                    </div>
-
-                    <div class="search-input-group">
-                        <div class="icon-box">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#21a2dc"/>
-                            </svg>
-                        </div>
-                        <div class="input-content">
-                            <p class="label-tag">TO</p>
-                            <select id="search-to" class="search-field select2" name="to">
-                                {% for loc in locations %}
-                                    <option value="{{ loc.id }}" {% if loc.id|stringformat:"s" == search_params.to %}selected{% endif %}>
-                                        {{ loc.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="search-input-group calendar-trigger">
-                        <div class="input-content ps-3">
-                            <p class="label-tag">JOURNEY DATE</p>
-                            <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" name="date" value="{{ search_params.date }}" readonly>
-                        </div>
-                    </div>
-
-                    <div class="button-area">
-                        <button type="submit" class="search-submit-btn" style="
-                        background-color: #21a2dc;
-                    ">UPDATE SEARCH</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <h3 class="results-title" style="font-size: 24px; margin-bottom: 30px;">
+        <h3 class="results-title text-center" style="font-size: 24px; margin-top: 30px; margin-bottom: 20px;">
             <span style="color: #21a2dc;">{{ trips|length }}</span> Ships found for your route
         </h3>
 
-        <div class="results-list">
-    {% for item in trips %}
-        <div class="trip-card" >
-            <div class="ship-media">
-                <img src="{% if item.trip.ship.image %}{{ item.trip.ship.image.url }}{% else %}https://placehold.co/600x400?text=Ship+Image{% endif %}" class="ship-img-v2" alt="Ship">
-                <span class="ship-type-tag">{{ item.trip.ship.ship_type }}</span>
-                <h4 class="ship-name-v2">{{ item.trip.ship.name }}</h4>
-            </div>
-
-            <div class="journey-details">
-                <div class="timeline-container">
-                    <div class="time-point">
-                        <span class="time-val">{{ item.segment_departure|date:"h:i A" }}</span>
-                        <span class="loc-val">{{ item.stop_from.location.name }}</span>
-                    </div> 
-
-                    <div class="route-visual">
-                        <span class="duration-label">
-                            <i class="fa-regular fa-clock me-1"></i> 
-                            {{ item.stop_to.time_offset_minutes|add:item.stop_from.time_offset_minutes|dictsort:"0" }} min 
-                        </span>
-                        <div class="visual-line-container">
-                            <div class="visual-line"></div>
-                            <i class="fas fa-ship ship-icon-mid"></i>
+        <div class="results-list results-list--modern">
+            {% for item in trips %}
+                <div class="trip-card trip-card--modern">
+                    <div class="ship-media ship-media--modern">
+                        <img src="{% if item.trip.ship.image %}{{ item.trip.ship.image.url }}{% else %}https://placehold.co/600x400?text=Ship+Image{% endif %}" class="ship-img-v2" alt="Ship">
+                        {% comment %} <span class="ship-type-tag ship-type-tag--modern">{{ item.trip.ship.ship_type }}</span> {% endcomment %}
+                        <h4 class="ship-name-v2 ship-name-v2--modern">{{ item.trip.ship.name }}</h4>
+                        <div class="ship-seat-count-v2 ship-seat-count-v2--modern">
+                            {{ item.available_seats }} seats/cabins available
                         </div>
                     </div>
 
-                    <div class="time-point text-end">
-                        <span class="time-val">{{ item.trip.departure_datetime|date:"d M Y" }}</span>
-                        <span class="loc-val">{{ item.stop_to.location.name }}</span>
+                    <div class="journey-details journey-details--modern">
+                        <div class="timeline-container timeline-container--modern">
+                            <div class="time-point time-point--modern">
+                                <span class="time-val time-val--modern">{{ item.segment_departure|date:"h:i A" }}</span><br>
+                                <span  style="font-size: 1em; color: #666; line-height: 1.2;">{{ item.segment_departure|date:"d M Y" }}</span><br>
+                                <span class="loc-val loc-val--modern">{{ item.stop_from.location.name }}</span>
+                            </div>
+
+                            <div class="route-visual route-visual--modern">
+                                <div class="visual-line-container visual-line-container--modern">
+                                    <div class="visual-line visual-line--modern"></div>
+                                    <i class="fas fa-ship ship-icon-mid ship-icon-mid--modern"></i>
+                                </div>
+                            </div>
+
+                            <div class="time-point time-point--modern text-end">
+                                <span class="time-val time-val--modern">{{ item.segment_arrival|date:"h:i A" }}</span><br>
+                                <span  style="font-size: 1em; color: #666; line-height: 1.2;">{{ item.segment_arrival|date:"d M Y" }}</span><br>
+                                <span class="loc-val loc-val--modern">{{ item.stop_to.location.name }}</span>
+                            </div>
+                        </div>
+
+                        <div class="clean-route-path clean-route-path--modern">
+                            {% with stops=item.trip.route.stops.all|dictsort:"stop_order" %}
+                                {% for stop in stops %}
+                                    <span class="route-stop route-stop--modern">{{ stop.location.name }}</span>
+                                    {% if not forloop.last %}
+                                        <span class="route-arrow route-arrow--modern">→</span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        </div>
                     </div>
-                </div>
 
-                <div class="clean-route-path">
-                    {% with stops=item.trip.route.stops.all|dictsort:"stop_order" %}
-                        {% for stop in stops %}
-                            <span class="route-stop">{{ stop.location.name }}</span>
-                            {% if not forloop.last %}
-                                <span class="route-arrow">→</span>
-                            {% endif %}
-                        {% endfor %}
-                    {% endwith %}
-                </div>
-            </div>
-
-            <div class="price-action-side">
-                {% comment %} <span class="loc-val">Starting from</span>
-                <div class="price-amount-v2">৳{{ item.preview_price|floatformat:0 }}</div> {% endcomment %}
-                
-                <a href="#" 
-                    class="book-btn-v2" 
-                    data-trip-id="{{ item.trip.id }}"
-                    data-from-stop="{{ item.stop_from.id }}"
-                    data-to-stop="{{ item.stop_to.id }}" style="
-                    background: #21a2dc;
-                ">
-                    SELECT SEATS
-                </a>
-            </div>
-        </div>
-    {% empty %}
-        <div class="text-center py-5 bg-white rounded-4 shadow-sm border">
-            <img src="/static/img/no-results.png" alt="No Trips" style="max-width: 150px; opacity: 0.6;">
-            <h4 class="fw-bold mt-4" style="color: #1A2B3C;">No Ships Available</h4>
-            <p class="text-muted">We couldn't find any trips for this route and date.</p>
-        </div>
-    {% endfor %}
-</div>
-    </div>
-</div>
-
-
-{% comment %} <div class="drawer-overlay" id="drawerOverlay"></div>
-<div class="seat-selection-drawer" id="seatDrawer">
-    <div class="drawer-header p-4 bg-white border-bottom d-flex justify-content-between align-items-center">
-        <div class="text-center">
-            <h3 class="m-0" id="drawerShipName">Deck Selection</h3>
-            <p class="text-muted m-0 small" id="drawerRouteInfo"></p>
-        </div>
-        <button class="btn-close" id="closeDrawer" style="font-size: 1.5rem;"></button>
-    </div>
-
-    <div id="drawerContent" class="flex-grow-1 overflow-auto">
-        </div>
-
-    <div class="drawer-footer">
-    </div>
-</div> {% endcomment %}
-
-{% comment %} <div class="drawer-overlay" id="drawerOverlay"></div>
-<div class="seat-selection-drawer" id="seatDrawer">
-    <div class="drawer-header border-0 position-relative" style="height: 0; z-index: 1060;">
-        <button class="btn-close position-absolute" id="closeDrawer" 
-                style="right: 1.5rem; top: 1.5rem; font-size: 1.5rem;">
-        </button>
-    </div>
-
-    <div id="drawerContent" class="d-flex flex-column h-100">
-        </div>
-</div> {% endcomment %}
-
-<div class="drawer-overlay" id="drawerOverlay"></div>
-<div class="seat-selection-drawer" id="seatDrawer">
-    <div class="drawer-header border-0 position-relative" style="z-index: 1060; flex-shrink: 0;">
-        <button class="btn-close position-absolute" id="closeDrawer" 
-                style="right: 1.5rem; top: 1.5rem; font-size: 1.5rem; z-index: 1061;">
-        </button>
-    </div>
-
-    <div class="drawer-body" id="drawerBody">
-        <div id="drawerContent">
-            </div>
-
-        <div id="passengerDetailsSection" class="p-4" style="display: none;">
-            <div class="d-flex flex-column align-items-center w-100">
-                <div class="w-100 d-flex justify-content-between align-items-center mb-4" style="max-width: 600px; margin-top: 2rem;">
-                    <p class="mb-0" style="color: #1e293b; font-size: 1.5rem;">Passenger Details</p>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="small text-muted">Same as first</span>
-                        <label class="custom-switch">
-                            <input type="checkbox" id="copyFirstPassenger">
-                            <span class="slider"></span>
-                        </label>
+                    <div class="price-action-side price-action-side--modern">
+                        <a href="#"
+                        class="book-btn-v2 book-btn--modern"
+                        data-trip-id="{{ item.trip.id }}"
+                        data-from-stop="{{ item.stop_from.id }}"
+                        data-to-stop="{{ item.stop_to.id }}">
+                            <span class="seat-toggle-text">VIEW SEATS</span>
+                        </a>
                     </div>
                 </div>
                 
-                <form id="bookingForm" class="w-100" style="max-width: 600px;">
-                    {% csrf_token %}
-                    <div id="passengerRows"></div>
-                </form>
-            </div>
+                <div class="trip-inline-seat-host" data-trip-host="{{ item.trip.id }}-{{ item.stop_from.id }}-{{ item.stop_to.id }}"></div>
+            {% empty %}
+                <div class="text-center py-5 bg-white rounded-4 shadow-sm border">
+                    {% comment %} <img src="/static/img/no-results.png" alt="No Trips" style="max-width: 150px; opacity: 0.6;"> {% endcomment %}
+                    <h4 class="fw-bold mt-4" style="color: #1A2B3C;">No Launch Available</h4>
+                    <p class="text-muted">We couldn't find any trips for this route and date.</p>
+                </div>
+            {% endfor %}
         </div>
     </div>
+</div>
 
-    <div class="modern-booking-footer">
-        <div class="footer-info-group">
-            <span class="footer-label">Your Selection</span>
-            <div id="selectedSeatsList" class="footer-value">None selected</div>
+<!-- Inline booking panel (replaces drawer) -->
+ <div id="inlineBookingOverlay" class="inline-booking-overlay"></div>
+<div id="inlineBookingPanel" class="inline-booking-panel" style="display: none;">
+    <div class="inline-booking-panel__inner">
+        <div class="inline-booking-header border-0 position-relative" style="z-index: 10; flex-shrink: 0;">
+            <button class="btn-close position-absolute" id="closeDrawer"
+                    style="right: 1rem; top: 1rem; font-size: 1.25rem; z-index: 11;">
+            </button>
         </div>
 
-        <div class="footer-info-group text-center">
-            <span class="footer-label">Total Payable</span>
-            <div class="total-price-display">৳ <span id="totalPrice">0</span></div>
+        <div class="inline-booking-body" id="drawerBody">
+            <div id="drawerContent"></div>
+
+            <div id="passengerDetailsSection" class="p-4" style="display: none;">
+                <div id="desktopLegendSlot" style="display:none;"></div>
+
+                <div class="d-flex flex-column align-items-center w-100">
+                    <div class="w-100 d-flex justify-content-between align-items-center mb-4" style="max-width: 600px; margin-top: 2rem;">
+                        <p class="mb-0" style="color: #1e293b; font-size: 1.5rem;">Passenger Details</p>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small text-muted">Same as first</span>
+                            <label class="custom-switch">
+                                <input type="checkbox" id="copyFirstPassenger">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <form id="bookingForm" class="w-100" style="max-width: 600px;">
+                        {% csrf_token %}
+                        <div id="passengerRows"></div>
+
+                        <!-- Desktop-only submit button (hidden on mobile by CSS) -->
+                        <div id="otpPhoneHint" class="otp-phone-hint" style="display:none;"></div>
+
+                        <!-- OTP UI (visible on both mobile and desktop when needed) -->
+                        <div id="otpUiWrap" class="otp-ui-wrap" style="display:none;">
+                            <div id="otpStatus" class="otp-status" style="display:none;"></div>
+
+                            <div id="otpInputWrap" class="otp-input-wrap" style="display:none;">
+                                <label class="otp-label">
+                                    Enter OTP <span class="req-star">*</span>
+                                </label>
+
+                                <div class="otp-input-row">
+                                    <input id="otpCodeInput" type="text" inputmode="numeric" maxlength="6"
+                                        class="otp-input"
+                                        placeholder="6-digit OTP">
+
+                                    <button type="button" id="verifyOtpBtn" class="otp-verify-btn" disabled>
+                                        VERIFY OTP
+                                    </button>
+                                </div>
+
+                                <div class="otp-help d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <span>OTP is valid for <strong>5 minutes</strong>.</span>
+                                    <button type="button" id="resendOtpBtn" class="otp-resend-btn">
+                                        Resend OTP
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop-only submit button -->
+                        <div class="desktop-passenger-submit-wrap" style="display: none;">
+                            <button type="button" id="desktopSubmitBookingBtn" class="btn-modern-checkout w-100 justify-content-center mt-3">
+                                <span>Book & PAY</span> <i class="fas fa-chevron-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
-        <div class="footer-action d-flex gap-2">
-            <button id="backToSeatsBtn" class="btn btn-outline-secondary rounded-pill px-4" style="display: none;">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <button id="checkoutBtn" class="btn-modern-checkout" disabled>
-                <span id="btnText">NEXT</span> <i class="fas fa-chevron-right ms-2"></i>
-            </button>
+        <div class="modern-booking-footer">
+            <div class="footer-info-group footer-total-group">
+                <span class="footer-label">Total</span>
+                <div class="total-price-display">৳ <span id="totalPrice">0</span></div>
+            </div>
+
+            <div class="footer-action d-flex gap-2">
+                <button id="backToSeatsBtn" class="btn btn-outline-secondary rounded-pill px-3" style="display: none;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button id="checkoutBtn" class="btn-modern-checkout" disabled>
+                    <span id="btnText">NEXT</span> <i class="fas fa-chevron-right ms-1"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -295,6 +302,109 @@
         <button id="finalRedirectBtn" class="view-tickets-btn">View My Tickets</button>
     </div>
 </div>
+
+<!-- [NEW:PAYMENT_MODAL] Payment confirmation modal -->
+<div id="paymentModal" class="pay-modal" style="display:none;">
+    <div class="pay-modal__backdrop"></div>
+
+    <div class="pay-modal__card" role="dialog" aria-modal="true" aria-labelledby="payModalTitle">
+        <div class="pay-modal__header">
+            <div>
+                <h3 id="payModalTitle" class="pay-modal__title">Confirm & Pay</h3>
+                <p class="pay-modal__subtitle">Review trip, passenger details and proceed to payment.</p>
+            </div>
+
+            <button type="button" class="pay-modal__close" id="closePaymentModal" aria-label="Close">
+                ✕
+            </button>
+        </div>
+
+        <div class="pay-modal__body">
+            <!-- Trip summary -->
+            <!-- [NEW:PAYMENT_TOTALS_TOP] Totals at top -->
+            <div class="pay-section">
+                <div class="pay-section__title">Total Summary</div>
+
+                <div id="pmSeatBreakdown" class="pay-breakdown"></div>
+
+                <div class="pay-breakdown__total">
+                    <span>Total</span>
+                    <strong>৳ <span id="pmTotalTop">0</span></strong>
+                </div>
+            </div>
+            <!-- [/NEW:PAYMENT_TOTALS_TOP] -->
+            <div class="pay-section">
+                <div class="pay-section__title">Trip Summary</div>
+                <div class="pay-kv">
+                    <div class="pay-kv__item">
+                        <div class="pay-kv__label">Ship</div>
+                        <div class="pay-kv__value" id="pmShipName">—</div>
+                    </div>
+                    <div class="pay-kv__item">
+                        <div class="pay-kv__label">Route</div>
+                        <div class="pay-kv__value" id="pmRoute">—</div>
+                    </div>
+                    <div class="pay-kv__item">
+                        <div class="pay-kv__label">Departure</div>
+                        <div class="pay-kv__value" id="pmDeparture">—</div>
+                    </div>
+                    <div class="pay-kv__item">
+                        <div class="pay-kv__label">Arrival</div>
+                        <div class="pay-kv__value" id="pmArrival">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seats + total -->
+            <div class="pay-section">
+                <div class="pay-section__title">Selected Seats</div>
+                <div id="pmSeats" class="pay-seats"></div>
+            </div>
+
+            <!-- Passenger details -->
+            <div class="pay-section">
+                <div class="pay-section__title">Passengers</div>
+                <div id="pmPassengers" class="pay-passengers"></div>
+            </div>
+
+            <!-- Payment method -->
+            <div class="pay-section">
+                <div class="pay-section__title">Payment Method</div>
+                <div class="pay-method">
+                    <label class="pay-method__option">
+                        <input type="radio" name="payment_method" value="SSLCOMMERZ" checked>
+                        <span class="pay-method__box">
+                            <img
+                                src="https://placehold.co/140x44?text=SSLCommerz"
+                                alt="SSLCommerz"
+                                class="pay-method__img"
+                            >
+                            <span class="pay-method__text">SSLCommerz Gateway</span>
+                        </span>
+                    </label>
+                </div>
+                <div class="pay-note">
+                    By clicking <strong>Pay</strong>, you’ll be redirected to the payment gateway.
+                </div>
+            </div>
+
+            <div class="pay-modal__spacer"></div>
+        </div>
+
+        <!-- Sticky footer: always visible -->
+        <div class="pay-modal__footer">
+            <div class="pay-total">
+                <div class="pay-total__label">Total</div>
+                <div class="pay-total__value">৳ <span id="pmTotal">0</span></div>
+            </div>
+
+            <button type="button" id="payNowBtn" class="btn-modern-checkout pay-now-btn">
+                <span id="payBtnText">Pay</span> <i class="fas fa-chevron-right ms-1"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<!-- [/NEW:PAYMENT_MODAL] -->
 
 {% endblock content %}
 
@@ -323,390 +433,2327 @@
         });
     });
 </script>
+    {{ holder_id|json_script:"holder-id-data" }}
+    {{ logged_in_user_prefill|default:None|json_script:"logged-in-user-prefill-data" }}
+
+    <script>
+        let IS_AUTH = {{ is_authenticated|yesno:"true,false" }};
+        const HOLDER_ID = JSON.parse(document.getElementById('holder-id-data').textContent);
+        const LOGGED_IN_USER_PREFILL = JSON.parse(
+            document.getElementById('logged-in-user-prefill-data').textContent
+        );
+    </script>
 
 
+    <script>
+        // Add this helper to the top of your script to get CSRF token
+        $(document).ready(function() {
+            let seatSocket = null;
+            let bookingOtpSent = false;
+            let deckFitResizeTimer;
+            let otpResendCountdown = 0;
+            let otpResendTimer = null;
+            let pendingPaymentPayload = null;
 
+            // const HOLDER_ID = {{ holder_id|default:"null" }};
+            // const IS_AUTH = {{ is_authenticated|yesno:"true,false" }};
 
-<script>
-    // Add this helper to the top of your script to get CSRF token
-    $(document).ready(function() {
-        function getCookie(name) {
-            // 1. Try to get the token from the hidden input field first (most reliable)
-            let token = $('input[name="csrfmiddlewaretoken"]').val();
-            if (token) return token;
-
-            // 2. Fallback to cookie-searching logic if input isn't found
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        // 1. Define the base URL using Django's URL name
-        // We use '0' as a placeholder for the trip_id
-        const baseLayoutUrl = "{% url 'get_seat_layout' 0 %}";
-
-        $('.book-btn-v2').on('click', function(e) {
-            e.preventDefault();
-            
-            // UI State
-            const $btn = $(this);
-            const tripId = $btn.data('trip-id');
-            const fromStop = $btn.data('from-stop');
-            const toStop = $btn.data('to-stop');
-
-            $('#drawerOverlay').fadeIn();
-            $('#seatDrawer').addClass('open');
-            $('body').css('overflow', 'hidden');
-
-            // Show a loader while fetching
-            $('#drawerContent').html(`
-                <div class="text-center py-5">
-                    <div class="spinner-border text-success" role="status"></div>
-                    <p class="mt-2 text-muted">Loading deck layout...</p>
-                </div>
-            `);
-
-            // 2. Resolve the URL by replacing placeholder '0' with actual tripId
-            let requestUrl = baseLayoutUrl.replace('0', tripId);
-            
-            // 3. Add query parameters using URLSearchParams
-            const params = new URLSearchParams({
-                from_stop: fromStop,
-                to_stop: toStop
-            });
-
-            // 4. Modern Fetch Promise
-            fetch(`${requestUrl}?${params.toString()}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.text(); // We expect HTML partial from the view
-                })
-                .then(html => {
-                    $('#drawerContent').html(html);
-                    initializeSeatBooking(); // Re-attach listeners to the new HTML
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    $('#drawerContent').html(`
-                        <div class="alert alert-danger m-4">
-                            Failed to load layout. Please try again.
-                        </div>
-                    `);
-                });
-        });
-
-        // Close Logic
-        $('#closeDrawer, #drawerOverlay').on('click', function() {
-            $('#seatDrawer').removeClass('open');
-            $('#drawerOverlay').fadeOut();
-            $('body').css('overflow', 'auto');
-        });
-
-        // Cabin or seat initialization
-        // Maximum selection logic and summary update
-        function initializeSeatBooking() {
-            $('.layout-item.available').off('click').on('click', function() {
-                const $seat = $(this);
-                
-                // Check if the seat is already selected
-                const isSelected = $seat.hasClass('selected');
-                
-                // Count how many are currently selected
-                const selectedCount = $('.layout-item.selected').length;
-
-                // LOGIC: If trying to select a new seat and already at 5, stop them
-                if (!isSelected && selectedCount >= 5) {
-                    alert('Maximum of 5 seats/cabins can be booked at once.');
-                    return; // Exit here so toggleClass('selected') never runs
+            // Enable for websockets starts
+            /* 
+            function connectSeatSocket(tripId, fromStop, toStop) {
+                if (seatSocket) {
+                    seatSocket.close();
+                    seatSocket = null;
                 }
 
-                $seat.toggleClass('selected');
-                updateSummary();
-            });
-        }
+                const proto = window.location.protocol === "https:" ? "wss" : "ws";
+                const wsUrl = `${proto}://${window.location.host}/ws/seats/${tripId}/${fromStop}/${toStop}/`;
 
-        function updateSummary() {
-            let selectedLabels = [];
-            let total = 0;
-            
-            // 1. Gather data from all currently selected items
-            $('.layout-item.selected').each(function() {
-                // We use || 0 to prevent "NaN" if a price is missing
-                selectedLabels.push($(this).data('label'));
-                total += parseFloat($(this).data('price') || 0);
-            });
+                seatSocket = new WebSocket(wsUrl);
 
-            // 2. Abbreviation Logic: prevent the "Selected Seats" list from breaking the layout
-            let displayTemplate = 'None selected';
-            if (selectedLabels.length > 0) {
-                if (selectedLabels.length > 3) {
-                    // Show first 3 and a count of the rest (e.g., "D-201, D-202, D-203 +2 more")
-                    displayTemplate = selectedLabels.slice(0, 3).join(', ') + ` +${selectedLabels.length - 3} more`;
-                } else {
-                    displayTemplate = selectedLabels.join(', ');
-                }
-            }
+                seatSocket.onmessage = function(e) {
+                    const msg = JSON.parse(e.data);
+                    const seatId = msg.seat_id;
 
-            // 3. Update the UI Elements
-            // Use .toLocaleString() to turn 35000 into 35,000
-            $('#selectedSeatsList').text(displayTemplate);
-            $('#totalPrice').text(total.toLocaleString()); 
+                    const $seat = $(`.layout-item[data-id="${seatId}"]`);
+                    if (!$seat.length) return;
 
-            // 4. Button State: Enable only if at least one seat is selected
-            const $checkoutBtn = $('#checkoutBtn');
-            if (selectedLabels.length > 0) {
-                $checkoutBtn.prop('disabled', false).addClass('active');
-            } else {
-                $checkoutBtn.prop('disabled', true).removeClass('active');
-            }
-        }
-
-
-        // helper function for generating passenger rows
-        function generatePassengerRows() {
-            const $container = $('#passengerRows');
-            $container.empty();
-
-            $('.layout-item.selected').each(function(index) {
-                const seatLabel = $(this).data('label');
-                const seatId = $(this).data('id');
-                
-                const rowHtml = `
-                    <div class="passenger-row" data-seat-id="${seatId}">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="seat-badge">
-                                    <i class="fa-solid fa-chair"></i> SEAT ${seatLabel}
-                                </span>
-                                <span class="passenger-label">Passenger ${index + 1}</span>
-                            </div>
-                        </div>
-
-                        <div class="field-grid">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="modern-input p-name" placeholder="Name" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Gender</label>
-                                <div class="select-wrapper">
-                                    <select class="modern-input p-gender">
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Phone</label>
-                                <input type="tel" class="modern-input p-phone" placeholder="Phone" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Email <span class="optional-text">(Optional)</span></label>
-                                <input type="email" class="modern-input p-email" placeholder="Email">
-                            </div>
-                        </div>
-                    </div>
-                `;
-                $container.append(rowHtml);
-            });
-        }
-
-
-        // Copy First Passenger Details
-        $(document).on('change', '#copyFirstPassenger', function() {
-            if(this.checked) {
-                const firstName = $('.p-name').first().val();
-                const firstGender = $('.p-gender').first().val();
-                const firstPhone = $('.p-phone').first().val();
-                const firstEmail = $('.p-email').first().val();
-
-                $('.p-name').val(firstName);
-                $('.p-gender').val(firstGender);
-                $('.p-phone').val(firstPhone);
-                $('.p-email').val(firstEmail);
-            }
-        });
-
-
-        // Checkout Button Click
-        $('#checkoutBtn').on('click', function() {
-            const isPassengerStep = $('#passengerDetailsSection').is(':visible');
-
-            if (!isPassengerStep) {
-                if ($('.layout-item.selected').length === 0) return;
-
-                generatePassengerRows();
-                
-                $('#drawerContent').fadeOut(300, function() {
-                    // Show passenger section
-                    $('#passengerDetailsSection').fadeIn(400);
-        
-                    // ADD THIS LINE: It forces the scrollable area back to the top
-                    $('#drawerBody').scrollTop(0);
-
-                    $('#backToSeatsBtn').fadeIn();
-                    $('#btnText').text('CONFIRM & PAY');
-                });
-
-                
-            } else {
-                // 1. Collect all passenger data
-                let passengers = [];
-                let allValid = true;
-
-                $('.passenger-row').each(function() {
-                    const name = $(this).find('.p-name').val().trim();
-                    const phone = $(this).find('.p-phone').val().trim();
-                    const email = $(this).find('.p-email').val().trim(); // Get email
-                    const gender = $(this).find('.p-gender').val();
-
-                    // STRICT VALIDATION: Check Name, Phone, AND Email
-                    if (!name || !phone) {
-                        allValid = false;
-                        // Optional: highlight the empty fields in red
-                        $(this).find('.modern-input').each(function() {
-                            if (!$(this).val().trim()) {
-                                $(this).css('border-color', 'red');
-                            } else {
-                                $(this).css('border-color', '#e2e8f0');
-                            }
-                        });
+                    if (msg.action === "hold") {
+                        if (msg.holder_id != null && Number(msg.holder_id) === HOLDER_ID) {
+                            // this hold is mine → show selected
+                            $seat.removeClass("available on-hold").addClass("selected");
+                        } else {
+                            // someone else’s hold → show on-hold
+                            $seat.removeClass("available selected").addClass("on-hold");
+                        }
+                        updateSummary();
                     }
 
-                    passengers.push({
-                        seat_id: $(this).data('seat-id'),
-                        name: name,
-                        gender: gender,
-                        phone: phone,
-                        email: email
-                    });
-                });
+                    if (msg.action === "release") {
+                        // If seat is booked/occupied, don’t change
+                        if ($seat.hasClass("occupied")) return;
 
-                // 2. Strict Validation Check
-                if (!allValid) {
-                    alert('Please fill in the Full Name and Phone Number for ALL passengers.');
-                    return; // THIS STOPS THE REDIRECT
-                }
+                        // If release is mine or unknown -> make available
+                        $seat.removeClass("on-hold selected").addClass("available");
+                        updateSummary();
+                        return;
+                    }
 
-                // 3. Send Data to Server (Replaces your old window.location.href)
-                const $btn = $(this);
-                $btn.prop('disabled', true).text('PROCESSING...');
-
-                const $origBtn = $('.book-btn-v2'); 
-                const payload = {
-                    trip_id: $origBtn.data('trip-id'),
-                    from_stop: $origBtn.data('from-stop'),
-                    to_stop: $origBtn.data('to-stop'),
-                    passengers: passengers 
+                    if (msg.action === "booked") {
+                        $seat.removeClass("available selected on-hold").addClass("occupied");
+                        updateSummary();
+                        return;
+                    }
                 };
 
-                fetch("{% url 'save_booking' %}", {
+                seatSocket.onerror = function(err) {
+                    console.error("Seat WS error:", err);
+                };
+
+                seatSocket.onclose = function() {
+                    // ignore
+                };
+            }
+            */
+            // Enable for websockets ends
+
+            /* =========================
+            DECK ZOOM / AUTO-FIT
+            ========================= */
+            function applyDeckScale(container, nextScale) {
+                const wrap = container.querySelector('.deck-scroll-scale-wrap');
+                const grid = wrap ? wrap.querySelector('.grid-canvas') : container.querySelector('.grid-canvas');
+                if (!wrap || !grid) return;
+
+                const fitScale = parseFloat(container.dataset.fitScale || '1');
+                const clamped = Math.max(fitScale, Math.min(1, nextScale)); // fitScale <= scale <= 1
+
+                // Reset first to measure natural height correctly
+                grid.style.transform = 'scale(1)';
+                const naturalHeight = grid.scrollHeight;
+
+                grid.style.transformOrigin = 'top left';
+                grid.style.transform = `scale(${clamped})`;
+                wrap.style.height = `${Math.ceil(naturalHeight * clamped)}px`;
+
+                container.dataset.currentScale = String(clamped);
+
+                updateDeckZoomButtons(container);
+            }
+
+            function $panelScope() {
+                // Only operate inside the currently visible booking panel
+                return $('#inlineBookingPanel:visible').length ? $('#inlineBookingPanel') : $(document);
+            }
+
+            function updateDeckZoomButtons(container) {
+                const fitScale = parseFloat(container.dataset.fitScale || '1');
+                const currentScale = parseFloat(container.dataset.currentScale || '1');
+
+                const panel = container.closest('#drawerContent, #inlineBookingPanel, .inline-booking-panel, .deck-selection-container') || document;
+                const zoomInBtn = panel.querySelector('.deck-zoom-in');
+                const zoomOutBtn = panel.querySelector('.deck-zoom-out');
+                const zoomLabel = panel.querySelector('.deck-zoom-label');
+
+                if (zoomInBtn) zoomInBtn.disabled = currentScale >= 0.999;
+                if (zoomOutBtn) zoomOutBtn.disabled = currentScale <= (fitScale + 0.001);
+
+                if (zoomLabel) {
+                    zoomLabel.textContent = `${Math.round(currentScale * 100)}%`;
+                }
+            }
+
+            function changeDeckZoom(container, direction) {
+                const currentScale = parseFloat(container.dataset.currentScale || '1');
+                const fitScale = parseFloat(container.dataset.fitScale || '1');
+
+                // Adaptive step feels better across different scales
+                let step = 0.08;
+                if (currentScale < 0.75) step = 0.05;
+
+                const nextScale = direction === 'in'
+                    ? Math.min(1, currentScale + step)
+                    : Math.max(fitScale, currentScale - step);
+
+                applyDeckScale(container, nextScale);
+            }
+
+            function autoFitDeckLayouts() {
+                $('#drawerContent .deck-scroll-container').each(function() {
+                    const container = this;
+                    const wrap = container.querySelector('.deck-scroll-scale-wrap');
+                    const grid = wrap ? wrap.querySelector('.grid-canvas') : container.querySelector('.grid-canvas');
+
+                    if (!wrap || !grid) return;
+
+                    // Reset to original before measuring
+                    grid.style.transform = 'scale(1)';
+                    grid.style.transformOrigin = 'top left';
+
+                    // Natural size
+                    const containerWidth = container.clientWidth;
+                    const gridWidth = grid.scrollWidth;
+                    const gridHeight = grid.scrollHeight;
+
+                    if (!containerWidth || !gridWidth) return;
+
+                    const usableWidth = Math.max(containerWidth - 4, 0);
+                    const fitScale = Math.min(usableWidth / gridWidth, 1); // never upscale
+
+                    // Save zoom state on container
+                    container.dataset.fitScale = String(fitScale);
+                    container.dataset.currentScale = String(fitScale);
+
+                    // Apply fit scale initially
+                    grid.style.transform = `scale(${fitScale})`;
+                    wrap.style.height = `${Math.ceil(gridHeight * fitScale)}px`;
+                    wrap.style.width = '100%';
+
+                    // Update zoom button state if toolbar exists
+                    updateDeckZoomButtons(container);
+                });
+            }
+
+            $(document).on('click', '.deck-zoom-in', function() {
+                const container = $(this).closest('#drawerContent').find('.deck-scroll-container:visible').get(0)
+                    || document.querySelector('#drawerContent .deck-scroll-container');
+                if (!container) return;
+                changeDeckZoom(container, 'in');
+            });
+
+            $(document).on('click', '.deck-zoom-out', function() {
+                const container = $(this).closest('#drawerContent').find('.deck-scroll-container:visible').get(0)
+                    || document.querySelector('#drawerContent .deck-scroll-container');
+                if (!container) return;
+                changeDeckZoom(container, 'out');
+            });
+            /* =========================
+            END DECK ZOOM / AUTO-FIT
+            ========================= */
+
+            /* =========================
+            SEAT HOLD API HELPERS
+            ========================= */
+            function holdSeatOnServer(tripId, fromStop, toStop, seatId) {
+                return fetch("{% url 'hold_seats' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        trip_id: tripId,
+                        from_stop: fromStop,
+                        to_stop: toStop,
+                        seat_ids: [seatId],
+                    })
+                }).then(r => r.json().then(j => ({ ok: r.ok, data: j })));
+            }
+
+            function releaseSeatOnServer(tripId, fromStop, toStop, seatId) {
+                return fetch("{% url 'release_seats' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        trip_id: tripId,
+                        from_stop: fromStop,
+                        to_stop: toStop,
+                        seat_ids: [seatId],
+                    })
+                }).then(r => r.json().then(j => ({ ok: r.ok, data: j })));
+            }
+            /* =========================
+            END SEAT HOLD API HELPERS
+            ========================= */
+
+            /* =========================
+            LAYOUT LOAD / RELOAD
+            ========================= */
+            // Enable for websockets starts
+            /*
+            function reloadLayout(tripId, fromStop, toStop) {
+                let requestUrl = baseLayoutUrl.replace('0', tripId);
+                const params = new URLSearchParams({ from_stop: fromStop, to_stop: toStop });
+
+                fetch(`${requestUrl}?${params.toString()}`)
+                    .then(r => r.text())
+                    .then(html => {
+                        $('#drawerContent').html(html);
+                        initializeSeatBooking();
+                        updateSummary();
+                    });
+            }
+            */
+            // Enable for websockets ends
+
+            
+            function reloadLayout(tripId, fromStop, toStop) {
+                let requestUrl = baseLayoutUrl.replace('/0/', `/${tripId}/`);
+                const params = new URLSearchParams({ from_stop: fromStop, to_stop: toStop });
+
+                fetch(`${requestUrl}?${params.toString()}`)
+                    .then(r => r.text())
+                    .then(html => {
+                        // ✅ FIX: clear old legend from previous load
+                        $('#desktopLegendSlot').hide().empty();
+
+                        $('#drawerContent').html(html);
+
+                        // Convert MY held seats (server rendered as on-hold) to selected
+                        $('#drawerContent .layout-item.on-hold').each(function() {
+                            const holder = String($(this).data('holder-id') || '');
+                            if (holder && holder === String(HOLDER_ID)) {
+                                $(this).removeClass('on-hold').addClass('selected');
+                            }
+                        });
+
+                        initializeSeatBooking();
+                        updateSummary();
+                        syncDesktopBookingUI();
+                        setTimeout(function() {
+                            autoFitDeckLayouts();
+                        }, 50);
+                    });
+            }
+            /* =========================
+            END LAYOUT LOAD / RELOAD
+            ========================= */
+            
+            // helper function for real time booking
+
+            function getCookie(name) {
+                const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+                if (el && el.value) return el.value;
+                // 1. Try to get the token from the hidden input field first (most reliable)
+                let token = $('input[name="csrfmiddlewaretoken"]').val();
+                if (token) return token;
+
+                // 2. Fallback to cookie-searching logic if input isn't found
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            // 1. Define the base URL using Django's URL name
+            // We use '0' as a placeholder for the trip_id
+            const baseLayoutUrl = "{% url 'get_seat_layout' 0 %}";
+
+            $(document).on('click', '.book-btn-v2', function(e) {
+                e.preventDefault();
+
+                // UI State
+                const $btn = $(this);
+                const tripId = $btn.data('trip-id');
+                const fromStop = $btn.data('from-stop');
+                const toStop = $btn.data('to-stop');
+
+                // If this button is already open -> hide seats instead of reloading
+                const isOpen = !!$btn.data('open');
+                if (isOpen) {
+                    hideLayoutForThisTrip($btn, tripId, fromStop, toStop);
+                    return;
+                }
+
+                // Close any previously opened button state
+                $('.book-btn-v2').each(function() {
+                    const $b = $(this);
+                    if ($b.data('open')) {
+                        $b.data('open', false);
+                        setSeatToggleButton($b, false);
+                    }
+                });
+
+                // ✅ Store the active trip context so checkout uses the correct ship/trip
+                $('#inlineBookingPanel')
+                    .data('trip-id', tripId)
+                    .data('from-stop', fromStop)
+                    .data('to-stop', toStop);
+
+                // Enable for websockets starts
+                //connectSeatSocket(tripId, fromStop, toStop);
+                // Enable for websockets ends
+
+                const $panel = $('#inlineBookingPanel');
+
+                if (isMobileBookingLayout()) {
+                    // Mobile: keep panel where it is (fixed drawer), just open it
+                    openInlinePanelMobile();
+                } else {
+                    // Desktop: append below the clicked trip card (your current behavior)
+                    const hostKey = `${tripId}-${fromStop}-${toStop}`;
+                    const $targetHost = $(`.trip-inline-seat-host[data-trip-host="${hostKey}"]`);
+
+                    $panel.stop(true, true).hide().appendTo($targetHost);
+
+                    $panel.slideDown(250);
+                    $('html, body').animate({
+                        scrollTop: $panel.offset().top - 80
+                    }, 250);
+                }
+
+                // Show a loader while fetching
+                $('#drawerContent').html(`
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-success" role="status"></div>
+                        <p class="mt-2 text-muted">Loading deck layout...</p>
+                    </div>
+                `);
+
+                // Resolve the URL by replacing placeholder '0' with actual tripId
+                let requestUrl = baseLayoutUrl.replace('0', tripId);
+
+                // Add query parameters using URLSearchParams
+                const params = new URLSearchParams({
+                    from_stop: fromStop,
+                    to_stop: toStop
+                });
+
+                // Fetch HTML partial
+                fetch(`${requestUrl}?${params.toString()}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.text();
+                    })
+                    .then(html => {
+                        // ✅ FIX: clear old legend from previous opened trip
+                        $('#desktopLegendSlot').hide().empty();
+
+                        $('#drawerContent').html(html);
+
+                        // Mark this button as open + switch to HIDE SEATS
+                        $btn.data('open', true);
+                        setSeatToggleButton($btn, true);
+
+                        // Convert MY held seats (server rendered as on-hold) to selected
+                        $('#drawerContent .layout-item.on-hold').each(function() {
+                            const holder = String($(this).data('holder-id') || '');
+                            if (holder && holder === String(HOLDER_ID)) {
+                                $(this).removeClass('on-hold').addClass('selected');
+                            }
+                        });
+
+                        initializeSeatBooking();
+                        updateSummary();
+                        syncDesktopBookingUI();
+                        setTimeout(function() {
+                            autoFitDeckLayouts();
+                        }, 50);
+                    })
+                    .catch(error => {
+                        console.error('Layout load/render error:', error);
+
+                        $btn.data('open', false);
+                        setSeatToggleButton($btn, false);
+
+                        $('#drawerContent').html(`
+                            <div class="alert alert-danger m-4">
+                                Failed to load layout. Please try again.
+                            </div>
+                        `);
+                    });
+            });
+
+            $(document).on('click', '#desktopSubmitBookingBtn', function() {
+                // Reuse the existing booking submission logic
+                $('#checkoutBtn').trigger('click');
+            });
+
+            // Checkout Button Click
+            $('#checkoutBtn').on('click', function() {
+                const isPassengerStep = $('#passengerDetailsSection').is(':visible');
+
+                if (!isPassengerStep && !isDesktopBookingLayout()) {
+                    if ($('.layout-item.selected').length === 0) return;
+
+                    generatePassengerRows();
+
+                    $('#drawerContent').fadeOut(300, function() {
+                        // Show passenger section
+                        $('#passengerDetailsSection').fadeIn(400);
+
+                        // Forces the scrollable area back to the top
+                        $('#drawerBody').scrollTop(0);
+
+                        $('#backToSeatsBtn').fadeIn();
+                        $('#btnText').text('Book & PAY');
+                    });
+                } else {
+                    // 1. Collect all passenger data
+                    let passengers = [];
+                    let allValid = true;
+
+                    $('.passenger-row').each(function() {
+                        const name = $(this).find('.p-name').val().trim();
+                        const phone = $(this).find('.p-phone').val().trim();
+                        const email = $(this).find('.p-email').val().trim();
+                        const genderRaw = $(this).find('.p-gender').val();
+                        const gender = (genderRaw === '' || genderRaw === null) ? null : parseInt(genderRaw, 10);
+                        const address = $(this).find('.p-address').val().trim();
+
+                        if (!name || !phone) {
+                            allValid = false;
+                            $(this).find('.modern-input').each(function() {
+                                if (!$(this).val().trim() && $(this).is('.p-name, .p-phone')) {
+                                    $(this).css('border-color', 'red');
+                                } else {
+                                    $(this).css('border-color', '#e2e8f0');
+                                }
+                            });
+                        }
+
+                        passengers.push({
+                            seat_id: $(this).data('seat-id'),
+                            name: name,
+                            gender: gender,
+                            phone: phone,
+                            email: email,
+                            address: address
+                        });
+                    });
+
+                    // 2. Strict Validation Check
+                    if (!allValid) {
+                        alert('Please fill in the Full Name and Phone Number for ALL passengers.');
+                        return;
+                    }
+
+                    // If not logged in, send OTP instead of saving booking
+                    if (!IS_AUTH) {
+                        const phone = getFirstPassengerPhoneClean();
+                        const name = getFirstPassengerName();
+
+                        if (!phoneLooksBd(phone) || !name) {
+                            setOtpStatus('Please fill the first passenger Phone and Full Name to receive OTP.', true);
+                            showOtpUi();
+                            return;
+                        }
+
+                        showOtpUi();
+
+                        const $btn = $(this);
+                        $btn.prop('disabled', true);
+                        $('#btnText').text('SENDING OTP...');
+
+                        fetch("{% url 'send_booking_otp' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            body: JSON.stringify({ phone: phone })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data.success) {
+                                setOtpStatus(data.error || 'Failed to send OTP.', true);
+                                syncActionButtonMode();
+                                return;
+                            }
+
+                            setOtpStatus(data.message || `OTP sent to ${phone}. Enter it below.`, false);
+                            bookingOtpSent = true;
+                            showOtpUi();
+                            showOtpInput();
+
+                            startOtpResendCountdown(60);
+
+                            // Hide SEND OTP buttons after OTP is sent (VERIFY/RESEND controls take over)
+                            $('#checkoutBtn').hide();
+                            $('#desktopSubmitBookingBtn').hide();
+
+                            // Scroll OTP block into view (important on mobile)
+                            setTimeout(function() {
+                                const el = document.getElementById('otpUiWrap');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }, 80);
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            setOtpStatus('Failed to send OTP. Please try again.', true);
+                            syncActionButtonMode();
+                        });
+
+                        return; // ✅ stop here (don’t save booking yet)
+                    }
+
+                    // for no modal starts
+                    /*// 3. Send Data to Server
+                    const $btn = $(this);
+                    $btn.prop('disabled', true);
+                    $('#btnText').text('PROCESSING...');
+
+                    // ✅ Read active trip context from the drawer (correct ship/trip)
+                    const $drawer = $('#inlineBookingPanel');
+                    const payload = {
+                        trip_id: $drawer.data('trip-id'),
+                        from_stop: $drawer.data('from-stop'),
+                        to_stop: $drawer.data('to-stop'),
+                        passengers: passengers
+                    };
+
+                    fetch("{% url 'save_booking' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.logged_in && data.user) {
+                                updateHeaderAfterAutoLogin(data.user);
+                            }
+
+                            $('#modalRef').text(data.booking_ref);
+
+                            $('#successModal').css('display', 'flex').hide().fadeIn(100, function() {
+                                $(this).addClass('show');
+                            });
+
+                            $('#finalRedirectBtn').off('click').on('click', function() {
+                                window.location.href = "/booking/success/" + data.booking_ref + "/";
+                            });
+                        } else {
+                            alert('Error: ' + data.error);
+                            $btn.prop('disabled', false);
+                            $('#btnText').text('Book & PAY');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                        alert('Failed to save booking. Please check your connection.');
+                        $btn.prop('disabled', false);
+                        $('#btnText').text('Book & PAY');
+                    });*/
+                    //for no modal ends
+
+
+                    // for modal starts
+                    // [NEW:PAYMENT_MODAL_FLOW] Open confirmation modal instead of saving booking now
+                    const $btn = $(this);
+                    $btn.prop('disabled', true);
+                    $('#btnText').text('OPENING...');
+
+                    // ✅ Read active trip context from the drawer (correct ship/trip)
+                    const $drawer = $('#inlineBookingPanel');
+                    const payload = {
+                        trip_id: $drawer.data('trip-id'),
+                        from_stop: $drawer.data('from-stop'),
+                        to_stop: $drawer.data('to-stop'),
+                        passengers: passengers
+                    };
+
+                    // Store payload globally for Pay button
+                    pendingPaymentPayload = payload;
+
+                    // Build seat + total summary from selected seats in current panel
+                    let total = 0;
+                    const seats = [];
+                    $('#inlineBookingPanel').find('.layout-item.selected').each(function() {
+                        const label = $(this).data('label') || '';
+                        const price = parseFloat($(this).data('price') || 0);
+                        seats.push({ label, price });
+                        total += price;
+                    });
+
+                    // Passengers summary (attach seat labels)
+                    const passengerSummary = passengers.map(p => {
+                        const seatLabel = $('#inlineBookingPanel')
+                            .find(`.layout-item[data-id="${p.seat_id}"]`)
+                            .data('label') || '';
+                        return {
+                            seat_label: seatLabel,
+                            name: p.name,
+                            phone: p.phone,
+                            gender: p.gender,
+                            email: p.email,
+                            address: p.address
+                        };
+                    });
+
+                    // Open modal UI (trip summary placeholders are fine for now)
+                    const tripSummary = getTripCardSummary(payload.trip_id);
+
+                    openPaymentModal({
+                        ship_name: tripSummary.ship_name,
+                        route_text: tripSummary.route_text,
+                        departure_text: tripSummary.departure_text,
+                        arrival_text: tripSummary.arrival_text,
+                        total: total,
+                        seats: seats,
+                        passengers: passengerSummary
+                    });
+
+                    // Re-enable button because booking is not submitted yet
+                    $btn.prop('disabled', false);
+                    $('#btnText').text('Book & PAY');
+                    return;
+                    // [/NEW:PAYMENT_MODAL_FLOW]
+                    // for modal ends
+                }
+            });
+
+            // OTP verify starts
+            $(document).on('input', '#otpCodeInput', function() {
+                const v = ($(this).val() || '').replace(/\D/g, '').slice(0, 6);
+                $(this).val(v);
+                $('#verifyOtpBtn').prop('disabled', v.length !== 6);
+            });
+
+            $(document).on('click', '#verifyOtpBtn', function() {
+                const phone = getFirstPassengerPhoneClean();
+                const otp = ($('#otpCodeInput').val() || '').trim();
+
+                if (!phoneLooksBd(phone)) {
+                    setOtpStatus('Invalid phone number in first passenger row.', true);
+                    return;
+                }
+                if (otp.length !== 6) {
+                    setOtpStatus('Enter the 6-digit OTP.', true);
+                    return;
+                }
+
+                const $vbtn = $(this);
+                $vbtn.prop('disabled', true).text('VERIFYING...');
+
+                fetch("{% url 'verify_booking_otp' %}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ phone: phone, otp: otp })
                 })
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    if (data.success) {
-                        // 1. Set the reference text
-                        $('#modalRef').text(data.booking_ref);
+                    if (data.csrfToken) CSRF_TOKEN = data.csrfToken;
 
-                        // 2. Show the Modal with Animation
+                    if (!data.success) {
+                        setOtpStatus(data.error || 'OTP verification failed.', true);
+                        showOtpUi();
+                        showOtpInput();
+                        $vbtn.prop('disabled', false).text('VERIFY OTP');
+                        return;
+                    }
+
+                    // [FIX:OTP_LOGIN_UI_SWITCH] OTP verified + logged in by backend
+                    // ✅ OTP verified only (NO LOGIN here)
+                    setOtpStatus(data.message || 'OTP verified. You can confirm booking now.', false);
+
+                    // Mark that OTP is done, but user is still guest until save_booking logs them in
+                    bookingOtpSent = false;
+
+                    // Hide OTP input fields (optional), but keep the OTP area calm
+                    $('#otpInputWrap').hide();
+                    $('#otpCodeInput').val('');
+                    $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP');
+                    $('#resendOtpBtn').prop('disabled', false).text('Resend OTP');
+                    // [/FIX:OTP_LOGIN_UI_SWITCH]
+
+                    // for no modal starts
+                    /* setOtpStatus(data.message || 'OTP verified. Confirming booking...', false);
+
+                    // ✅ Now call save_booking using the same flow:
+                    $('#checkoutBtn').prop('disabled', true);
+                    $('#btnText').text('PROCESSING...');
+
+                    // Trigger your existing confirm flow: reuse the same click path
+                    // but now IS_AUTH is still false; backend will accept because session otp verified.
+                    // So just run the save request directly here:
+                    const passengers = [];
+                    $('.passenger-row').each(function() {
+                        const name = $(this).find('.p-name').val().trim();
+                        const phone2 = $(this).find('.p-phone').val().trim();
+                        const email = $(this).find('.p-email').val().trim();
+                        const genderRaw = $(this).find('.p-gender').val();
+                        const gender = (genderRaw === '' || genderRaw === null) ? null : parseInt(genderRaw, 10);
+                        const address = $(this).find('.p-address').val().trim();
+
+                        passengers.push({
+                            seat_id: $(this).data('seat-id'),
+                            name: name,
+                            gender: gender,
+                            phone: phone2,
+                            email: email,
+                            address: address
+                        });
+                    });
+
+                    const $drawer = $('#inlineBookingPanel');
+                    const payload = {
+                        trip_id: $drawer.data('trip-id'),
+                        from_stop: $drawer.data('from-stop'),
+                        to_stop: $drawer.data('to-stop'),
+                        passengers: passengers
+                    };
+
+                    fetch("{% url 'save_booking' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(r => r.json())
+                    .then(resp => {
+                        if (!resp.success) {
+                            setOtpStatus(resp.error || 'Booking failed after OTP verification.', true);
+                            showOtpUi();
+                            $('#otpInputWrap').show();
+                            $('#checkoutBtn').prop('disabled', false);
+                            $vbtn.prop('disabled', false).text('VERIFY OTP');
+                            return;
+                        }
+
+                        if (resp.logged_in && resp.user) {
+                            updateHeaderAfterAutoLogin(resp.user);
+                        }
+
+                        bookingOtpSent = false;
+
+                        // Success modal you already use
+                        $('#modalRef').text(resp.booking_ref);
                         $('#successModal').css('display', 'flex').hide().fadeIn(100, function() {
                             $(this).addClass('show');
                         });
 
-                        // 3. Handle Redirect on Button Click
-                        $('#finalRedirectBtn').on('click', function() {
-                            window.location.href = "/booking/success/" + data.booking_ref + "/";
+                        $('#finalRedirectBtn').off('click').on('click', function() {
+                            window.location.href = "/booking/success/" + resp.booking_ref + "/";
                         });
-                    } else {
-                        alert('Error: ' + data.error);
-                        $btn.prop('disabled', false).text('CONFIRM & PAY');
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    alert('Failed to save booking. Please check your connection.');
-                    $btn.prop('disabled', false).text('CONFIRM & PAY');
-                });
-            }
-        });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        setOtpStatus('Network error while saving booking.', true);
+                        showOtpUi();
+                        $('#otpInputWrap').show();
+                        $('#checkoutBtn').prop('disabled', false);
+                        $vbtn.prop('disabled', false).text('VERIFY OTP');
+                    });*/
+                    // for no modal ends
 
-        // Back Button Logic
-        $('#backToSeatsBtn').on('click', function() {
-            $('#passengerDetailsSection').fadeOut(300, function() {
-                $('#drawerContent').fadeIn(300);
+                    // [NEW:PAYMENT_MODAL_FLOW_OTP] OTP verified -> open payment modal (do NOT save booking yet)
+
+                    // Build passengers (same as your current code)
+                    const passengers = [];
+                    $('.passenger-row').each(function() {
+                        const name = $(this).find('.p-name').val().trim();
+                        const phone2 = $(this).find('.p-phone').val().trim();
+                        const email = $(this).find('.p-email').val().trim();
+                        const genderRaw = $(this).find('.p-gender').val();
+                        const gender = (genderRaw === '' || genderRaw === null) ? null : parseInt(genderRaw, 10);
+                        const address = $(this).find('.p-address').val().trim();
+
+                        passengers.push({
+                            seat_id: $(this).data('seat-id'),
+                            name: name,
+                            gender: gender,
+                            phone: phone2,
+                            email: email,
+                            address: address
+                        });
+                    });
+
+                    const $drawer = $('#inlineBookingPanel');
+                    const payload = {
+                        trip_id: $drawer.data('trip-id'),
+                        from_stop: $drawer.data('from-stop'),
+                        to_stop: $drawer.data('to-stop'),
+                        passengers: passengers
+                    };
+
+                    // Store payload globally for Pay button
+                    pendingPaymentPayload = payload;
+
+                    // Build seat + total summary from selected seats in current panel
+                    let total = 0;
+                    const seats = [];
+                    $('#inlineBookingPanel').find('.layout-item.selected').each(function() {
+                        const label = $(this).data('label') || '';
+                        const price = parseFloat($(this).data('price') || 0);
+                        seats.push({ label, price });
+                        total += price;
+                    });
+
+                    // Passengers summary for modal
+                    const passengerSummary = passengers.map(p => {
+                        const seatLabel = $('#inlineBookingPanel')
+                            .find(`.layout-item[data-id="${p.seat_id}"]`)
+                            .data('label') || '';
+                        return {
+                            seat_label: seatLabel,
+                            name: p.name,
+                            phone: p.phone,
+                            gender: p.gender,
+                            email: p.email,
+                            address: p.address
+                        };
+                    });
+
+                    // Open payment modal
+                    const tripSummary = getTripCardSummary(payload.trip_id);
+
+                    openPaymentModal({
+                        ship_name: tripSummary.ship_name,
+                        route_text: tripSummary.route_text,
+                        departure_text: tripSummary.departure_text,
+                        arrival_text: tripSummary.arrival_text,
+                        total: total,
+                        seats: seats,
+                        passengers: passengerSummary
+                    });
+
+                    // UI cleanup: keep OTP verified state, hide verify button state
+                    // [FIX:OTP_POST_SUCCESS]
+                    $vbtn.prop('disabled', false).text('VERIFY OTP');
+                    // User is logged in already, so do NOT show OTP status / do NOT hide Book & Pay buttons
+                    return;
+                    // [/FIX:OTP_POST_SUCCESS]
+                    // [/NEW:PAYMENT_MODAL_FLOW_OTP]
+                })
+                .catch(err => {
+                    console.error(err);
+                    setOtpStatus('OTP verification failed. Please try again.', true);
+                    showOtpUi();
+                    $('#otpInputWrap').show();
+                    $vbtn.prop('disabled', false).text('VERIFY OTP');
+                });
+            });
+            // OTP verify ends
+
+            $(document).on('click', '#resendOtpBtn', function() {
+                if (otpResendCountdown > 0) {
+                    return;
+                }
+                const phone = getFirstPassengerPhoneClean();
+                const name = getFirstPassengerName();
+
+                if (!phoneLooksBd(phone) || !name) {
+                    setOtpStatus('Please fill the first passenger Phone and Full Name before resending OTP.', true);
+                    showOtpUi();
+                    return;
+                }
+
+                const $btn = $(this);
+                $btn.prop('disabled', true).text('Sending...');
+
+                fetch("{% url 'send_booking_otp' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ phone: phone })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        setOtpStatus(data.error || 'Failed to resend OTP.', true);
+                        $btn.prop('disabled', false).text('Resend OTP');
+                        return;
+                    }
+
+                    setOtpStatus(data.message || `OTP sent to ${phone}. Enter it below.`, false);
+                    showOtpUi();
+                    showOtpInput();
+                    startOtpResendCountdown(60);
+
+                    $('#checkoutBtn').prop('disabled', true);
+
+                    setTimeout(function() {
+                        const el = document.getElementById('otpUiWrap');
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 80);
+
+                    $btn.prop('disabled', false).text('Resend OTP');
+                    syncActionButtonMode();
+                })
+                .catch(err => {
+                    console.error(err);
+                    setOtpStatus('Failed to resend OTP. Please try again.', true);
+                    $btn.prop('disabled', false).text('Resend OTP');
+                });
+            });
+
+            // release holds if user closes drawer.  Otherwise seats remain “on hold” until TTL expires.
+            $('#closeDrawer').on('click', function() {
+                const $drawer = $('#inlineBookingPanel');
+                const tripId = $drawer.data('trip-id');
+                const fromStop = $drawer.data('from-stop');
+                const toStop = $drawer.data('to-stop');
+
+                // release all selected seats for this user/session
+                const selectedIds = $panelScope().find('.layout-item.selected').map(function() {
+                    return $(this).data('id');
+                }).get();
+
+                if (selectedIds.length) {
+                    fetch("{% url 'release_seats' %}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCookie("csrftoken"),
+                        },
+                        body: JSON.stringify({
+                            trip_id: tripId,
+                            from_stop: fromStop,
+                            to_stop: toStop,
+                            seat_ids: selectedIds,
+                        })
+                    });
+                }
+
+                // Reset UI
+                $('#passengerDetailsSection').hide();
+                $('#drawerContent').show().empty();
+
+                // ✅ FIX: clear desktop legend slot too (otherwise it stays and duplicates on next load)
+                $('#desktopLegendSlot').hide().empty();
+
+                $('#passengerRows').empty();
                 $('#backToSeatsBtn').hide();
                 $('#btnText').text('NEXT');
+                bookingOtpSent = false;
+
+                if (otpResendTimer) {
+                    clearInterval(otpResendTimer);
+                    otpResendTimer = null;
+                }
+                otpResendCountdown = 0;
+
+                $('#checkoutBtn').show().prop('disabled', true).removeClass('active');
+                $('#desktopSubmitBookingBtn').show(); // safe even if not present
+
+                $('#selectedSeatsList').text('None selected');
+                $('#totalPrice').text('0');
+                $('#copyFirstPassenger').prop('checked', false);
+
+                $('#otpUiWrap').hide();
+                $('#otpInputWrap').hide();
+                $('#otpStatus').hide().removeClass('is-error').text('');
+                $('#otpCodeInput').val('');
+                $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP');
+                $('#resendOtpBtn').prop('disabled', false).text('Resend OTP');
+
+                // Reset any open View/Hide button back to VIEW SEATS
+                $('.book-btn-v2').each(function() {
+                    const $b = $(this);
+                    if ($b.data('open')) {
+                        $b.data('open', false);
+                        setSeatToggleButton($b, false);
+                    }
+                });
+
+                if (isMobileBookingLayout()) {
+                    closeInlinePanelMobile();
+                    $drawer.hide(); // hide after transition starts (optional safe)
+                } else {
+                    $drawer.slideUp(200);
+                }
+            });
+
+            // Back Button Logic
+            $('#backToSeatsBtn').on('click', function() {
+                bookingOtpSent = false;   // ✅ reset OTP sent state
+
+                $('#passengerDetailsSection').fadeOut(300, function() {
+                    $('#drawerContent').fadeIn(300);
+                    $('#backToSeatsBtn').hide();
+                    $('#btnText').text('NEXT');
+
+                    $('#otpUiWrap').hide();
+                    $('#otpInputWrap').hide();
+                    $('#otpStatus').hide().removeClass('is-error').text('');
+                    $('#otpCodeInput').val('');
+                    $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP'); // ✅ reset verify button
+                });
+            });
+            /* =========================
+            END MAIN BOOKING FLOW HANDLERS
+            ========================= */
+
+            // for mobile view
+            /* =========================
+            LAYOUT MODE HELPERS (MOBILE / DESKTOP)
+            ========================= */
+            function isMobileBookingLayout() {
+                return !window.matchMedia('(min-width: 992px)').matches;
+            }
+
+            function openInlinePanelMobile() {
+                $('#inlineBookingOverlay').addClass('is-open');
+                $('#inlineBookingPanel').show().addClass('is-open');
+                $('body').css('overflow', 'hidden'); // prevent background scroll
+            }
+
+            function closeInlinePanelMobile() {
+                $('#inlineBookingOverlay').removeClass('is-open');
+                $('#inlineBookingPanel').removeClass('is-open');
+                $('body').css('overflow', '');
+            }
+            // for mobile view
+
+            function isDesktopBookingLayout() {
+                return window.matchMedia('(min-width: 992px)').matches;
+            }
+            /* =========================
+            END LAYOUT MODE HELPERS
+            ========================= */
+
+            /* =========================
+            VIEW/HIDE SEATS TOGGLE HELPERS
+            ========================= */
+            function setSeatToggleButton($btn, isOpen) {
+                const $txt = $btn.find('.seat-toggle-text');
+                if (isOpen) {
+                    $btn.addClass('is-hide');
+                    if ($txt.length) {
+                        $txt.text('HIDE SEATS');
+                    } else {
+                        $btn.text('HIDE SEATS');
+                    }
+                } else {
+                    $btn.removeClass('is-hide');
+                    if ($txt.length) {
+                        $txt.text('VIEW SEATS');
+                    } else {
+                        $btn.text('VIEW SEATS');
+                    }
+                }
+            }
+
+            function hideLayoutForThisTrip($btn, tripId, fromStop, toStop) {
+                const $panel = $('#inlineBookingPanel');
+
+                // Only close if the currently opened panel belongs to this same trip segment
+                const isSameContext =
+                    String($panel.data('trip-id')) === String(tripId) &&
+                    String($panel.data('from-stop')) === String(fromStop) &&
+                    String($panel.data('to-stop')) === String(toStop);
+
+                if (!isSameContext) {
+                    // If somehow button says "hide" but panel isn't for this trip, just reset button UI
+                    setSeatToggleButton($btn, false);
+                    $btn.data('open', false);
+                    return;
+                }
+
+                // Smooth close
+                if (isMobileBookingLayout()) {
+                    $('#closeDrawer').trigger('click'); // uses your existing cleanup + release logic
+                } else {
+                    $panel.stop(true, true).slideUp(200, function() {
+                        // Keep the DOM clean
+                        $(this).hide();
+                    });
+
+                    // Reset UI state (minimal; does NOT release seats automatically on desktop hide)
+                    // If you want to release seats on hide too, tell me and I'll wire it.
+                    $('#passengerDetailsSection').hide();
+                    $('#drawerContent').show().empty();
+
+                    // ✅ FIX: remove old legend that was moved to passenger side
+                    $('#desktopLegendSlot').hide().empty();
+
+                    $('#passengerRows').empty();
+                    $('#backToSeatsBtn').hide();
+                    $('#btnText').text('NEXT');
+
+                    bookingOtpSent = false;
+                    if (otpResendTimer) {
+                        clearInterval(otpResendTimer);
+                        otpResendTimer = null;
+                    }
+                    otpResendCountdown = 0;
+
+                    $('#checkoutBtn').show().prop('disabled', true).removeClass('active');
+                    $('#desktopSubmitBookingBtn').show();
+
+                    $('#otpUiWrap').hide();
+                    $('#otpInputWrap').hide();
+                    $('#otpStatus').hide().removeClass('is-error').text('');
+                    $('#otpCodeInput').val('');
+                    $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP');
+                    $('#resendOtpBtn').prop('disabled', false).text('Resend OTP');
+                }
+
+                // Reset button UI
+                setSeatToggleButton($btn, false);
+                $btn.data('open', false);
+            }
+            /* =========================
+            END VIEW/HIDE SEATS TOGGLE HELPERS
+            ========================= */
+
+            function syncDesktopBookingUI() {
+                // Helper: move legend to the right on desktop, back to drawerContent on mobile
+                function moveLegendForLayout() {
+                    $('#desktopLegendSlot .legend-container').slice(1).remove();
+                    const $legend = $('#drawerContent .legend-container').first();
+                    const $slot = $('#desktopLegendSlot');
+
+                    if (isDesktopBookingLayout()) {
+                        if ($legend.length && $slot.length) {
+                            $slot.show();
+
+                            // Move legend into the passenger section (right column)
+                            if (!$slot.find('.legend-container').length) {
+                                $legend.detach().appendTo($slot);
+                            }
+                        }
+                    } else {
+                        // Mobile: move legend back to its original place (top of drawerContent)
+                        if ($legend.length) {
+                            $('#desktopLegendSlot').hide();
+                            $legend.detach().prependTo('#drawerContent');
+                        }
+                    }
+                }
+
+                if (isDesktopBookingLayout()) {
+                    // Always show passenger side panel in desktop mode
+                    $('#passengerDetailsSection').show();
+                    $('#drawerContent').show();
+
+                    // Hide back button in desktop mode
+                    $('#backToSeatsBtn').hide();
+
+                    // ✅ Move legend to the right on desktop
+                    moveLegendForLayout();
+
+                    // Generate passenger rows immediately based on selected seats
+                    generatePassengerRows();
+
+                    // Let auth-aware logic decide text/button state
+                    syncActionButtonMode();
+
+                    return;
+                }
+
+                // If not desktop, still ensure legend is in the normal position
+                moveLegendForLayout();
+            }
+
+            /* =========================
+            SEAT SELECTION ENGINE
+            ========================= */
+            function setSeatUiState($seat, state) {
+                // state: "available" | "selected" | "on-hold" | "occupied"
+                $seat.removeClass('available selected on-hold occupied occupied-male occupied-female');
+
+                if (state === 'available') $seat.addClass('available');
+                if (state === 'selected') $seat.addClass('selected');
+                if (state === 'on-hold') $seat.addClass('on-hold');
+                if (state === 'occupied') $seat.addClass('occupied');
+            }
+
+            // Cabin or seat initialization
+            // Maximum selection logic and summary update
+            function initializeSeatBooking() {
+                /*
+                if (!IS_AUTH) {
+                    alert("Please login to book seats.");
+                    return;
+                }
+                */
+
+                const $scope = $panelScope();
+                $scope.find('.layout-item.available, .layout-item.selected, .layout-item.on-hold').off('click').on('click', async function() {
+                    const $seat = $(this);
+
+                    const $drawer = $('#inlineBookingPanel');
+                    const tripId = $drawer.data('trip-id');
+                    const fromStop = $drawer.data('from-stop');
+                    const toStop = $drawer.data('to-stop');
+
+                    const seatId = $seat.data('id');
+
+                    // if seat is on-hold/occupied/non-bookable, block
+                    if ($seat.hasClass('occupied') || $seat.hasClass('non-bookable')) {
+                        alert(`Seat ${$seat.data('label')} is not available right now.`);
+                        return;
+                    }
+
+                    const isSelected = $seat.hasClass('selected');
+                    const selectedCount = $panelScope().find('.layout-item.selected').length;
+
+                    // deselect -> release
+                    if (isSelected) {
+                        $seat.removeClass('selected on-hold').addClass('available');
+                        updateSummary();
+
+                        const rel = await releaseSeatOnServer(tripId, fromStop, toStop, seatId);
+
+                        if (!rel.ok || !rel.data?.success) {
+                            $seat.removeClass('available on-hold').addClass('selected');
+                            updateSummary();
+                            alert(rel.data?.error || 'Failed to release the seat. Please try again.');
+                        }
+
+                        return;
+                    }
+
+                    // selecting new seat -> max 5
+                    if (selectedCount >= 5) {
+                        alert('Maximum of 5 seats/cabins can be booked at once.');
+                        return;
+                    }
+
+                    // try hold on server FIRST
+                    // try hold on server FIRST
+                    const result = await holdSeatOnServer(tripId, fromStop, toStop, seatId);
+
+                    // Hard failure (401, 500, etc.)
+                    if (!result.ok || !result.data.success) {
+                        alert(result.data?.error || `Seat ${$seat.data('label')} is not available right now.`);
+
+                        const err = String(result.data?.error || '').toLowerCase();
+                        if (err.includes('hold')) {
+                            setSeatUiState($seat, 'on-hold');
+                        } else if (err.includes('book')) {
+                            setSeatUiState($seat, 'occupied');
+                        } else {
+                            // unknown error -> keep as-is (or force available)
+                            setSeatUiState($seat, 'available');
+                        }
+
+                        updateSummary();
+                        return;
+                    }
+
+                    // Backend may return success:true but still reject specific seats
+                    const heldSeats = Array.isArray(result.data.held) ? result.data.held.map(Number) : [];
+                    const rejectedSeats = Array.isArray(result.data.rejected) ? result.data.rejected : [];
+                    const seatWasHeld = heldSeats.includes(Number(seatId));
+
+                    if (!seatWasHeld) {
+                        const rejection = rejectedSeats.find(r => Number(r.seat_id) === Number(seatId));
+
+                        let msg = `Seat ${$seat.data('label')} is not available right now.`;
+                        if (rejection?.reason === 'held') {
+                            msg = `Seat ${$seat.data('label')} is currently on hold.`;
+                        } else if (rejection?.reason === 'booked') {
+                            msg = `Seat ${$seat.data('label')} has already been booked.`;
+                        } else if (result.data.error) {
+                            msg = result.data.error;
+                        }
+
+                        alert(msg);
+
+                        // Update ONLY this seat
+                        if (rejection?.reason === 'held') {
+                            setSeatUiState($seat, 'on-hold');
+                        } else if (rejection?.reason === 'booked') {
+                            setSeatUiState($seat, 'occupied');
+                        } else {
+                            setSeatUiState($seat, 'available');
+                        }
+
+                        updateSummary();
+                        return;
+                    }
+
+                    // hold success -> select
+                    $seat.removeClass('available on-hold').addClass('selected');
+                    updateSummary();
+
+                    if (isDesktopBookingLayout()) {
+                        syncDesktopBookingUI();
+                    }
+                });
+            }
+            /* =========================
+            END SEAT SELECTION ENGINE
+            ========================= */
+
+            /* =========================
+            SUMMARY / TOTAL / SELECTED ITEMS UI
+            ========================= */
+            function updateSummary() {
+                let selectedLabels = [];
+                let total = 0;
+
+                // 1. Gather data from all currently selected items
+                $panelScope().find('.layout-item.selected').each(function() {
+                    selectedLabels.push($(this).data('label'));
+                    total += parseFloat($(this).data('price') || 0);
+                });
+
+                // 2. Selected seats summary text
+                let displayTemplate = 'None selected';
+                if (selectedLabels.length > 0) {
+                    if (selectedLabels.length > 3) {
+                        displayTemplate = selectedLabels.slice(0, 3).join(', ') + ` +${selectedLabels.length - 3} more`;
+                    } else {
+                        displayTemplate = selectedLabels.join(', ');
+                    }
+                }
+
+                // 3. Update footer summary
+                if ($('#selectedSeatsList').length) {
+                    $('#selectedSeatsList').text(displayTemplate);
+                }
+                $('#totalPrice').text(total.toLocaleString());
+
+                // 4. Enable/disable footer checkout button (base state from seat selection)
+                const $checkoutBtn = $('#checkoutBtn');
+                const hasSelected = selectedLabels.length > 0;
+
+                // Keep visual active class in sync
+                $checkoutBtn.toggleClass('active', hasSelected);
+
+                // Base disabled state (syncActionButtonMode may override for guest OTP flow)
+                $checkoutBtn.prop('disabled', !hasSelected);
+
+                syncActionButtonMode();   // ✅ auth-aware button logic
+
+                // ✅ 5. Keep passenger rows synced with current selected seats
+                // Desktop: always visible, so always sync
+                // Mobile: sync only if passenger section is currently open
+                if (isDesktopBookingLayout() || $('#passengerDetailsSection').is(':visible')) {
+                    generatePassengerRows();
+                }
+
+                // ✅ 6. Keep desktop submit button in sync too (if present)
+                $('#desktopSubmitBookingBtn').prop('disabled', selectedLabels.length === 0);
+
+                // ✅ 7. Update live selected items panel
+                renderSelectedItemsLivePanel();
+            }
+
+            // Selected Items panel render starts
+            function renderSelectedItemsLivePanel() {
+                const $panel = $('#selectedItemsPanel');
+                const $list = $('#selectedItemsListLive');
+                const $count = $('#selectedItemsCount');
+                const $subtotal = $('#selectedItemsSubtotal');
+
+                if (!$panel.length || !$list.length || !$count.length) return;
+
+                const selected = [];
+                let subtotal = 0;
+
+                $('.layout-item.selected').each(function() {
+                    const label = $(this).data('label') || 'Seat';
+                    const category = $(this).data('category') || '';
+                    const price = parseFloat($(this).data('price') || 0);
+
+                    subtotal += price;
+
+                    selected.push({
+                        label: label,
+                        category: category,
+                        price: price
+                    });
+                });
+
+                $count.text(selected.length);
+                if ($subtotal.length) {
+                    $subtotal.text(`৳${subtotal.toLocaleString()}`);
+                }
+
+                if (selected.length === 0) {
+                    $list.empty();
+                    $panel.stop(true, true).slideUp(120);
+                    return;
+                }
+
+                let html = '';
+                selected.forEach(item => {
+                    html += `
+                        <div class="selected-items-panel__item">
+                            <div class="selected-items-panel__left">
+                                <span class="selected-items-panel__badge">
+                                    <i class="fa-solid fa-chair"></i>
+                                </span>
+                                <div>
+                                    <div class="selected-items-panel__name">${item.label}</div>
+                                    <div class="selected-items-panel__meta">${item.category || 'Seat/Cabin'}</div>
+                                </div>
+                            </div>
+                            <div class="selected-items-panel__price">৳${item.price.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+
+                $list.html(html);
+
+                if (!$panel.is(':visible')) {
+                    $panel.stop(true, true).slideDown(140);
+                }
+            }
+            // Selected Items panel render ends
+            /* =========================
+            END SUMMARY / TOTAL / SELECTED ITEMS UI
+            ========================= */
+
+
+            /* =========================
+            PASSENGER FORM BUILDERS / HELPERS
+            ========================= */
+            // helper function for generating passenger rows
+            function generatePassengerRows() {
+                const $container = $('#passengerRows');
+
+                // Preserve existing values by seat_id (and disabled state)
+                const existingData = {};
+                $container.find('.passenger-row').each(function() {
+                    const seatId = $(this).data('seat-id');
+                    existingData[seatId] = {
+                        name: $(this).find('.p-name').val() || '',
+                        gender: $(this).find('.p-gender').val() || '0',
+                        phone: $(this).find('.p-phone').val() || '',
+                        email: $(this).find('.p-email').val() || '',
+                        address: $(this).find('.p-address').val() || ''
+                    };
+                });
+
+                $container.empty();
+
+                $('.layout-item.selected').each(function(index) {
+                    const seatLabel = $(this).data('label');
+                    const seatId = $(this).data('id');
+
+                    let saved = existingData[seatId] || {};
+
+                    // ✅ If logged in, prefill FIRST passenger row from logged-in user
+                    // but don't overwrite values already typed by the user
+                    if (IS_AUTH && index === 0 && LOGGED_IN_USER_PREFILL) {
+                        saved = {
+                            ...saved,
+                            name: saved.name || (LOGGED_IN_USER_PREFILL.name || ''),
+                            phone: saved.phone || (LOGGED_IN_USER_PREFILL.phone || ''),
+                            email: saved.email || (LOGGED_IN_USER_PREFILL.email || ''),
+                            address: saved.address || (LOGGED_IN_USER_PREFILL.address || '')
+                        };
+                    }
+
+                    const isFirstLoggedInPassenger = IS_AUTH && index === 0;
+                    const phoneDisabledAttr = isFirstLoggedInPassenger ? 'disabled' : '';
+
+                    const rowHtml = `
+                        <div class="passenger-row" data-seat-id="${seatId}">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="seat-badge">
+                                        <i class="fa-solid fa-chair"></i> SEAT ${seatLabel}
+                                    </span>
+                                    <span class="passenger-label">Passenger ${index + 1}</span>
+                                </div>
+                            </div>
+
+                            <div class="field-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Phone <span class="req-star">*</span></label>
+                                    <input type="tel"
+                                            class="modern-input p-phone"
+                                            placeholder="01xxxxxxxxx"
+                                            required
+                                            autocomplete="tel"
+                                            ${phoneDisabledAttr}
+                                            value="${(saved.phone || '').replace(/"/g, '&quot;')}">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Full Name <span class="req-star">*</span></label>
+                                    <input type="text"
+                                            class="modern-input p-name"
+                                            placeholder="Name"
+                                            required
+                                            value="${(saved.name || '').replace(/"/g, '&quot;')}">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Gender</label>
+                                    <select class="modern-input p-gender">
+                                        <option value="0" ${String(saved.gender) === '0' ? 'selected' : ''}>Male</option>
+                                        <option value="1" ${String(saved.gender) === '1' ? 'selected' : ''}>Female</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Email <span class="optional-text">(Optional)</span></label>
+                                    <input type="email"
+                                            class="modern-input p-email"
+                                            placeholder="Email"
+                                            value="${(saved.email || '').replace(/"/g, '&quot;')}">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Address <span class="optional-text">(Optional)</span></label>
+                                    <input type="text"
+                                            class="modern-input p-address"
+                                            placeholder="Address"
+                                            value="${(saved.address || '').replace(/"/g, '&quot;')}">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $container.append(rowHtml);
+                });
+
+                // Enable/disable desktop submit button based on selection
+                syncActionButtonMode();
+            }
+
+
+            // Copy First Passenger Details
+            $(document).on('change', '#copyFirstPassenger', function() {
+                if (this.checked) {
+                    const firstName = $('.p-name').first().val();
+                    const firstGender = $('.p-gender').first().val();
+                    const firstPhone = $('.p-phone').first().val();
+                    const firstEmail = $('.p-email').first().val();
+                    const firstAddress = $('.p-address').first().val();
+
+                    $('.p-name').val(firstName);
+                    $('.p-gender').val(firstGender);
+                    $('.p-phone').val(firstPhone);
+                    $('.p-email').val(firstEmail);
+                    $('.p-address').val(firstAddress);
+                }
+            });
+            /* =========================
+            END PASSENGER FORM BUILDERS / HELPERS
+            ========================= */
+
+            /* =========================
+            OTP UI STATE / ACTION BUTTON MODE
+            ========================= */
+
+            // otp & confirmation button starts
+            function syncActionButtonMode() {
+                const hasSelected = $('.layout-item.selected').length > 0;
+
+                // Only show OTP UI when passenger UI exists (desktop always / mobile step open)
+                const passengerVisible = isDesktopBookingLayout() || $('#passengerDetailsSection').is(':visible');
+                if (!passengerVisible) {
+                    $('#otpUiWrap').hide();
+                    $('#otpInputWrap').hide();
+
+                    // On seat step, button should depend only on seat selection
+                    const hasSelectedOnly = $('.layout-item.selected').length > 0;
+                    $('#checkoutBtn').prop('disabled', !hasSelectedOnly);
+
+                    return;
+                }
+
+                if (IS_AUTH) {
+                    $('#otpUiWrap').hide();
+                    $('#btnText').text('Book & PAY');
+
+                    $('#checkoutBtn')
+                        .prop('disabled', !hasSelected)
+                        .removeClass('otp-mode');
+
+                    $('#desktopSubmitBookingBtn')
+                        .text('Book & PAY')
+                        .prop('disabled', !hasSelected);
+
+                    return;
+                }
+
+                // Guest mode
+                showOtpUi();
+
+                const phone = getFirstPassengerPhoneClean();
+                const name = getFirstPassengerName();
+
+                const canSendOtp = hasSelected && phoneLooksBd(phone) && name.length > 0;
+
+                // Main button is only for SEND OTP
+                $('#btnText').text('SEND OTP');
+                $('#desktopSubmitBookingBtn').text('SEND OTP');
+
+                $('#checkoutBtn').show();
+                $('#desktopSubmitBookingBtn').show();
+
+                // If OTP already sent, keep SEND OTP buttons disabled (VERIFY OTP button handles next step)
+                if (bookingOtpSent) {
+                    // Hide SEND OTP buttons after OTP has been sent
+                    $('#checkoutBtn').hide();
+                    $('#desktopSubmitBookingBtn').hide();
+
+                    // Keep OTP UI visible
+                    showOtpUi();
+                    $('#otpInputWrap').show();
+
+                    setResendOtpButtonState();
+                    return;
+                }
+
+                // Enable SEND OTP button when first passenger phone + name are valid
+                $('#checkoutBtn').prop('disabled', !canSendOtp).addClass('otp-mode');
+                $('#desktopSubmitBookingBtn').prop('disabled', !canSendOtp);
+
+                // Status hint
+                if (hasSelected) {
+                    if (phoneLooksBd(phone)) {
+                        setOtpStatus(`The OTP will be sent to ${phone}`, false);
+                    } else {
+                        setOtpStatus(`Enter a valid phone (01XXXXXXXXX) in the first passenger row to receive OTP.`, true);
+                    }
+                } else {
+                    $('#otpStatus').hide().text('');
+                }
+            }
+
+            // Send OTP
+            function setOtpStatus(message, isError=false) {
+                const $box = $('#otpStatus');
+                if (!$box.length) return;
+
+                $box
+                    .toggleClass('is-error', !!isError)
+                    .text(message || '')
+                    .show();
+            }
+
+            function showOtpUi() {
+                $('#otpUiWrap').show();
+            }
+
+            function showOtpInput() {
+                $('#otpInputWrap').show();
+                $('#otpCodeInput').val('').focus();
+                $('#verifyOtpBtn').prop('disabled', true);
+            }
+
+            function getFirstPassengerPhoneClean() {
+                const raw = ($('#passengerRows .p-phone').first().val() || '');
+                return raw.replace(/\s+/g, '').trim();
+            }
+
+            function getFirstPassengerName() {
+                return ($('#passengerRows .p-name').first().val() || '').trim();
+            }
+
+            function phoneLooksBd(phone) {
+                return /^01\d{9}$/.test(phone) || /^(\+?8801)\d{9}$/.test(phone);
+            }
+
+            function setResendOtpButtonState() {
+                const $btn = $('#resendOtpBtn');
+                if (!$btn.length) return;
+
+                if (otpResendCountdown > 0) {
+                    const mm = String(Math.floor(otpResendCountdown / 60)).padStart(2, '0');
+                    const ss = String(otpResendCountdown % 60).padStart(2, '0');
+                    $btn.prop('disabled', true).text(`Resend OTP (${mm}:${ss})`);
+                } else {
+                    $btn.prop('disabled', false).text('Resend OTP');
+                }
+            }
+
+            function startOtpResendCountdown(seconds) {
+                otpResendCountdown = seconds || 60;
+
+                if (otpResendTimer) {
+                    clearInterval(otpResendTimer);
+                    otpResendTimer = null;
+                }
+
+                setResendOtpButtonState();
+
+                otpResendTimer = setInterval(function() {
+                    otpResendCountdown -= 1;
+
+                    if (otpResendCountdown <= 0) {
+                        otpResendCountdown = 0;
+                        clearInterval(otpResendTimer);
+                        otpResendTimer = null;
+                    }
+
+                    setResendOtpButtonState();
+                }, 1000);
+            }
+
+            function resetOtpUiState() {
+                bookingOtpSent = false;
+
+                if (otpResendTimer) {
+                    clearInterval(otpResendTimer);
+                    otpResendTimer = null;
+                }
+
+                otpResendCountdown = 0;
+
+                $('#otpUiWrap').hide();
+                $('#otpInputWrap').hide();
+                $('#otpStatus').hide().removeClass('is-error').text('');
+                $('#otpCodeInput').val('');
+                $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP');
+                $('#resendOtpBtn').prop('disabled', false).text('Resend OTP');
+            }
+            /* =========================
+            END OTP UI STATE / ACTION BUTTON MODE
+            ========================= */
+
+            /* =========================
+            AUTH UI UPDATE HELPERS
+            ========================= */
+            // for logging in the user
+            function updateHeaderAfterAutoLogin(userData) {
+                if (!userData) return;
+
+                const firstName = (userData.first_name || '').trim();
+                const phone = (userData.phone_number || '').trim();
+                const displayName = (firstName || phone || 'Account');
+
+                // IMPORTANT: make a unique dropdown id (avoid collisions)
+                const menuId = 'userMenuDynamic';
+
+                const authHtml = `
+                    <div class="dropdown d-inline-block me-3">
+                        <div class="user-dropdown-toggle d-flex align-items-center"
+                            id="${menuId}" data-bs-toggle="dropdown" aria-expanded="false">
+
+                            <div class="user-icon-wrapper">
+                                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 8C10.2091 8 12 6.20914 12 4C12 1.79086 10.2091 0 8 0C5.79086 0 4 1.79086 4 4C4 6.20914 5.79086 8 8 8Z" fill="currentColor"/>
+                                    <path d="M8 9C5.33 9 0 10.34 0 13V16H16V13C16 10.34 10.67 9 8 9Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+
+                            <div class="user-info-text d-flex align-items-center">
+                                <span class="user-name-label">${$('<div>').text(displayName).html()}</span>
+                                <i class="fa-solid fa-chevron-down ms-2 caret-icon"></i>
+                            </div>
+                        </div>
+
+                        <ul class="dropdown-menu dropdown-menu-end modern-user-menu" aria-labelledby="${menuId}">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'profile_edit' %}">
+                                    <i class="fa-light fa-user"></i>
+                                    <span class="menu-text">Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'my_bookings' %}">
+                                    <i class="fa-light fa-calendar-check"></i>
+                                    <span class="menu-text">My Booking</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'logout' %}" method="post" class="m-0">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
+                                    <button type="submit" class="dropdown-item text-danger logout-link">
+                                        <i class="fa-light fa-arrow-right-from-bracket"></i>
+                                        <span class="menu-text">Log Out</span>
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                `;
+
+                $('#headerAuthControls').html(authHtml);
+
+                // keep JS auth state consistent
+                IS_AUTH = true;
+            }
+            // for logging in the user
+            /* =========================
+            END AUTH UI UPDATE HELPERS
+            ========================= */
+
+            /* =========================
+            PASSENGER PROFILE LOOKUP (PHONE -> PREFILL)
+            ========================= */
+            // fetch user information from phone number
+            function normalizeBdPhoneForLookup(phone) {
+                const digits = String(phone || '').replace(/\D/g, '');
+
+                // UI input target is 11-digit local: 01XXXXXXXXX
+                if (/^01\d{9}$/.test(digits)) return digits;
+
+                // Convert 8801XXXXXXXXX -> 01XXXXXXXXX for UI consistency if needed
+                if (/^8801\d{9}$/.test(digits)) return '0' + digits.slice(2);
+
+                // Convert +8801XXXXXXXXX -> 01XXXXXXXXX
+                if (/^\+8801\d{9}$/.test(String(phone || '').trim())) {
+                    return '0' + String(phone || '').replace(/\D/g, '').slice(2);
+                }
+
+                return digits;
+            }
+
+            function autofillPassengerRowFromPhone($row, profile) {
+                if (!profile) return;
+
+                // Fill only if current field is empty (don't overwrite user's manual edits)
+                const $name = $row.find('.p-name');
+                const $email = $row.find('.p-email');
+                const $address = $row.find('.p-address');
+                const $gender = $row.find('.p-gender');
+
+                if (!$name.val().trim() && profile.name) {
+                    $name.val(profile.name);
+                }
+
+                if (!$email.val().trim() && profile.email) {
+                    $email.val(profile.email);
+                }
+
+                if (!$address.val().trim() && profile.address) {
+                    $address.val(profile.address);
+                }
+
+                if (($gender.val() === '' || $gender.val() === null) && profile.gender !== null && profile.gender !== undefined) {
+                    $gender.val(String(profile.gender));
+                }
+            }
+
+            async function fetchPassengerProfileByPhone(phone11) {
+                const url = "{% url 'passenger_profile_by_phone' %}" + "?phone=" + encodeURIComponent(phone11);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+                return { ok: response.ok, data };
+            }
+            // fetch user information from phone number
+            /* =========================
+            END PASSENGER PROFILE LOOKUP
+            ========================= */
+
+            /* =========================
+            PASSENGER INPUT WATCHERS (LIVE STATE + AUTOFILL)
+            ========================= */
+            // on phone input change
+            $(document).on('input change', '#passengerRows .p-phone, #passengerRows .p-name', function() {
+                const $row = $(this).closest('.passenger-row');
+                const isFirstRow = $row.index() === 0;
+
+                // If first passenger phone/name changes in guest flow, OTP must be re-sent
+                if (isFirstRow && !IS_AUTH) {
+                    bookingOtpSent = false;
+
+                    if (otpResendTimer) {
+                        clearInterval(otpResendTimer);
+                        otpResendTimer = null;
+                    }
+                    otpResendCountdown = 0;
+
+                    $('#otpInputWrap').hide();
+                    $('#otpCodeInput').val('');
+                    $('#verifyOtpBtn').prop('disabled', true).text('VERIFY OTP');
+                    $('#resendOtpBtn').prop('disabled', false).text('Resend OTP');
+
+                    // Show SEND OTP buttons again (they may have been hidden after previous OTP send)
+                    $('#checkoutBtn').show();
+                    $('#desktopSubmitBookingBtn').show(); // safe even if not present
+                }
+
+                syncActionButtonMode();
+            });
+
+            // fetch user information from phone number
+            // Autofill passenger row from existing user profile when phone reaches 11 digits
+            $(document).on('input', '#passengerRows .p-phone', async function() {
+                const $input = $(this);
+                const $row = $input.closest('.passenger-row');
+
+                // Skip if this phone input is disabled (e.g., logged-in first row)
+                if ($input.is(':disabled')) return;
+
+                const rawPhone = $input.val() || '';
+                const normalized11 = normalizeBdPhoneForLookup(rawPhone);
+
+                // Keep input visually normalized if user pasted +880... / 880...
+                if (rawPhone !== normalized11 && /^01\d{9}$/.test(normalized11)) {
+                    $input.val(normalized11);
+                }
+
+                // Only trigger lookup on exact 11-digit local BD number
+                if (!/^01\d{9}$/.test(normalized11)) {
+                    // Clear lookup marker so it can refetch when user types again
+                    $row.removeData('lookup-phone');
+                    return;
+                }
+
+                // Avoid duplicate lookup for same phone in same row
+                const lastLookupPhone = String($row.data('lookup-phone') || '');
+                if (lastLookupPhone === normalized11) return;
+
+                $row.data('lookup-phone', normalized11);
+
+                try {
+                    const result = await fetchPassengerProfileByPhone(normalized11);
+
+                    if (!result.ok || !result.data.success) {
+                        return; // silent fail to avoid annoying alerts while typing
+                    }
+
+                    if (!result.data.found) {
+                        return; // no existing profile, user fills manually
+                    }
+
+                    autofillPassengerRowFromPhone($row, result.data.data);
+
+                    // Re-run auth/OTP button state because first row may now have name auto-filled
+                    syncActionButtonMode();
+
+                } catch (err) {
+                    console.error('Passenger profile lookup failed:', err);
+                }
+            });
+            // fetch user information from phone number
+            /* =========================
+            END PASSENGER INPUT WATCHERS
+            ========================= */
+
+            // [NEW:PAYMENT_MODAL_HELPERS]
+            function openPaymentModal(summary) {
+                // Fill summary fields
+                $('#pmShipName').text(summary.ship_name || '—');
+                $('#pmRoute').text(summary.route_text || '—');
+                $('#pmDeparture').text(summary.departure_text || '—');
+                $('#pmArrival').text(summary.arrival_text || '—');
+                $('#pmTotal').text((summary.total || 0).toLocaleString());
+
+                // [NEW:PAYMENT_TOTALS_TOP_JS]
+                $('#pmTotalTop').text((summary.total || 0).toLocaleString());
+
+                const breakdownHtml = (summary.seats || []).map(s => {
+                    const price = Number(s.price || 0);
+                    return `
+                        <div class="pay-breakdown__row">
+                            <div>${escapeHtml(s.label)} <small>${escapeHtml(s.category || '')}</small></div>
+                            <div>৳${price.toLocaleString()}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                $('#pmSeatBreakdown').html(breakdownHtml || `<div class="text-muted">No seats selected</div>`);
+                // [/NEW:PAYMENT_TOTALS_TOP_JS]
+
+                // Seats
+                const seatsHtml = (summary.seats || []).map(s => {
+                    return `<span class="pay-seat-pill">${escapeHtml(s.label)} <small>৳${Number(s.price || 0).toLocaleString()}</small></span>`;
+                }).join('');
+                $('#pmSeats').html(seatsHtml || `<span class="text-muted">No seats selected</span>`);
+
+                // Passengers
+                const passengersHtml = (summary.passengers || []).map((p, idx) => {
+                    const g = (p.gender === 1 || p.gender === "1") ? "Female" : "Male";
+                    return `
+                        <div class="pay-passenger">
+                            <div class="pay-passenger__title">Passenger ${idx + 1} — Seat ${escapeHtml(p.seat_label || '')}</div>
+                            <div class="pay-passenger__kv"><span>Name:</span> ${escapeHtml(p.name || '')}</div>
+                            <div class="pay-passenger__kv"><span>Phone:</span> ${escapeHtml(p.phone || '')}</div>
+                            <div class="pay-passenger__kv"><span>Gender:</span> ${escapeHtml(g)}</div>
+                            <div class="pay-passenger__kv"><span>Email:</span> ${escapeHtml(p.email || '')}</div>
+                            <div class="pay-passenger__kv"><span>Address:</span> ${escapeHtml(p.address || '')}</div>
+                        </div>
+                    `;
+                }).join('');
+                $('#pmPassengers').html(passengersHtml || `<span class="text-muted">No passengers</span>`);
+
+                // Open
+                $('#paymentModal').fadeIn(120);
+                $('body').css('overflow', 'hidden');
+            }
+
+            function closePaymentModal() {
+                $('#paymentModal').fadeOut(120);
+                $('body').css('overflow', '');
+                $('#payNowBtn').prop('disabled', false);
+                $('#payBtnText').text('Pay');
+
+                // [NEW:PAYMENT_MODAL_CLOSE_UI]
+                if (!IS_AUTH) {
+                    // If guest, show OTP UI again (they already verified, so they can reopen modal)
+                    $('#checkoutBtn').show();
+                    $('#desktopSubmitBookingBtn').show();
+                }
+                // [FIX:PAYMENT_MODAL_CLOSE_SYNC]
+                syncActionButtonMode();
+                // [/FIX:PAYMENT_MODAL_CLOSE_SYNC]
+                // [/NEW:PAYMENT_MODAL_CLOSE_UI]
+            }
+
+            function escapeHtml(v) {
+                return $('<div>').text(String(v ?? '')).html();
+            }
+            // [/NEW:PAYMENT_MODAL_HELPERS]
+
+            // [NEW:PAYMENT_MODAL_PAY_HANDLER]
+            $(document).on('click', '#payNowBtn', function() {
+                if (!pendingPaymentPayload) {
+                    alert('Missing payment payload. Please try again.');
+                    return;
+                }
+
+                const $btn = $(this);
+                $btn.prop('disabled', true);
+                $('#payBtnText').text('PROCESSING...');
+
+                fetch("{% url 'save_booking' %}", {
+                    method: 'POST',
+                    credentials: "same-origin",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(pendingPaymentPayload)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('Error: ' + (data.error || 'Payment failed.'));
+                        $btn.prop('disabled', false);
+                        $('#payBtnText').text('Pay');
+                        return;
+                    }
+
+                    // If your backend auto-logins guest, update header too
+                    if (data.logged_in && data.user) {
+                        updateHeaderAfterAutoLogin(data.user);
+                    }
+
+                    // Close payment modal
+                    closePaymentModal();
+
+                    // Show success modal (your existing one)
+                    $('#modalRef').text(data.booking_ref);
+                    $('#successModal').css('display', 'flex').hide().fadeIn(100, function() {
+                        $(this).addClass('show');
+                    });
+
+                    $('#finalRedirectBtn').off('click').on('click', function() {
+                        window.location.href = "/booking/success/" + data.booking_ref + "/";
+                    });
+
+                    // Clear pending payload
+                    pendingPaymentPayload = null;
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Failed to process payment. Please try again.');
+                    $btn.prop('disabled', false);
+                    $('#payBtnText').text('Pay');
+                });
+            });
+
+            function getTripCardSummary(tripId) {
+                const $card = $(`.book-btn-v2[data-trip-id="${tripId}"]`).closest('.trip-card');
+
+                if (!$card.length) {
+                    return {
+                        ship_name: '—',
+                        route_text: '—',
+                        departure_text: '—',
+                        arrival_text: '—'
+                    };
+                }
+
+                const shipName = ($card.find('.ship-name-v2').text() || '').trim() || '—';
+
+                const depTime = ($card.find('.time-point').first().find('.time-val').text() || '').trim();
+                const depDate = ($card.find('.time-point').first().find('span').eq(1).text() || '').trim(); // your date span
+                const depLoc = ($card.find('.time-point').first().find('.loc-val').text() || '').trim();
+
+                const arrTime = ($card.find('.time-point').last().find('.time-val').text() || '').trim();
+                const arrDate = ($card.find('.time-point').last().find('span').eq(1).text() || '').trim();
+                const arrLoc = ($card.find('.time-point').last().find('.loc-val').text() || '').trim();
+
+                const routeStops = ($card.find('.clean-route-path').text() || '').replace(/\s+/g, ' ').trim();
+                const routeText = routeStops || `${depLoc} → ${arrLoc}` || '—';
+
+                const departureText = (depLoc || depTime || depDate)
+                    ? `${depLoc} — ${depTime}${depDate ? ` (${depDate})` : ''}`
+                    : '—';
+
+                const arrivalText = (arrLoc || arrTime || arrDate)
+                    ? `${arrLoc} — ${arrTime}${arrDate ? ` (${arrDate})` : ''}`
+                    : '—';
+
+                return {
+                    ship_name: shipName,
+                    route_text: routeText,
+                    departure_text: departureText,
+                    arrival_text: arrivalText
+                };
+            }
+            // [/NEW:PAYMENT_MODAL_PAY_HANDLER]
+
+
+            /* =========================
+            GLOBAL UI EVENT HOOKS
+            ========================= */
+            $(window).on('resize', function() {
+                clearTimeout(deckFitResizeTimer);
+                deckFitResizeTimer = setTimeout(function() {
+                    autoFitDeckLayouts();
+                    syncDesktopBookingUI(); // ✅ move legend when breakpoint changes
+                }, 120);
+            });
+
+            // Bootstrap tab switch (deck tabs)
+            $(document).on('shown.bs.tab', '#deckTabs button[data-bs-toggle="pill"]', function() {
+                setTimeout(function() {
+                    autoFitDeckLayouts();
+                }, 30);
+            });
+
+            $(document).on('click', '#inlineBookingOverlay', function() {
+                $('#closeDrawer').trigger('click');
+            });
+
+            $(window).on('load', function() {
+                autoFitDeckLayouts();
+            });
+
+                        // [NEW:PAYMENT_MODAL_EVENTS]
+            $(document).on('click', '#closePaymentModal', function() {
+                closePaymentModal();
+            });
+            $(document).on('click', '#paymentModal .pay-modal__backdrop', function() {
+                closePaymentModal();
+            });
+            // [/NEW:PAYMENT_MODAL_EVENTS]
+            /* =========================
+            END GLOBAL UI EVENT HOOKS
+            ========================= */
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            let waitingToSetValue = null;
+            
+            $('#switch-location').on('click', function() {
+                const fromValue = $('#search-from').val();
+                const toValue = $('#search-to').val();
+                
+                // Only swap if both have values
+                if (fromValue && toValue) {
+                    // Store the value we want to set in TO
+                    waitingToSetValue = fromValue;
+                    
+                    // Change FROM (this will trigger AJAX load for TO dropdown)
+                    $('#search-from').val(toValue).trigger('change');
+                }
+            });
+            
+            // Listen for when Select2 finishes loading results
+            $('#search-to').on('select2:select select2:unselect', function() {
+                // Reset after manual selection
+                waitingToSetValue = null;
+            });
+            
+            // After FROM changes, wait for TO to load, then set the value
+            $('#search-from').on('change', function() {
+                if (waitingToSetValue !== null) {
+                    // Small delay to let AJAX complete
+                    setTimeout(function() {
+                        // Create a new option if it doesn't exist (for preloading)
+                        const $toSelect = $('#search-to');
+                        
+                        // Check if option already exists
+                        if ($toSelect.find('option[value="' + waitingToSetValue + '"]').length === 0) {
+                            // Fetch the text for this option from the original FROM dropdown
+                            const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
+                            
+                            // Create and append the option
+                            const newOption = new Option(optionText, waitingToSetValue, true, true);
+                            $toSelect.append(newOption);
+                        }
+                        
+                        // Set the value
+                        $toSelect.val(waitingToSetValue).trigger('change');
+                        
+                        // Reset
+                        waitingToSetValue = null;
+                    }, 800); // Increased delay for AJAX
+                }
             });
         });
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        let waitingToSetValue = null;
-        
-        $('#switch-location').on('click', function() {
-            const fromValue = $('#search-from').val();
-            const toValue = $('#search-to').val();
-            
-            // Only swap if both have values
-            if (fromValue && toValue) {
-                // Store the value we want to set in TO
-                waitingToSetValue = fromValue;
-                
-                // Change FROM (this will trigger AJAX load for TO dropdown)
-                $('#search-from').val(toValue).trigger('change');
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            // Phone validation starts
+            // Bangladesh phone rule: 01 + [2-9] + 8 digits = 11 digits total
+            const BD_PHONE_REGEX = /^01[2-9]\d{8}$/;
+
+            function validatePhoneInput($input) {
+                // Keep digits only
+                let digits = ($input.val() || '').replace(/\D/g, '');
+
+                // Hard cap to 11 digits (prevents paste/typing beyond 11)
+                if (digits.length > 11) {
+                    digits = digits.slice(0, 11);
+                }
+
+                // Write back sanitized value
+                if ($input.val() !== digits) {
+                    $input.val(digits);
+                }
+
+                const isValid = BD_PHONE_REGEX.test(digits);
+
+                // Error message node (create once per field)
+                let $err = $input.closest('.form-group').find('.phone-error');
+                if ($err.length === 0) {
+                    $err = $('<small class="phone-error text-danger" style="display:none;"></small>');
+                    $input.closest('.form-group').append($err);
+                }
+
+                // Neutral state when empty
+                if (!digits) {
+                    $err.hide();
+                    $input.removeClass('is-valid is-invalid');
+                    $input.css('border-color', '#e2e8f0');
+                    return false;
+                }
+
+                // Valid/invalid UI
+                if (isValid) {
+                    $err.hide();
+                    $input.removeClass('is-invalid').addClass('is-valid');
+                    $input.css('border-color', '#22c55e'); // green
+                } else {
+                    $err.text('Phone must be 11 digits: 01 + (2-9) + 8 digits (e.g., 01712345678).').show();
+                    $input.removeClass('is-valid').addClass('is-invalid');
+                    $input.css('border-color', 'red');
+                }
+
+                return isValid;
             }
+
+            // Real-time validation + max-length enforcement (works for dynamically generated rows)
+            $(document).on('input', '.p-phone', function() {
+                validatePhoneInput($(this));
+            });
+
+            // Optional: also validate when leaving the field
+            $(document).on('blur', '.p-phone', function() {
+                validatePhoneInput($(this));
+            });
         });
-        
-        // Listen for when Select2 finishes loading results
-        $('#search-to').on('select2:select select2:unselect', function() {
-            // Reset after manual selection
-            waitingToSetValue = null;
-        });
-        
-        // After FROM changes, wait for TO to load, then set the value
-        $('#search-from').on('change', function() {
-            if (waitingToSetValue !== null) {
-                // Small delay to let AJAX complete
-                setTimeout(function() {
-                    // Create a new option if it doesn't exist (for preloading)
-                    const $toSelect = $('#search-to');
-                    
-                    // Check if option already exists
-                    if ($toSelect.find('option[value="' + waitingToSetValue + '"]').length === 0) {
-                        // Fetch the text for this option from the original FROM dropdown
-                        const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
-                        
-                        // Create and append the option
-                        const newOption = new Option(optionText, waitingToSetValue, true, true);
-                        $toSelect.append(newOption);
-                    }
-                    
-                    // Set the value
-                    $toSelect.val(waitingToSetValue).trigger('change');
-                    
-                    // Reset
-                    waitingToSetValue = null;
-                }, 800); // Increased delay for AJAX
-            }
-        });
-    });
     </script>
 {% endblock custom_js %}

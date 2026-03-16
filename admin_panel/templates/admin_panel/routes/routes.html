@@ -170,9 +170,12 @@
                                                 <span class="edit-icon-span">
                                                     <i class="fa-regular fa-pen-to-square edit-icon"
                                                         data-bs-toggle="modal" data-bs-target="#editModal"
-                                                        data-id="{{ route.id }}" data-name="{{ route.name }}"
+                                                        data-id="{{ route.id }}"
+                                                        data-name="{{ route.name }}"
                                                         data-source="{{ route.source.id }}"
-                                                        data-dest="{{ route.destination.id }}"></i>
+                                                        data-dest="{{ route.destination.id }}"
+                                                        data-dest-offset="{{ route.destination_stop_offset|default:0 }}"
+                                                        data-min-dest-offset="{{ route.max_non_dest_offset|default:0 }}"></i>
                                                 </span>
                                             </li>
                                             <li class="delete" data-id="{{ route.id }}">
@@ -229,6 +232,13 @@
                                     <input class="form-control btn-pill" id="name" type="text"
                                         placeholder="e.g. Dhaka - Barisal">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Arrival Offset (minutes)</label>
+                                    <input class="form-control btn-pill" id="arrival_offset_minutes" type="number" min="1"
+                                        placeholder="e.g. 480">
+                                    <small class="text-muted">Minutes from departure to destination (source is always 0)</small>
+                                </div>
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
                                 <div class="error-success-div p-6"></div>
@@ -277,9 +287,17 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Destination Arrival Offset (minutes)</label>
+                                    <input class="form-control btn-pill" id="edit-arrival-offset-minutes" type="number" min="1"
+                                        placeholder="e.g. 480">
+                                    <small id="edit-offset-help" class="text-muted d-block mt-1"></small>
+                                </div>
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
                                 <div class="error-success-div p-6"></div>
+                                <div id="edit-offset-warning" class="mt-2 small text-danger" style="display: none;"></div>
                             </div>
                             <div class="card-footer text-end">
                                 <button class="btn btn-primary custom-large-btn me-3" type="submit">Update
@@ -383,14 +401,36 @@
     // ADD
     $("#addModal form").on("submit", e => {
         e.preventDefault();
+
+        const sourceId = $("#source").val();
+        const destinationId = $("#destination").val();
+        const name = $("#name").val().trim();
+        const arrivalOffset = parseInt($("#arrival_offset_minutes").val(), 10);
+
+        if (!sourceId || !destinationId) {
+            showMessage("error", "Please select source and destination.");
+            return;
+        }
+
+        if (!name) {
+            showMessage("error", "Route name is required.");
+            return;
+        }
+
+        if (!Number.isInteger(arrivalOffset) || arrivalOffset <= 0) {
+            showMessage("error", "Arrival offset must be greater than 0 minutes.");
+            return;
+        }
+
         fetch("{% url 'routes' %}", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
             body: JSON.stringify({
                 action: "add",
-                name: $("#name").val(),
-                source_id: $("#source").val(),
-                destination_id: $("#destination").val()
+                name: name,
+                source_id: sourceId,
+                destination_id: destinationId,
+                arrival_offset_minutes: arrivalOffset
             })
         })
             .then(r => r.json())
@@ -399,25 +439,72 @@
 
     // EDIT
     let editId = null;
+    let editMinRequiredOffset = 0;
+
     $(document).on("click", ".edit-icon", function () {
-        const { id, name, source, dest } = this.dataset;
+        const {
+            id,
+            name,
+            source,
+            dest,
+            destOffset,
+            minDestOffset
+        } = this.dataset;
+
         editId = id;
+        editMinRequiredOffset = parseInt(minDestOffset || "0", 10);
+
         $("#edit-name").val(name);
         $("#edit-source").val(source).trigger('change');
         $("#edit-dest").val(dest).trigger('change');
+        $("#edit-arrival-offset-minutes").val(destOffset || "");
+
+        const warningText = editMinRequiredOffset > 0
+            ? `Time offset must be greater than ${editMinRequiredOffset} minutes.`
+            : "Time offset must be greater than 0 minutes.";
+
+        $("#edit-offset-warning").text(warningText).show();
+        $("#edit-offset-help").text("This is the destination arrival time in minutes from route start.");
     });
 
     $("#editModal form").on("submit", e => {
         e.preventDefault();
+
+        const name = $("#edit-name").val().trim();
+        const sourceId = $("#edit-source").val();
+        const destId = $("#edit-dest").val();
+        const arrivalOffset = parseInt($("#edit-arrival-offset-minutes").val(), 10);
+
+        if (!name) {
+            showMessage("error", "Route name is required.");
+            return;
+        }
+
+        if (!sourceId || !destId) {
+            showMessage("error", "Please select source and destination.");
+            return;
+        }
+
+        if (!Number.isInteger(arrivalOffset) || arrivalOffset <= 0) {
+            showMessage("error", "Destination arrival offset must be greater than 0 minutes.");
+            return;
+        }
+
+        if (arrivalOffset <= editMinRequiredOffset) {
+            showMessage("error", `Time offset must be greater than ${editMinRequiredOffset} minutes.`);
+            return;
+        }
+
         fetch("{% url 'routes' %}", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
             body: JSON.stringify({
                 action: "edit",
                 id: editId,
-                name: $("#edit-name").val(),
-                source_id: $("#edit-source").val(),
-                destination_id: $("#edit-dest").val()
+                name: name,
+                source_id: sourceId,
+                destination_id: destId,
+                arrival_offset_minutes: arrivalOffset
             })
         })
             .then(r => r.json())

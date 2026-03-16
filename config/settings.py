@@ -32,9 +32,23 @@ SECRET_KEY = 'django-insecure-4fnm5q5pq7l%n$(l4#yetfzsdt4924f6!@-z$&n@^&ajop$7o#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'mk.studentvisabd.com', 'www.mk.studentvisabd.com']
+ALLOWED_HOSTS = env.list(
+    "DJANGO_ALLOWED_HOSTS",
+    default=["127.0.0.1", "localhost"],
+)
+
+# ALLOWED_HOSTS = env.list(
+#     "DJANGO_ALLOWED_HOSTS",
+#     default=["127.0.0.1", "localhost"],
+# )
 
 AUTH_USER_MODEL = 'accounts.User'
+
+# Redirect unauthenticated users here when using @login_required
+LOGIN_URL = "/accounts/signin/"
+
+# Optional (nice to have): where to go after successful login if "next" is missing
+LOGIN_REDIRECT_URL = "/"
 
 
 # Application definition
@@ -46,10 +60,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'accounts',
     'admin_panel',
     'ticketing',
     'portal',
+    'payment',
     'rest_framework',
     'sass_processor',
 ]
@@ -165,11 +181,70 @@ MESSAGE_TAGS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ---------------------------
+# Redis Configuration (Dynamic)
+# ---------------------------
+# This reads 'REDIS_HOST=redis' from your .env file
+REDIS_HOST = env("REDIS_HOST", default="redis")
+REDIS_PORT = env.int("REDIS_PORT", default=6379)
 
-# CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+REDIS_CELERY_DB = env.int("REDIS_CELERY_DB", default=0)
+REDIS_CHANNEL_DB = env.int("REDIS_CHANNEL_DB", default=1)
+REDIS_CACHE_DB = env.int("REDIS_CACHE_DB", default=2)
+
+# Construct the Connection URLs (e.g. redis://redis:6379/1)
+REDIS_CELERY_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
+REDIS_CHANNEL_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CHANNEL_DB}"
+REDIS_CACHE_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CACHE_DB}"
+
+
+# ---------------------------
+# Celery Settings
+# ---------------------------
+CELERY_BROKER_URL = REDIS_CELERY_URL
+CELERY_RESULT_BACKEND = REDIS_CELERY_URL
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Dhaka'
+
+
+# ---------------------------
+# Channels (WebSocket) Settings
+# ---------------------------
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            # This uses the URL we built above (redis://redis:6379/1)
+            "hosts": [REDIS_CHANNEL_URL],
+        },
+    },
+}
+
+
+# ---------------------------
+# Security & Trusted Origins
+# ---------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "https://mk.studentvisabd.com",
+    "https://www.mk.studentvisabd.com",
+    "https://*.ngrok-free.app",
+    "https://*.ngrok-free.dev",
+]
+
+# ===== SSLCOMMERZ Configuration =====
+SSLCOMMERZ_STORE_ID = env('SSLCOMMERZ_STORE_ID', default='')
+SSLCOMMERZ_STORE_PASSWORD = env('SSLCOMMERZ_STORE_PASSWORD', default='')
+SSLCOMMERZ_IS_LIVE = env.bool('SSLCOMMERZ_IS_LIVE', default=False)
+
+# Base URL for your site - UPDATE THIS TO YOUR LIVE DOMAIN
+BASE_URL = 'https://mkshippinglines.com'  # Your live domain
+
+# Payment callback URLs
+SSLCOMMERZ_SUCCESS_URL = f'{BASE_URL}/payment/success/'
+SSLCOMMERZ_FAIL_URL = f'{BASE_URL}/payment/fail/'
+SSLCOMMERZ_CANCEL_URL = f'{BASE_URL}/payment/cancel/'
+SSLCOMMERZ_IPN_URL = f'{BASE_URL}/payment/ipn/'

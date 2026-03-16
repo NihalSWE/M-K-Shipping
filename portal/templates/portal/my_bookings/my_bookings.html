@@ -1,0 +1,1118 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{% static 'portal/assets/css/schedule.css' %}" />
+
+<style>
+    :root{
+        --heading-font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+        --ocean:#167fca;
+        --ocean-dark:#0b4a78;
+        --ink:#0b1220;
+        --muted:#607387;
+
+        --card:#ffffff;
+        --surface:#f6fbff;
+        --border:rgba(10, 60, 95, 0.12);
+
+        --shadow-sm: 0 6px 18px rgba(11, 18, 32, 0.06);
+        --shadow-md: 0 14px 30px rgba(11, 18, 32, 0.10);
+    }
+
+    .mbx-page-wrap {
+        font-family: var(--heading-font);
+        background: linear-gradient(180deg, #f8fbff 0%, #f4f9ff 100%);
+        min-height: 100%;
+        padding: 26px 0 48px;
+    }
+
+    .mbx-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* ===============================
+       HERO
+    =============================== */
+    .mbx-hero {
+        background: linear-gradient(135deg, rgba(22,127,202,0.10), rgba(11,74,120,0.08));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        animation: mbxFadeUp .45s ease;
+    }
+
+    .mbx-hero__title {
+        margin: 0;
+        color: var(--ink);
+        font-weight: 800;
+        font-size: 2.2rem;
+        line-height: 1.2;
+    }
+
+    .mbx-hero__sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 1.4rem;
+        line-height: 1.3;
+    }
+
+    .mbx-hero__support {
+        margin-top: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px dashed rgba(22,127,202,0.35);
+        color: var(--ocean-dark);
+        background: rgba(22,127,202,0.06);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-weight: 600;
+        font-size: 1.2rem;
+        line-height: 1.2;
+        flex-wrap: wrap;
+    }
+
+    /* ===============================
+       TABS
+    =============================== */
+    .mbx-tabs {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        padding: 8px;
+        margin-bottom: 14px;
+        animation: mbxFadeUp .55s ease;
+    }
+
+    .mbx-tabs .nav-pills {
+        gap: 6px;
+    }
+
+    .mbx-tabs .nav-link {
+        border: none;
+        border-radius: 10px;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 1.22rem;
+        padding: 8px 12px;
+        transition: all .25s ease;
+        line-height: 1.1;
+    }
+
+    .mbx-tabs .nav-link:hover {
+        background: rgba(22,127,202,0.06);
+        color: var(--ocean-dark);
+    }
+
+    .mbx-tabs .nav-link.active {
+        background: linear-gradient(135deg, var(--ocean), var(--ocean-dark));
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(22,127,202,0.22);
+    }
+
+    /* ===============================
+       LIST
+    =============================== */
+    .mbx-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* ===============================
+       CARD
+    =============================== */
+    .mbx-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        animation: mbxFadeUp .45s ease;
+    }
+
+    .mbx-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(22,127,202,0.22);
+    }
+
+    .mbx-card__head {
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+        background: linear-gradient(180deg, rgba(22,127,202,0.04), rgba(22,127,202,0.01));
+    }
+
+    .mbx-card__topline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .mbx-card__ref {
+        font-weight: 800;
+        color: var(--ink);
+        letter-spacing: 0.1px;
+        font-size: 1.65rem;
+        line-height: 1.1;
+    }
+
+    .mbx-chip-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .mbx-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 1.08rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .mbx-chip i {
+        font-size: 0.88rem;
+    }
+
+    .mbx-chip--status-confirmed {
+        background: rgba(25, 135, 84, 0.10);
+        color: #0f7a45;
+        border-color: rgba(25, 135, 84, 0.18);
+    }
+
+    .mbx-chip--status-pending,
+    .mbx-chip--status-locked {
+        background: rgba(255, 193, 7, 0.14);
+        color: #8a6a00;
+        border-color: rgba(255, 193, 7, 0.24);
+    }
+
+    .mbx-chip--status-cancelled,
+    .mbx-chip--status-expired {
+        background: rgba(220, 53, 69, 0.10);
+        color: #b02a37;
+        border-color: rgba(220, 53, 69, 0.18);
+    }
+
+    .mbx-chip--payment-paid {
+        background: rgba(22,127,202,0.10);
+        color: var(--ocean-dark);
+        border-color: rgba(22,127,202,0.18);
+    }
+
+    .mbx-chip--payment-unpaid {
+        background: rgba(108, 117, 125, 0.10);
+        color: #495057;
+        border-color: rgba(108, 117, 125, 0.18);
+    }
+
+    .mbx-route-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 1.46rem;
+        line-height: 1.2;
+    }
+
+    .mbx-route-line .mbx-route-arrow {
+        color: var(--ocean);
+        opacity: 0.9;
+        font-size: 1.08rem;
+    }
+
+    .mbx-route-meta {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .mbx-route-meta__item {
+        background: rgba(22,127,202,0.04);
+        border: 1px solid rgba(22,127,202,0.08);
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-height: 62px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .mbx-label {
+        display: block;
+        color: var(--muted);
+        font-size: 1.08rem;
+        font-weight: 500;
+        margin-bottom: 2px;
+        line-height: 1.15;
+    }
+
+    .mbx-value {
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 1.28rem;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .mbx-card__body {
+        padding: 10px 14px 12px;
+    }
+
+    /* Bootstrap summary row wrapper */
+    .mbx-summary-grid {
+        margin-bottom: 10px;
+    }
+
+    .mbx-summary-item {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 8px 10px;
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .mbx-summary-item .mbx-label {
+        margin-bottom: 3px;
+        font-size: 1rem;
+    }
+
+    .mbx-summary-item .mbx-value {
+        font-size: 1.18rem;
+        line-height: 1.15;
+    }
+
+    .mbx-summary-item .mbx-value.mbx-seats-value {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* ===============================
+       DETAILS SECTION
+    =============================== */
+    .mbx-section {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        border-radius: 12px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .mbx-section__head {
+        background: rgba(22,127,202,0.04);
+        border-bottom: 1px solid rgba(10, 60, 95, 0.08);
+        padding: 8px 10px;
+        font-weight: 700;
+        font-size: 1.16rem;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        line-height: 1.15;
+    }
+
+    .mbx-section__body {
+        padding: 8px 10px;
+        background: #fff;
+    }
+
+    .mbx-passenger-list,
+    .mbx-ticket-list {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mbx-passenger-item,
+    .mbx-ticket-item {
+        border: 1px solid rgba(10, 60, 95, 0.08);
+        border-radius: 10px;
+        padding: 8px 9px;
+        background: #fff;
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .mbx-passenger-item:hover,
+    .mbx-ticket-item:hover {
+        background: #fbfdff;
+        transform: translateY(-1px);
+    }
+
+    .mbx-passenger-item .fw-semibold,
+    .mbx-ticket-item .fw-semibold {
+        font-size: 1.2rem;
+        line-height: 1.15;
+    }
+
+    .mbx-inline-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.2;
+    }
+
+    .mbx-inline-meta strong {
+        color: var(--ink);
+        font-weight: 700;
+    }
+
+    .mbx-empty {
+        background: var(--card);
+        border: 1px dashed rgba(22,127,202,0.25);
+        border-radius: 16px;
+        padding: 22px 16px;
+        text-align: center;
+        color: var(--muted);
+        box-shadow: var(--shadow-sm);
+        animation: mbxFadeUp .4s ease;
+    }
+
+    .mbx-empty__icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(22,127,202,0.08);
+        color: var(--ocean);
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+    }
+
+    .mbx-empty h5 {
+        font-size: 1.4rem;
+        color: var(--ink);
+        margin-bottom: 0.4rem;
+    }
+
+    .mbx-empty p {
+        font-size: 1.14rem;
+        margin-bottom: 0;
+    }
+
+    .mbx-cancel-note {
+        margin-top: 8px;
+        background: rgba(255, 193, 7, 0.10);
+        border: 1px solid rgba(255, 193, 7, 0.24);
+        color: #7a5b00;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-weight: 600;
+        font-size: 1.08rem;
+        line-height: 1.2;
+    }
+
+    .mbx-collapse-btn {
+        border: 1px solid rgba(22,127,202,0.16);
+        background: rgba(22,127,202,0.06);
+        color: var(--ocean-dark);
+        border-radius: 8px;
+        padding: 5px 9px;
+        font-size: 1.04rem;
+        font-weight: 700;
+        transition: all .2s ease;
+        line-height: 1.1;
+    }
+
+    .mbx-collapse-btn:hover {
+        background: rgba(22,127,202,0.12);
+        transform: translateY(-1px);
+    }
+
+    .mbx-muted {
+        color: var(--muted);
+    }
+
+    .mbx-card .collapse {
+        transition: all .25s ease;
+    }
+
+    @keyframes mbxFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===============================
+       LARGE TABLETS / SMALL LAPTOPS
+    =============================== */
+    @media (max-width: 991.98px) {
+        .mbx-page-wrap {
+            padding: 22px 0 40px;
+        }
+
+        .mbx-card__ref {
+            font-size: 1.42rem;
+        }
+
+        .mbx-route-line {
+            font-size: 1.28rem;
+        }
+
+        .mbx-value {
+            font-size: 1.14rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 1rem;
+        }
+    }
+
+    /* ===============================
+       MOBILE
+    =============================== */
+    @media (max-width: 767.98px) {
+        .mbx-page-wrap {
+            padding-top: 16px;
+            padding-bottom: 28px;
+        }
+
+        .mbx-hero {
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .mbx-hero__title {
+            font-size: 1.68rem;
+        }
+
+        .mbx-hero__sub {
+            font-size: 1.2rem;
+        }
+
+        .mbx-hero__support {
+            width: 100%;
+            border-radius: 10px;
+            justify-content: flex-start;
+            align-items: flex-start;
+            font-size: 1.08rem;
+            padding: 8px 9px;
+        }
+
+        .mbx-tabs {
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 10px;
+        }
+
+        .mbx-tabs .nav {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mbx-tabs .nav-item {
+            width: 100%;
+        }
+
+        .mbx-tabs .nav-link {
+            width: 100%;
+            font-size: 1.02rem;
+            padding: 8px 8px;
+            text-align: center;
+        }
+
+        .mbx-grid {
+            gap: 10px;
+        }
+
+        .mbx-card {
+            border-radius: 14px;
+        }
+
+        .mbx-card__head,
+        .mbx-card__body {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .mbx-card__head {
+            padding-top: 10px;
+            padding-bottom: 9px;
+        }
+
+        .mbx-card__body {
+            padding-top: 9px;
+            padding-bottom: 10px;
+        }
+
+        .mbx-card__topline {
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .mbx-card__ref {
+            font-size: 1.34rem;
+        }
+
+        .mbx-chip {
+            font-size: 0.98rem;
+            padding: 4px 8px;
+        }
+
+        .mbx-route-line {
+            font-size: 1.16rem;
+            gap: 5px;
+            line-height: 1.15;
+        }
+
+        .mbx-route-meta {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .mbx-route-meta__item {
+            min-height: auto;
+            padding: 7px 8px;
+            border-radius: 9px;
+        }
+
+        .mbx-label {
+            font-size: 0.98rem;
+        }
+
+        .mbx-value {
+            font-size: 1.08rem;
+        }
+
+        /* Bootstrap summary already handles 2 columns via col-6 */
+        .mbx-summary-grid {
+            margin-bottom: 8px;
+        }
+
+        .mbx-summary-item {
+            min-height: auto;
+            padding: 7px 8px;
+            border-radius: 9px;
+        }
+
+        .mbx-summary-item .mbx-label {
+            font-size: 0.94rem;
+        }
+
+        .mbx-summary-item .mbx-value {
+            font-size: 1.02rem;
+        }
+
+        .mbx-summary-item .mbx-value.mbx-seats-value {
+            -webkit-line-clamp: 2;
+        }
+
+        .mbx-collapse-btn {
+            width: 100%;
+            text-align: center;
+            padding: 7px 8px;
+            border-radius: 8px;
+            font-size: 0.98rem;
+        }
+
+        .mbx-section {
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+
+        .mbx-section__head {
+            padding: 7px 8px;
+            font-size: 1.04rem;
+        }
+
+        .mbx-section__body {
+            padding: 7px 8px;
+        }
+
+        .mbx-passenger-item,
+        .mbx-ticket-item {
+            border-radius: 8px;
+            padding: 7px 8px;
+        }
+
+        .mbx-passenger-item .fw-semibold,
+        .mbx-ticket-item .fw-semibold {
+            font-size: 1.06rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 0.98rem;
+            gap: 4px 10px;
+        }
+
+        .mbx-cancel-note {
+            font-size: 0.98rem;
+            padding: 7px 8px;
+            border-radius: 8px;
+        }
+
+        .mbx-card__body .d-flex.justify-content-between .small {
+            font-size: 0.98rem;
+            line-height: 1.25;
+        }
+    }
+
+    /* ===============================
+       VERY SMALL DEVICES
+    =============================== */
+    @media (max-width: 420px) {
+        .mbx-card__ref {
+            font-size: 1.2rem;
+        }
+
+        .mbx-route-line {
+            font-size: 1.06rem;
+        }
+
+        .mbx-chip {
+            font-size: 0.92rem;
+            padding: 4px 7px;
+        }
+
+        .mbx-tabs .nav-link {
+            font-size: 0.98rem;
+            padding: 7px 6px;
+        }
+
+        .mbx-value,
+        .mbx-summary-item .mbx-value {
+            font-size: 1rem;
+        }
+
+        .mbx-inline-meta {
+            font-size: 0.92rem;
+        }
+
+        .mbx-label,
+        .mbx-summary-item .mbx-label {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+{% endblock custom_css %}
+
+{% block content %}
+<div class="mbx-page-wrap">
+    <div class="container mbx-shell">
+        <div class="mbx-hero">
+            <h1 class="mbx-hero__title">My Bookings</h1>
+            <p class="mbx-hero__sub">
+                View your upcoming trips and booking history with full details.
+            </p>
+            <div class="mbx-hero__support">
+                <i class="fa-solid fa-headset"></i>
+                For cancellation, contact support: <strong>09678330055</strong>
+            </div>
+        </div>
+
+        <div class="mbx-tabs">
+            <ul class="nav nav-pills" id="mbxBookingTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            id="mbx-upcoming-tab"
+                            data-bs-toggle="pill"
+                            data-bs-target="#mbx-upcoming-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="mbx-upcoming-pane"
+                            aria-selected="true">
+                        Upcoming Bookings ({{ upcoming_bookings|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="mbx-history-tab"
+                            data-bs-toggle="pill"
+                            data-bs-target="#mbx-history-pane"
+                            type="button"
+                            role="tab"
+                            aria-controls="mbx-history-pane"
+                            aria-selected="false">
+                        Booking History ({{ past_bookings|length }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="mbxBookingTabsContent">
+            <!-- Upcoming -->
+            <div class="tab-pane fade show active" id="mbx-upcoming-pane" role="tabpanel" aria-labelledby="mbx-upcoming-tab" tabindex="0">
+                {% if upcoming_bookings %}
+                    <div class="mbx-grid">
+                        {% for booking in upcoming_bookings %}
+                            <div class="mbx-card">
+                                <div class="mbx-card__head">
+                                    <div class="mbx-card__topline">
+                                        <div class="mbx-card__ref">{{ booking.booking_ref }}</div>
+
+                                        <div class="mbx-chip-wrap">
+                                            <span class="mbx-chip mbx-chip--status-{{ booking.status|lower }}">
+                                                <i class="fa-solid fa-circle"></i>
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                            <span class="mbx-chip mbx-chip--payment-{{ booking.payment_status|lower }}">
+                                                <i class="fa-solid fa-wallet"></i>
+                                                {{ booking.get_payment_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-route-line">
+                                        <span>{{ booking.trip.route.source.name }}</span>
+                                        <i class="fa-solid fa-arrow-right mbx-route-arrow"></i>
+                                        <span>{{ booking.trip.route.destination.name }}</span>
+                                    </div>
+
+                                    <div class="mbx-route-meta">
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Departure</span>
+                                            <span class="mbx-value">{{ booking.trip.departure_datetime|date:"d M Y, h:i A" }}</span>
+                                        </div>
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Ship</span>
+                                            <span class="mbx-value">{{ booking.trip.ship.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mbx-card__body">
+                                    <!-- ✅ Bootstrap summary row (2 cols mobile, 4 cols md+) -->
+                                    <div class="row g-2 mbx-summary-grid">
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Total Amount</span>
+                                                <span class="mbx-value">৳{{ booking.total_amount }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Passengers</span>
+                                                <span class="mbx-value">{{ booking.passengers.count }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Seats</span>
+                                                <span class="mbx-value mbx-seats-value">
+                                                    {% if booking.seat_labels %}{{ booking.seat_labels|join:", " }}{% else %}N/A{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Channel</span>
+                                                <span class="mbx-value">{{ booking.get_sales_channel_display|default:booking.sales_channel }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="small mbx-muted">
+                                            <strong class="text-dark">Booked on:</strong> {{ booking.created_at|date:"d M Y, h:i A" }}
+                                        </div>
+
+                                        <div class="d-flex justify-content-end">
+                                            <button class="mbx-collapse-btn"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#mbx-detail-{{ booking.id }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="mbx-detail-{{ booking.id }}">
+                                                <i class="fa-solid fa-chevron-down me-1"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-cancel-note">
+                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                        To cancel this booking, please contact support at <strong>09678330055</strong>.
+                                    </div>
+
+                                    <div class="collapse mt-2" id="mbx-detail-{{ booking.id }}">
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-users me-1"></i> Passenger Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.passengers.all %}
+                                                    <ul class="mbx-passenger-list">
+                                                        {% for p in booking.passengers.all %}
+                                                            <li class="mbx-passenger-item">
+                                                                <div class="fw-semibold">{{ p.name }}</div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Phone:</strong> {{ p.phone }}</span>
+                                                                    {% if p.email %}<span><strong>Email:</strong> {{ p.email }}</span>{% endif %}
+                                                                    {% if p.get_gender_display %}<span><strong>Gender:</strong> {{ p.get_gender_display }}</span>{% endif %}
+                                                                    {% if p.address %}<span><strong>Address:</strong> {{ p.address }}</span>{% endif %}
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No passenger details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-ticket me-1"></i> Ticket Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.tickets.all %}
+                                                    <ul class="mbx-ticket-list">
+                                                        {% for t in booking.tickets.all %}
+                                                            <li class="mbx-ticket-item">
+                                                                <div class="fw-semibold">
+                                                                    Seat {{ t.seat_object.label|default:t.seat_object_id }} — ৳{{ t.fare_amount }}
+                                                                </div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Passenger:</strong> {{ t.passenger_name }}</span>
+                                                                    <span><strong>Segment:</strong> {{ t.from_stop.location.name }} → {{ t.to_stop.location.name }}</span>
+                                                                    <span><strong>Status:</strong> {{ t.get_status_display }}</span>
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No ticket details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="mbx-empty">
+                        <div class="mbx-empty__icon">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <h5>No Upcoming Bookings</h5>
+                        <p>You don’t have any upcoming trips yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- History -->
+            <div class="tab-pane fade" id="mbx-history-pane" role="tabpanel" aria-labelledby="mbx-history-tab" tabindex="0">
+                {% if past_bookings %}
+                    <div class="mbx-grid">
+                        {% for booking in past_bookings %}
+                            <div class="mbx-card">
+                                <div class="mbx-card__head">
+                                    <div class="mbx-card__topline">
+                                        <div class="mbx-card__ref">{{ booking.booking_ref }}</div>
+
+                                        <div class="mbx-chip-wrap">
+                                            <span class="mbx-chip mbx-chip--status-{{ booking.status|lower }}">
+                                                <i class="fa-solid fa-circle"></i>
+                                                {{ booking.get_status_display }}
+                                            </span>
+                                            <span class="mbx-chip mbx-chip--payment-{{ booking.payment_status|lower }}">
+                                                <i class="fa-solid fa-wallet"></i>
+                                                {{ booking.get_payment_status_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mbx-route-line">
+                                        <span>{{ booking.trip.route.source.name }}</span>
+                                        <i class="fa-solid fa-arrow-right mbx-route-arrow"></i>
+                                        <span>{{ booking.trip.route.destination.name }}</span>
+                                    </div>
+
+                                    <div class="mbx-route-meta">
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Departure</span>
+                                            <span class="mbx-value">{{ booking.trip.departure_datetime|date:"d M Y, h:i A" }}</span>
+                                        </div>
+                                        <div class="mbx-route-meta__item">
+                                            <span class="mbx-label">Ship</span>
+                                            <span class="mbx-value">{{ booking.trip.ship.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mbx-card__body">
+                                    <div class="row g-2 mbx-summary-grid">
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Total Amount</span>
+                                                <span class="mbx-value">৳{{ booking.total_amount }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Passengers</span>
+                                                <span class="mbx-value">{{ booking.passengers.count }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Seats</span>
+                                                <span class="mbx-value mbx-seats-value">
+                                                    {% if booking.seat_labels %}{{ booking.seat_labels|join:", " }}{% else %}N/A{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="mbx-summary-item h-100">
+                                                <span class="mbx-label">Channel</span>
+                                                <span class="mbx-value">{{ booking.get_sales_channel_display|default:booking.sales_channel }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                        <div class="small mbx-muted">
+                                            <strong class="text-dark">Booked on:</strong> {{ booking.created_at|date:"d M Y, h:i A" }}
+                                        </div>
+
+                                        <div class="d-flex justify-content-end">
+                                            <button class="mbx-collapse-btn"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#mbx-history-detail-{{ booking.id }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="mbx-history-detail-{{ booking.id }}">
+                                                <i class="fa-solid fa-chevron-down me-1"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="collapse mt-2" id="mbx-history-detail-{{ booking.id }}">
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-users me-1"></i> Passenger Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.passengers.all %}
+                                                    <ul class="mbx-passenger-list">
+                                                        {% for p in booking.passengers.all %}
+                                                            <li class="mbx-passenger-item">
+                                                                <div class="fw-semibold">{{ p.name }}</div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Phone:</strong> {{ p.phone }}</span>
+                                                                    {% if p.email %}<span><strong>Email:</strong> {{ p.email }}</span>{% endif %}
+                                                                    {% if p.get_gender_display %}<span><strong>Gender:</strong> {{ p.get_gender_display }}</span>{% endif %}
+                                                                    {% if p.address %}<span><strong>Address:</strong> {{ p.address }}</span>{% endif %}
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No passenger details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mbx-section">
+                                            <div class="mbx-section__head">
+                                                <span><i class="fa-solid fa-ticket me-1"></i> Ticket Details</span>
+                                            </div>
+                                            <div class="mbx-section__body">
+                                                {% if booking.tickets.all %}
+                                                    <ul class="mbx-ticket-list">
+                                                        {% for t in booking.tickets.all %}
+                                                            <li class="mbx-ticket-item">
+                                                                <div class="fw-semibold">
+                                                                    Seat {{ t.seat_object.label|default:t.seat_object_id }} — ৳{{ t.fare_amount }}
+                                                                </div>
+                                                                <div class="mbx-inline-meta">
+                                                                    <span><strong>Passenger:</strong> {{ t.passenger_name }}</span>
+                                                                    <span><strong>Segment:</strong> {{ t.from_stop.location.name }} → {{ t.to_stop.location.name }}</span>
+                                                                    <span><strong>Status:</strong> {{ t.get_status_display }}</span>
+                                                                </div>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <div class="mbx-muted">No ticket details found.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="mbx-empty">
+                        <div class="mbx-empty__icon">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <h5>No Booking History</h5>
+                        <p>Your completed/past bookings will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block custom_js %}
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const collapseButtons = document.querySelectorAll(".mbx-collapse-btn");
+
+        collapseButtons.forEach(function (btn) {
+            const targetSelector = btn.getAttribute("data-bs-target");
+            const targetEl = document.querySelector(targetSelector);
+
+            if (!targetEl) {
+                return;
+            }
+
+            targetEl.addEventListener("show.bs.collapse", function () {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-up me-1"></i>Hide Details';
+            });
+
+            targetEl.addEventListener("hide.bs.collapse", function () {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down me-1"></i>View Details';
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

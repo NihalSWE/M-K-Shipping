@@ -32,16 +32,15 @@
     .sheet-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px; /* Matches the dense look of your image */
+        font-size: 11px;
     }
 
     .sheet-table th, .sheet-table td {
-        border: 1px solid #000 !important; /* Force solid black border everywhere */
+        border: 1px solid #000 !important;
         padding: 4px 6px;
         vertical-align: middle;
     }
 
-    /* Header Styling */
     .header-table th {
         background-color: #f8f9fa;
         text-align: left;
@@ -60,19 +59,64 @@
         text-align: left;
     }
     
-    /* Footer Styling */
     .footer-cell {
         background-color: #f8f9fa; 
         font-weight: bold;
     }
 
+    /* ===== Timer Stopped Badge Style ===== */
+    .badge-timer-stopped {
+        background-color: #6f42c1;
+        color: white;
+        font-size: 9px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        display: inline-block;
+        margin-left: 4px;
+    }
+    
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+    
+    .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    /* ===== Booking grouping indicator ===== */
+    .booking-group {
+        background-color: #e8f4f8;
+        font-weight: bold;
+    }
+    .booking-group td {
+        border-top: 2px solid #000 !important;
+    }
+    .pending-booking {
+        background-color: #fff3cd;
+    }
+    /* ===== END STYLES ===== */
+
     /* --- PRINT SETTINGS --- */
     @media print {
-        body * { visibility: hidden; }
-        .trip-sheet-container, .trip-sheet-container * { visibility: visible; }
-        .trip-sheet-container {
-            position: absolute; left: 0; top: 0; width: 100%; padding: 0;
+        @media print {
+            .screen-header {
+                display: none !important;
+            }
+        
+            body {
+                background: white;
+            }
+        
+            .trip-sheet-container {
+                padding: 0;
+            }
+        
+            @page {
+                size: landscape;
+                margin: 10mm;
+            }
         }
+        
         .screen-header { display: none !important; }
         @page { size: landscape; margin: 10mm; }
     }
@@ -148,48 +192,143 @@
                 </tr>
             </thead>
             <tbody>
-                {% for ticket in tickets %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ ticket.id }}</td>
-                    <td>{{ ticket.seat_object.seat_identifier|default:ticket.seat_object.label }}</td>
-                    <td class="text-left">{{ ticket.booking.passenger_name|default:"-" }}</td>
-                    <td>{{ ticket.booking.user.phone_number|default:"0" }}</td>
-                    <td>{{ ticket.fare_amount|floatformat:0 }}</td>
-                    <td>0</td> <td>0</td> <td>{{ ticket.from_stop.location.name }}</td>
-                    <td>{{ ticket.to_stop.location.name }}</td>
-                    <td>Confirmed</td>
-                    <td>{{ request.user.first_name|default:"Admin" }}</td>
-                    <td>{{ request.user.first_name|default:"Admin" }}</td>
-                    <td>N/A</td>
-                </tr>
+                {% for group in booking_groups %}
+                    {% with booking=group.booking tickets=group.tickets %}
+                        <!-- Booking header row -->
+                        <tr class="booking-group">
+                            <td colspan="14" style="text-align: left; padding: 4px 8px;">
+                                <strong>Booking #{{ booking.id }} (Ref: {{ booking.booking_ref }})</strong>
+                                - Total Fare: {{ group.total_fare|floatformat:0 }} BDT
+                                - Paid: <strong class="text-success">{{ group.paid_amount|floatformat:0 }} BDT</strong>
+                                - Due: <strong class="{% if group.due_amount > 0 %}text-danger{% endif %}">{{ group.due_amount|floatformat:0 }} BDT</strong>
+
+                                {% if booking.status == 'PENDING' %}
+                                    - <span style="color: orange;">PENDING</span>
+                                    {% if booking.time_stopped %}
+                                        - <span style="color: #6f42c1;">⏸️ Timer Stopped</span>
+                                    {% endif %}
+                                {% elif booking.status == 'CONFIRMED' %}
+                                    - <span style="color: green;">CONFIRMED</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% for ticket in tickets %}
+                            <tr {% if booking.status == 'PENDING' %}class="pending-booking"{% endif %}>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ ticket.id }}</td>
+
+                                <td>
+                                    {{ ticket.seat_object.seat_identifier|default:ticket.seat_object.label }}
+                                    {% if booking.status == 'PENDING' and booking.time_stopped %}
+                                        <span class="badge-timer-stopped" title="Timer Stopped - Pay at Counter">
+                                            <i class="fa fa-pause-circle"></i>
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-left">
+                                    {{ ticket.passenger_name|default:"-" }}
+                                </td>
+
+                                <td>{{ ticket.passenger.phone|default:ticket.booking.user.phone_number|default:"0" }}</td>
+
+                                {# Booking-level Paid / Discount / Due shown only once per booking #}
+                                {% if forloop.first %}
+                                    <td rowspan="{{ tickets|length }}" class="fw-bold text-success align-middle">
+                                        {{ group.paid_amount|floatformat:0 }}
+                                    </td>
+
+                                    <td rowspan="{{ tickets|length }}" class="align-middle">
+                                        0
+                                    </td>
+
+                                    <td rowspan="{{ tickets|length }}" class="{% if group.due_amount > 0 %}text-danger fw-bold{% endif %} align-middle">
+                                        {{ group.due_amount|floatformat:0 }}
+                                    </td>
+                                {% endif %}
+
+                                <td>{{ ticket.from_stop.location.name }}</td>
+                                <td>{{ ticket.to_stop.location.name }}</td>
+
+                                {# Booking-level status shown once #}
+                                {% if forloop.first %}
+                                    <td rowspan="{{ tickets|length }}" class="align-middle">
+                                        {% if booking.status == 'CONFIRMED' %}
+                                            <span style="color: green;">Confirmed</span>
+                                            <br><small style="color: green; font-size: 8px;">Paid</small>
+                                        {% elif booking.status == 'PENDING' %}
+                                            <span style="color: orange;">Pending</span>
+                                            <br><small style="color: #fd7e14; font-size: 8px;">{{ group.payment_label }}</small>
+                                        {% else %}
+                                            <span>{{ booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td rowspan="{{ tickets|length }}" class="align-middle">
+                                        {{ booking.user.first_name|default:"Admin" }}
+                                    </td>
+
+                                    <td rowspan="{{ tickets|length }}" class="align-middle">
+                                        {{ request.user.first_name|default:"Admin" }}
+                                    </td>
+
+                                    <td rowspan="{{ tickets|length }}" class="align-middle">
+                                        {% if booking.status == 'PENDING' and booking.time_stopped %}
+                                            Timer Stopped
+                                        {% elif booking.status == 'PENDING' and group.paid_amount > 0 and group.due_amount > 0 %}
+                                            Partial Payment
+                                        {% elif booking.status == 'PENDING' and group.paid_amount == 0 %}
+                                            Unpaid
+                                        {% elif booking.status == 'PENDING' and group.due_amount == 0 %}
+                                            Paid*
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+
+                        <!-- Spacer -->
+                        <tr style="height: 5px;"><td colspan="14"></td></tr>
+                    {% endwith %}
+                {% empty %}
+                    <tr>
+                        <td colspan="14" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fa fa-ticket fa-3x mb-3"></i>
+                                <h5>No tickets found for this trip</h5>
+                            </div>
+                        </td>
+                    </tr>
                 {% endfor %}
 
-                {% if tickets %}
-                <tr class="footer-cell">
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    
-                    <td style="white-space: nowrap;">
-                        Total Paid: {{ total_paid|floatformat:0 }}
-                    </td>
-                    
-                    <td></td>
-                    
-                    <td style="white-space: nowrap;">
-                        Total Due: {{ total_due }}
-                    </td>
+                {% if booking_groups %}
+                    <tr class="footer-cell">
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
 
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
+                        <td style="white-space: nowrap; font-weight: bold; color: green;">
+                            Total Paid: {{ total_paid|floatformat:0 }}
+                        </td>
+
+                        <td></td>
+
+                        <td style="white-space: nowrap; font-weight: bold; {% if total_due > 0 %}color: red;{% else %}color: black;{% endif %}">
+                            Total Due: {{ total_due|floatformat:0 }}
+                        </td>
+
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
                 {% endif %}
             </tbody>
         </table>

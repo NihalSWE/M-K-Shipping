@@ -1,11 +1,38 @@
 # accounts/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin # Rename import
+from django.contrib import admin, messages
 from .models import User
+
+
+
+
+
+@admin.action(description='Force delete selected users (and their passengers)')
+def force_delete_users_and_passengers(modeladmin, request, queryset):
+    # 1. Loop through selected users and delete their passenger records first
+    
+    for user in queryset:
+        # Uses the related_name 'booking_passengers' from your model
+        user.booking_passengers.all().delete()
+        
+    # 2. Now that the protected records are gone, delete the users
+    deleted_count, _ = queryset.delete()
+    
+    # 3. Show a green success message in the admin panel
+    modeladmin.message_user(
+        request, 
+        f"Successfully force-deleted {deleted_count} user(s) and their associated passenger records.",
+        messages.SUCCESS
+    )
+    
 
 @admin.register(User) # <--- THIS REGISTERS THE MODEL
 class CustomUserAdmin(BaseUserAdmin): # <--- Rename to CustomUserAdmin
     model = User
+    
+    # --- ADD THIS LINE TO REGISTER THE ACTION ---
+    actions = [force_delete_users_and_passengers]
 
     ordering = ('email',)
     list_display = (
