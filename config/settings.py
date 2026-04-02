@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import sys
 from pathlib import Path
 from django.contrib import messages
 import environ
@@ -248,3 +249,80 @@ SSLCOMMERZ_SUCCESS_URL = f'{BASE_URL}/payment/success/'
 SSLCOMMERZ_FAIL_URL = f'{BASE_URL}/payment/fail/'
 SSLCOMMERZ_CANCEL_URL = f'{BASE_URL}/payment/cancel/'
 SSLCOMMERZ_IPN_URL = f'{BASE_URL}/payment/ipn/'
+
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    # ---------- FORMAT ----------
+    "formatters": {
+        "verbose": {
+            "format": "[%(levelname)s] %(asctime)s | %(name)s | %(module)s:%(lineno)d | %(message)s",
+        },
+        "simple": {
+            "format": "[%(levelname)s] %(message)s",
+        },
+    },
+
+    # ---------- HANDLERS ----------
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,   # 🔥 IMPORTANT for Docker
+            "formatter": "verbose",
+        },
+    },
+
+    # ---------- ROOT LOGGER ----------
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",   # change to DEBUG if needed
+    },
+
+    # ---------- APP LOGGERS ----------
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+
+        "config": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "admin_panel": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "portal": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "accounts": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "ticketing": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "payment": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

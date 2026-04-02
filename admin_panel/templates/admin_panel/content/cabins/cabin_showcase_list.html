@@ -1,0 +1,262 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    .container-fluid {
+        padding-top: 25px;
+    }
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+    .custom-delete-btn:hover {
+        background-color: #ff0000 !important;
+    }
+    .modal-body {
+        padding-top: 34px !important;
+    }
+    .success-message {
+        background-color: #10cf1057;
+        color: #096009;
+    }
+    .error-message {
+        background-color: #ff0d0d78 !important;
+        color: #890000;
+    }
+    .edit {
+        cursor: pointer;
+    }
+    .edit-icon {
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+        color: #1e2f65;
+    }
+    .edit-icon:hover {
+        transform: scale(1.15);
+    }
+    .delete-icon {
+        cursor: pointer;
+        font-size: 22px !important;
+        transition: 0.3s ease-in-out;
+    }
+    .delete-icon:hover {
+        transform: scale(1.15);
+    }
+    .delete {
+        cursor: pointer;
+    }
+    /* Small addition for the cover thumbnail */
+    .cabin-thumbnail {
+        width: 50px; 
+        height: 50px; 
+        object-fit: cover; 
+        border-radius: 5px;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid datatable-init">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>Cabin Showcases</h1>
+                            <p class="text-muted">Marketing profiles for your fleet's cabins and seats.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <a href="{% url 'add_cabin_showcase' %}" class="btn btn-pill btn-primary btn-lg custom-large-btn">
+                                    <span class="me-6">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </span> Add a New Cabin
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Cabin Info</th>
+                                    <th>Linked Vessel</th>
+                                    <th>Capacity</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cabin in cabins %}
+                                <tr data-id="{{ cabin.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            {% if cabin.cover_image %}
+                                                <img src="{{ cabin.cover_image.url }}" alt="{{ cabin.title }}" class="cabin-thumbnail">
+                                            {% else %}
+                                                <div class="cabin-thumbnail bg-light d-flex align-items-center justify-content-center text-muted">N/A</div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ cabin.title }}</div>
+                                                <small class="text-muted">{{ cabin.subtitle|default:"No subtitle"|truncatechars:30 }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if cabin.vessel %}
+                                            <span class="badge badge-light-primary text-primary">{{ cabin.vessel.name }}</span>
+                                        {% else %}
+                                            <span class="badge badge-light-warning text-warning">Fleet-wide (Generic)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ cabin.guest_capacity }}</td>
+                                    <td>
+                                        {% if cabin.is_published %}
+                                            <span class="badge badge-light-success text-success">Published</span>
+                                        {% else %}
+                                            <span class="badge badge-light-secondary text-secondary">Draft</span>
+                                        {% endif %}
+
+                                        {% if cabin.is_sold_out_badge %}
+                                            <span class="badge badge-light-danger text-danger ms-1">Sold Out</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <ul class="action">
+                                            <li class="edit">
+                                                <a href="{% url 'edit_cabin_showcase' cabin.id %}" class="edit-icon-span">
+                                                    <i class="fa-regular fa-pen-to-square edit-icon"></i>
+                                                </a>
+                                            </li>
+                                            <li class="delete" data-id="{{ cabin.id }}">
+                                                <span class="delete-icon-span">
+                                                    <i class="fa-solid fa-trash-can delete-icon" data-id="{{ cabin.id }}"></i>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+</div>
+
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" role="dialog"
+    aria-labelledby="deleteConfirmationModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-toggle-wrapper text-start dark-sign-up">
+                <div class="modal-body">
+                    <div class="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24">
+                            <path fill="#ce2222"
+                                d="M10 5h4a2 2 0 1 0-4 0M8.5 5a3.5 3.5 0 1 1 7 0h5.75a.75.75 0 0 1 0 1.5h-1.32l-1.17 12.111A3.75 3.75 0 0 1 15.026 22H8.974a3.75 3.75 0 0 1-3.733-3.389L4.07 6.5H2.75a.75.75 0 0 1 0-1.5zm2 4.75a.75.75 0 0 0-1.5 0v7.5a.75.75 0 0 0 1.5 0zM14.25 9a.75.75 0 0 0-.75.75v7.5a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75"
+                                stroke-width="0.8" stroke="#ce2222" />
+                        </svg>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="mb-3 text-center">Are you sure?</h4>
+                        <p class="mb-4 text-center">This action will permanently delete this cabin profile.</p>
+                        <div class="card-footer text-end">
+                            <div class="d-flex justify-content-center gap-2">
+                                <button id="confirm-delete" class="btn btn-danger">Yes, Delete</button>
+                                <button class="btn btn-secondary close-btn" type="button"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <div class="text-center">
+                <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" class="success-media"
+                    style="width: 150px; height: 150px;" />
+            </div>
+            <h5 class="mt-3">Deleted successfully!</h5>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+
+<script>
+    // DELETE LOGIC ONLY
+    let pendingDeleteId = null;
+
+    // Open delete modal
+    $(document).on("click", ".delete-icon", function () {
+        pendingDeleteId = this.dataset.id;
+        new bootstrap.Modal($("#deleteConfirmationModal")[0]).show();
+    });
+
+    // Confirm delete
+    $("#confirm-delete").on("click", function () {
+        fetch("{% url 'cabin_showcases' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ action: "delete", id: pendingDeleteId })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.status === "success") {
+                // 1. Hide delete modal
+                bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
+
+                // 2. Show success modal
+                const successModal = new bootstrap.Modal($("#deleteSuccessModal")[0]);
+                successModal.show();
+
+                // 3. After animation+delay, reload
+                setTimeout(() => {
+                    successModal.hide();
+                    location.reload();
+                }, 1500); 
+            } else {
+                alert("Error deleting cabin: " + d.message);
+                bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
+            }
+        });
+    });
+
+    // Explicitly hide modal & backdrop on Cancel
+    $(document).on("click", ".close-btn", function () {
+        const modalEl = document.getElementById("deleteConfirmationModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) {
+            modal.hide();
+        }
+        document.querySelectorAll(".modal-backdrop").forEach(bg => bg.remove());
+    });
+</script>
+{% endblock %}

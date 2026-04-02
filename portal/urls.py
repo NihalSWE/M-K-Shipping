@@ -47,4 +47,10 @@ urlpatterns = [
     path("ticket/<str:booking_ref>/<str:token>/", views.ticket_public_view, name="ticket_public"),
     path("ticket/<str:booking_ref>/<str:token>/qr.png", views.booking_qr_png_view, name="ticket_qr_png"),
     path("booking/<str:booking_ref>/ticket.pdf/", views.booking_ticket_pdf, name="booking_ticket_pdf"),
+    
+    # Cabin Showcase
+    path('cabins/', views.all_cabins_view, name='all_cabins'),
+    
+    # Vessels Showcase
+    path('vessels/', views.all_vessels, name='all_vessels'),
 ]

@@ -1,0 +1,224 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<style>
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ce2222;
+    }
+
+    /* Modern Error/Success Messages */
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .error-success-div.show {
+        max-height: 100px;
+        opacity: 1;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+    }
+
+    .success-message {
+        background-color: rgba(16, 207, 16, 0.15);
+        color: #096009;
+        border: 1px solid rgba(16, 207, 16, 0.3);
+    }
+
+    .error-message {
+        background-color: rgba(255, 13, 13, 0.15);
+        color: #890000;
+        border: 1px solid rgba(255, 13, 13, 0.3);
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 25px;">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>Add a Featured Article</h1>
+                            <p class="text-muted">Highlight press mentions and publications about the company.</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'featured_articles' %}" class="btn btn-secondary btn-pill">Back to List</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form id="add-article-form" class="form theme-form dark-inputs" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="name">Article Title / Headline</label>
+                                <input class="form-control btn-pill" id="name" name="name" type="text" placeholder="e.g., Company Launches New Fleet" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="organization_name">Organization / Publisher Name</label>
+                                <input class="form-control btn-pill" id="organization_name" name="organization_name" type="text" placeholder="e.g., Forbes, TechCrunch" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="url">Article URL</label>
+                                <input class="form-control btn-pill" id="url" name="url" type="url" placeholder="https://www.example.com/article" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="publication_date">Publication Date</label>
+                                <input class="form-control btn-pill" id="publication_date" name="publication_date" type="date">
+                                <small class="text-muted ms-2">Optional. Used to sort articles chronologically.</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label required-field" for="description">Excerpt / Summary</label>
+                                <textarea class="form-control btn-pill" id="description" name="description"
+                                 rows="4" placeholder="A short excerpt, quote, or summary of the article..." required
+                                 style="border-radius: 10px;"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label required-field" for="logo">Organization Logo</label>
+                                <input class="form-control btn-pill" id="logo" name="logo" type="file" accept="image/*" required>
+                                <small class="text-muted ms-2">Max upload: 2MB. (Images over 80KB will be automatically optimized).</small>
+                                
+                                <div class="mt-3">
+                                    <img id="logo-preview" src="" alt="Logo Preview" style="max-width: 150px; display: none; border-radius: 8px; border: 1px solid #ccc; padding: 10px; background: #f8f9fa; object-fit: contain;">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-4 d-flex align-items-center">
+                                <div class="form-check checkbox checkbox-solid-primary">
+                                    <input class="form-check-input" id="is_active" type="checkbox" checked>
+                                    <label class="form-check-label mb-0" for="is_active">
+                                        Active (Visible on Website)
+                                    </label>
+                                    <div class="text-muted ms-4 mt-1" style="font-size: 0.85rem;">Uncheck to hide this article from the live website immediately.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="error-success-div" id="message-container"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-3">
+                            <button class="btn btn-primary btn-lg btn-pill custom-large-btn px-5" type="submit" id="submit-btn">
+                                Save Featured Article
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scriptcontent %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        // Message Display Logic
+        function showMessage(type, message) {
+            const div = $("#message-container");
+            
+            function expand() {
+                div.removeClass("error-message success-message").addClass(`${type}-message`).text(message);
+                requestAnimationFrame(() => div.addClass("show"));
+                
+                if (type === "success") {
+                    setTimeout(() => window.location.href = "{% url 'featured_articles' %}", 2000);
+                }
+            }
+
+            if (div.hasClass("show")) {
+                div.removeClass("show");
+                div.one("transitionend", expand);
+            } else {
+                expand();
+            }
+        }
+
+        // Image Preview and Client-Side Validation
+        const logoInput = document.getElementById('logo');
+        const logoPreview = document.getElementById('logo-preview');
+
+        logoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            logoPreview.style.display = 'none';
+            logoPreview.src = '';
+            $("#message-container").removeClass("show");
+
+            if (!file) return;
+
+            // Size validation (Increased to 2MB to let backend compress large files)
+            if (file.size > 2 * 1024 * 1024) {
+                showMessage("error", "Image is too large. Please upload an image under 2MB.");
+                this.value = ''; // Clear input
+                return;
+            }
+            
+            // Passed validation - Show preview
+            const objectUrl = URL.createObjectURL(file);
+            logoPreview.src = objectUrl;
+            logoPreview.style.display = 'block';
+        });
+
+        // Form Submission
+        $("#add-article-form").on("submit", function (e) {
+            e.preventDefault();
+            const submitBtn = $("#submit-btn");
+
+            submitBtn.prop("disabled", true).text("Saving...");
+
+            const formData = new FormData(this);
+            // Manually handle the checkbox state since unchecked checkboxes aren't included in FormData
+            formData.append("is_active", document.getElementById('is_active').checked);
+
+            fetch("{% url 'add_featured_article' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage(data.status, data.message);
+                if (data.status === "error") {
+                    submitBtn.prop("disabled", false).text("Save Featured Article");
+                }
+            })
+            .catch(error => {
+                showMessage("error", "A network error occurred.");
+                submitBtn.prop("disabled", false).text("Save Featured Article");
+            });
+        });
+    });
+</script>
+{% endblock scriptcontent %}

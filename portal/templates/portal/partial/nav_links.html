@@ -1,29 +1,31 @@
 {# portal/partial/nav_links.html #}
 
-<li class="menu-item">
+{# UPDATED: Active desktop menu class now follows the current page so only that item gets the white border #}
+<li class="menu-item {% if request.resolver_match.url_name == 'home' %}active current-menu-item{% endif %}">
     <a class="main-element rts-dropdown-main-element" href="{% url 'home' %}">Home</a>
 </li>
 
-<li class="menu-item">
-    <a class="main-element rts-dropdown-main-element" href="{% url 'aboutUs' %}">About</a>
+<li class="menu-item {% if request.resolver_match.url_name == 'all_vessels' %}active current-menu-item{% endif %}">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'all_vessels' %}">Our Vessels</a>
 </li>
 
-<li class="menu-item">
-    <a class="main-element rts-dropdown-main-element" href="{% url 'services' %}">Services</a>
+<li class="menu-item {% if request.resolver_match.url_name == 'all_cabins' %}active current-menu-item{% endif %}">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'all_cabins' %}">Seat Category</a>
 </li>
 
-<li class="menu-item">
-    <a class="main-element rts-dropdown-main-element" href="{% url 'technology_innovation' %}">Technology</a>
+<li class="menu-item {% if request.resolver_match.url_name == 'aboutUs' %}active current-menu-item{% endif %}">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'aboutUs' %}">About Us</a>
 </li>
 
-<li class="menu-item rts-has-dropdown">
+<li class="menu-item {% if request.resolver_match.url_name == 'contact' %}active current-menu-item{% endif %}">
+    <a class="main-element rts-dropdown-main-element" href="{% url 'contact' %}">Contact</a>
+</li>
+
+{% comment %} <li class="menu-item rts-has-dropdown">
     <a href="#" class="rts-dropdown-main-element">Pages</a>
     <ul class="rts-submenu list-unstyled menu-home">
         <li class="nav-item"><a class="nav-link" href="{% url 'team' %}">Leadership Profile</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'blog' %}">Blog</a></li>
     </ul>
-</li>
+</li> {% endcomment %}
 
-<li class="menu-item">
-    <a class="main-element rts-dropdown-main-element" href="{% url 'contact' %}">Contact</a>
-</li>

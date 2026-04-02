@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/fav.svg'%}">
-    <title>Travel & Tour Booking HTML Template</title>
+    <title>MK Shipping</title>
    <!-- swiper css -->
 <link rel="stylesheet" href="{% static 'portal/assets/css/plugins/swiper.min.css' %}" />
 <!-- Custom Font css -->
@@ -129,114 +129,294 @@
     }
 
     /* header styles overrides */
+    /* UPDATED: Shared desktop glass navbar styles moved from homepage to base so all pages use the same header design */
+    @media (min-width: 992px) {
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header {
+            position: absolute;
+            left: 0;
+            right: 0;
+            padding: 0;
+            background: #4d87b254;
+            border-bottom: 0;
+            z-index: 20;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header > .container {
+            max-width: 1380px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-inner {
+            border-radius: 28px;
+            -webkit-backdrop-filter: blur(18px);
+            padding: 0 28px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-style-one-wrapper {
+            min-height: 108px;
+            gap: 24px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-style-one-wrapper .left-area {
+            flex: 0 0 auto;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo {
+            min-width: 190px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo img {
+            height: 78px !important;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area {
+            flex: 1 1 auto;
+            display: flex;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area ul.rts-desktop-menu {
+            gap: 10px;
+            flex-wrap: nowrap;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area ul.rts-desktop-menu .menu-item .rts-dropdown-main-element {
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: 0;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0);
+            border: 2px solid #00abea;
+            white-space: nowrap;
+            text-shadow: 0 1px 10px rgba(0, 0, 0, 0.16);
+        }
+
+        /* UPDATED: Active desktop menu border stays white while the rest stay blue */
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area ul.rts-desktop-menu .menu-item.active .rts-dropdown-main-element,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area ul.rts-desktop-menu .menu-item.current-menu-item .rts-dropdown-main-element {
+            border-color: #ffffff;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .main-nav-area ul.rts-desktop-menu .menu-item .rts-dropdown-main-element:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .button-area-start {
+            flex: 0 0 auto;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .auth-btn,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-dropdown-toggle {
+            min-height: 50px;
+            padding: 10px 18px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.34) !important;
+            background: rgba(255, 255, 255, 0.18) !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+            white-space: nowrap;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-name-label,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-icon-wrapper,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .caret-icon {
+            color: #ffffff !important;
+        }
+
+        .tour-marketplace .header--sticky.sticky.header-six.glassy-overlay-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+    }
+
+    /* UPDATED: Shared mobile/tablet glass navbar styles so the same header look also applies below 992px */
+    @media (max-width: 991.98px) {
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 0;
+            background: #4d87b254;
+            border-bottom: 0;
+            z-index: 30;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header > .container {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-inner {
+            border-radius: 18px;
+            -webkit-backdrop-filter: blur(18px);
+            padding: 0 14px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-style-one-wrapper {
+            min-height: 82px;
+            gap: 14px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-style-one-wrapper .left-area,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .button-area-start {
+            flex-basis: auto;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo {
+            min-width: 132px;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo img {
+            height: 56px !important;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .auth-btn,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-dropdown-toggle {
+            min-height: 44px;
+            padding: 8px 14px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(255, 255, 255, 0.34) !important;
+            background: rgba(255, 255, 255, 0.18) !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+            white-space: nowrap;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-name-label,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-icon-wrapper,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .caret-icon {
+            color: #ffffff !important;
+        }
+
+        .tour-marketplace .header--sticky.sticky.header-six.glassy-overlay-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+    }
+
     /* Modern Header Dropdown Styles */
-/* Modern Header Dropdown Styles */
-/* --- USER DROPDOWN TOGGLE --- */
-.user-dropdown-toggle {
-    cursor: pointer !important;
-    background: #f8fafd !important;
-    padding: 8px 16px !important;
-    border-radius: 50px !important;
-    border: 1px solid #e2e8f0 !important;
-    transition: all 0.25s ease !important;
-    display: flex !important;
-    align-items: center !important;
-}
+    /* Modern Header Dropdown Styles */
+    /* --- USER DROPDOWN TOGGLE --- */
+    .user-dropdown-toggle {
+        cursor: pointer !important;
+        background: #f8fafd !important;
+        padding: 8px 16px !important;
+        border-radius: 50px !important;
+        border: 1px solid #e2e8f0 !important;
+        transition: all 0.25s ease !important;
+        display: flex !important;
+        align-items: center !important;
+    }
 
-.user-dropdown-toggle:hover {
-    background: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
-}
+    .user-dropdown-toggle:hover {
+        background: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+    }
 
-.user-name-label {
-    font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: #1e293b !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-}
+    .user-name-label {
+        font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }
 
-.user-icon-wrapper {
-    color: #0b4a78 !important;
-    margin-right: 10px !important;
-    display: flex !important;
-    align-items: center !important;
-}
+    .user-icon-wrapper {
+        color: #0b4a78 !important;
+        margin-right: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
 
-.caret-icon {
-    font-size: 10px !important;
-    color: #94a3b8 !important;
-    transition: transform 0.3s ease !important;
-}
+    .caret-icon {
+        font-size: 10px !important;
+        color: #94a3b8 !important;
+        transition: transform 0.3s ease !important;
+    }
 
-.dropdown.show .caret-icon {
-    transform: rotate(180deg) !important;
-}
+    .dropdown.show .caret-icon {
+        transform: rotate(180deg) !important;
+    }
 
-/* --- DROPDOWN MENU CONTAINER --- */
-.modern-user-menu {
-    border: 1px solid #f1f5f9 !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-    border-radius: 12px !important;
-    padding: 8px !important;
-    min-width: 220px !important;
-    margin-top: 12px !important;
-    background-color: #ffffff !important;
-}
+    /* --- DROPDOWN MENU CONTAINER --- */
+    .modern-user-menu {
+        border: 1px solid #f1f5f9 !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
+        min-width: 220px !important;
+        margin-top: 12px !important;
+        background-color: #ffffff !important;
+    }
 
-/* --- MENU ITEMS & TYPOGRAPHY --- */
-.modern-user-menu .dropdown-item {
-    padding: 12px 14px !important; /* Forces breathing room */
-    display: flex !important;
-    align-items: center !important;
-    border-radius: 8px !important;
-    transition: all 0.2s ease !important;
-    background: transparent !important;
-    border: none !important;
-    /* Forces modern typography */
-    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    color: #475569 !important;
-    text-transform: none !important; 
-    letter-spacing: normal !important;
-    line-height: 1.2 !important;
-}
+    /* --- MENU ITEMS & TYPOGRAPHY --- */
+    .modern-user-menu .dropdown-item {
+        padding: 12px 14px !important; /* Forces breathing room */
+        display: flex !important;
+        align-items: center !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+        background: transparent !important;
+        border: none !important;
+        /* Forces modern typography */
+        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: #475569 !important;
+        text-transform: none !important; 
+        letter-spacing: normal !important;
+        line-height: 1.2 !important;
+    }
 
-.modern-user-menu .dropdown-item:hover {
-    background-color: #f1f5f9 !important;
-    color: #167fca !important;
-    transform: translateX(4px) !important;
-}
+    .modern-user-menu .dropdown-item:hover {
+        background-color: #f1f5f9 !important;
+        color: #167fca !important;
+        transform: translateX(4px) !important;
+    }
 
-/* Icons inside items */
-.modern-user-menu .dropdown-item i {
-    width: 20px !important;
-    margin-right: 12px !important;
-    font-size: 16px !important;
-    color: #94a3b8 !important;
-    text-align: center !important;
-}
+    /* Icons inside items */
+    .modern-user-menu .dropdown-item i {
+        width: 20px !important;
+        margin-right: 12px !important;
+        font-size: 16px !important;
+        color: #94a3b8 !important;
+        text-align: center !important;
+    }
 
-.modern-user-menu .dropdown-item:hover i {
-    color: #167fca !important;
-}
+    .modern-user-menu .dropdown-item:hover i {
+        color: #167fca !important;
+    }
 
-/* --- LOGOUT & DIVIDER --- */
-.modern-user-menu .dropdown-divider {
-    margin: 8px 0 !important;
-    border-top: 1px solid #f1f5f9 !important;
-    opacity: 1 !important;
-}
+    /* --- LOGOUT & DIVIDER --- */
+    .modern-user-menu .dropdown-divider {
+        margin: 8px 0 !important;
+        border-top: 1px solid #f1f5f9 !important;
+        opacity: 1 !important;
+    }
 
-.logout-link:hover {
-    background-color: #fff5f5 !important;
-}
+    .logout-link:hover {
+        background-color: #fff5f5 !important;
+    }
 
-.logout-link:hover, .logout-link:hover i {
-    color: #dc2626 !important;
-}
+    .logout-link:hover, .logout-link:hover i {
+        color: #dc2626 !important;
+    }
 
 
 
@@ -751,9 +931,9 @@ html.mbn2-open .site-wrapper {
         <span class="mbn2-tx">Home</span>
     </a>
 
-    <a href="{% url 'services' %}" class="mbn2-item" data-mbn2-path="{% url 'services' %}">
+    <a href="{% url 'all_vessels' %}" class="mbn2-item" data-mbn2-path="{% url 'services' %}">
         <span class="iconify mbn2-ic" data-icon="mdi:briefcase-outline"></span>
-        <span class="mbn2-tx">Services</span>
+        <span class="mbn2-tx">Vessels</span>
     </a>
 
     <a href="{% url 'contact' %}" class="mbn2-item" data-mbn2-path="{% url 'contact' %}">
@@ -794,9 +974,8 @@ html.mbn2-open .site-wrapper {
             <div class="mbn2-sec-title">Pages</div>
             <ul class="mbn2-list">
                 <li><a class="mbn2-link" href="{% url 'aboutUs' %}"><span class="iconify" data-icon="mdi:information-outline"></span>About</a></li>
-                <li><a class="mbn2-link" href="{% url 'technology_innovation' %}"><span class="iconify" data-icon="mdi:chip"></span>Technology &amp; Innovation</a></li>
+                <li><a class="mbn2-link" href="{% url 'all_cabins' %}"><span class="iconify" data-icon="mdi:chip"></span>Seat Category</a></li>
                 <li><a class="mbn2-link" href="{% url 'team' %}"><span class="iconify" data-icon="mdi:account-group-outline"></span>Leadership Profile</a></li>
-                <li><a class="mbn2-link" href="{% url 'blog' %}"><span class="iconify" data-icon="mdi:post-outline"></span>Blog</a></li>
             </ul>
         </div>
 

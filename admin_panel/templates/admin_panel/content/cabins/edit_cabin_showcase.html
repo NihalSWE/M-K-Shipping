@@ -1,0 +1,375 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'portal/assets/css/select2_custom_style.css' %}">
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<style>
+    .container-fluid{
+        padding-top: 25px;
+    }
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ce2222;
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .error-success-div.show {
+        max-height: 100px;
+        opacity: 1;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+    }
+
+    .success-message {
+        background-color: rgba(16, 207, 16, 0.15);
+        color: #096009;
+        border: 1px solid rgba(16, 207, 16, 0.3);
+    }
+
+    .error-message {
+        background-color: rgba(255, 13, 13, 0.15);
+        color: #890000;
+        border: 1px solid rgba(255, 13, 13, 0.3);
+    }
+
+    .quill-wrapper {
+        display: block;
+    }
+    .ql-container {
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+        height: 250px !important;
+        font-family: inherit;
+    }
+    .ql-toolbar {
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>Edit Cabin Showcase</h1>
+                            <p class="text-muted">Update the marketing profile for {{ cabin.title }}.</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'cabin_showcases' %}" class="btn btn-secondary btn-pill">Back to List</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form id="edit-cabin-form" class="form theme-form dark-inputs" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="title">Cabin Title</label>
+                                <input class="form-control btn-pill" id="title" name="title" type="text" value="{{ cabin.title }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="vessel_select">Linked Vessel Showcase</label>
+                                <select class="form-control vessel-select" id="vessel_select" name="vessel_id">
+                                    <option value="" {% if not cabin.vessel_id %}selected{% endif %}>Select Vessel</option>
+                                    
+                                    {% for vessel in vessels %}
+                                        <option value="{{ vessel.id }}" {% if cabin.vessel_id == vessel.id %}selected{% endif %}>
+                                            {{ vessel.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="subtitle">Subtitle</label>
+                                <input class="form-control btn-pill" id="subtitle" name="subtitle" type="text" value="{{ cabin.subtitle }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="guest_capacity">Guest Capacity</label>
+                                <input class="form-control btn-pill" id="guest_capacity" name="guest_capacity" type="text" value="{{ cabin.guest_capacity }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="room_size">Room Size</label>
+                                <input class="form-control btn-pill" id="room_size" name="room_size" type="text" value="{{ cabin.room_size }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="bed_type">Bed Type</label>
+                                <input class="form-control btn-pill" id="bed_type" name="bed_type" type="text" value="{{ cabin.bed_type }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="operational_categories">Linked Operational Categories</label>
+                                <select class="form-control custom-multi-select" id="operational_categories" name="operational_categories" multiple="multiple">
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.id }}" {% if cat.id in selected_categories %}selected{% endif %}>
+                                            {{ cat.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted ms-2">Select the actual bookable categories.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="features">Cabin Features (Tags)</label>
+                                <select class="form-control custom-multi-select" id="features" name="features" multiple="multiple">
+                                    {% for feature in features %}
+                                        <option value="{{ feature.id }}" {% if feature.id in selected_features %}selected{% endif %}>
+                                            {{ feature.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted ms-2">Select features like AC, River Side, etc.</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label required-field" for="short_description">Short Description</label>
+                                <textarea class="form-control btn-pill" id="short_description" name="short_description"
+                                 rows="3" required style="border-radius: 10px;">{{ cabin.short_description }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                <label class="form-label required-field" for="full_description">Full Description</label>
+                                
+                                <div class="quill-wrapper">
+                                    <div id="full-description-editor" class="richtext-editor"></div>
+                                </div>
+                                
+                                <textarea name="full_description" id="hidden_full_description" style="display:none;"></textarea>
+                                <div id="existing-description" style="display:none;">{{ cabin.full_description|safe }}</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label class="form-label" for="cover_image">Cover Image (Leave blank to keep current image)</label>
+                                <input class="form-control btn-pill" id="cover_image" name="cover_image" type="file" accept="image/*">
+                                <small class="text-muted ms-2">Format: JPG, PNG, WEBP, etc. Must be Square (up to 800x800) and max 500KB.</small>
+                                
+                                <div class="mt-3">
+                                    <img id="cover-preview" src="{% if cabin.cover_image %}{{ cabin.cover_image.url }}{% endif %}" 
+                                         alt="Image Preview" 
+                                         style="max-width: 150px; {% if not cabin.cover_image %}display: none;{% endif %} border-radius: 8px; border: 1px solid #ccc; object-fit: cover;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="error-success-div" id="message-container"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button class="btn btn-primary btn-lg btn-pill custom-large-btn px-5" type="submit" id="submit-btn">
+                                Update Cabin Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // A. Initialize the Vessel dropdown
+        $('.vessel-select').select2({
+            width: '100%',
+        });
+
+        // B. Initialize the Categories and Features multi-selects
+        $('.custom-multi-select').select2({
+            width: '100%',
+            placeholder: "Select options"
+        });
+
+        // 2. Initialize Quill Editor
+        const toolbarOptions = [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'header': 1 }, { 'header': 2 }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            ['link', 'image', 'video'],
+            ['clean']
+        ];
+
+        const quill = new Quill('#full-description-editor', {
+            theme: 'snow',
+            placeholder: 'Write the detailed cabin description here...',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        // Load existing content into Quill
+        const existingHTML = document.getElementById('existing-description').innerHTML;
+        quill.root.innerHTML = existingHTML;
+
+        const hiddenFullDesc = document.getElementById('hidden_full_description');
+        // Initial sync just in case user doesn't type anything before saving
+        hiddenFullDesc.value = quill.root.innerHTML;
+
+        quill.on('text-change', () => {
+            hiddenFullDesc.value = quill.root.innerHTML;
+        });
+
+        // 3. Message Display Logic
+        function showMessage(type, message) {
+            const div = $("#message-container");
+            
+            function expand() {
+                div.removeClass("error-message success-message").addClass(`${type}-message`).text(message);
+                requestAnimationFrame(() => div.addClass("show"));
+                
+                if (type === "success") {
+                    setTimeout(() => window.location.href = "{% url 'cabin_showcases' %}", 2000); // Update URL to match your listing route
+                }
+            }
+
+            if (div.hasClass("show")) {
+                div.removeClass("show");
+                div.one("transitionend", expand);
+            } else {
+                expand();
+            }
+        }
+
+        // 4. Image Preview and Client-Side Validation
+        const coverInput = document.getElementById('cover_image');
+        const coverPreview = document.getElementById('cover-preview');
+        const originalImageSrc = coverPreview.src;
+
+        coverInput.addEventListener('change', function() {
+            const file = this.files[0];
+            $("#message-container").removeClass("show");
+
+            if (!file) {
+                // If user cancels file selection, revert to original image
+                if (originalImageSrc && originalImageSrc !== window.location.href) {
+                    coverPreview.src = originalImageSrc;
+                    coverPreview.style.display = 'block';
+                } else {
+                    coverPreview.style.display = 'none';
+                }
+                return;
+            }
+
+            // Size validation (Max 500KB)
+            if (file.size > 500 * 1024) {
+                showMessage("error", "Image size must be 500KB or less.");
+                this.value = ''; // Clear input
+                coverPreview.src = originalImageSrc; // Revert
+                return;
+            }
+
+            // Dimension and Aspect Ratio validation
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            
+            img.onload = function() {
+                if (img.width !== img.height) {
+                    showMessage("error", "Image must be a perfect square (1:1 ratio).");
+                    coverInput.value = ''; 
+                    coverPreview.src = originalImageSrc;
+                    URL.revokeObjectURL(objectUrl);
+                    return;
+                }
+                if (img.width > 800 || img.height > 800) {
+                    showMessage("error", "Image dimensions cannot exceed 800x800 pixels.");
+                    coverInput.value = ''; 
+                    coverPreview.src = originalImageSrc;
+                    URL.revokeObjectURL(objectUrl);
+                    return;
+                }
+                
+                // Passed validation - Show new preview
+                coverPreview.src = objectUrl;
+                coverPreview.style.display = 'block';
+            };
+            
+            img.src = objectUrl;
+        });
+
+        // 5. Form Submission
+        $("#edit-cabin-form").on("submit", function (e) {
+            e.preventDefault();
+            const submitBtn = $("#submit-btn");
+
+            if (quill.getText().trim().length === 0) {
+                showMessage("error", "Full Description is required.");
+                return;
+            }
+
+            submitBtn.prop("disabled", true).text("Updating...");
+
+            const formData = new FormData(this);
+            formData.set("full_description", hiddenFullDesc.value);
+
+            // Fetch request to the current URL
+            fetch(window.location.href, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage(data.status, data.message);
+                if (data.status === "error") {
+                    submitBtn.prop("disabled", false).text("Update Cabin Profile");
+                }
+            })
+            .catch(error => {
+                showMessage("error", "A network error occurred.");
+                submitBtn.prop("disabled", false).text("Update Cabin Profile");
+            });
+        });
+    });
+</script>
+{% endblock scriptcontent %}

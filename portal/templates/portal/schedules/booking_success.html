@@ -75,6 +75,24 @@
             border-color: rgba(255,255,255,.2);
         }
 
+        /* New style for the Print button */
+        .btn-print-secondary {
+            background: var(--card);
+            border-color: var(--border);
+            color: var(--ink);
+        }
+
+        /* Optional: adjustment for mobile to ensure buttons don't overflow */
+        @media (max-width: 780px) {
+            .no-print {
+                flex-wrap: wrap; /* Allows buttons to stack if the screen is too narrow */
+            }
+            .btn {
+                flex: 1; /* Makes buttons grow equally on mobile */
+                justify-content: center;
+            }
+        }
+
         /* Main container */
         .ticket{
             max-width: 920px;
@@ -638,10 +656,18 @@
 
 <body>
     <div class="no-print">
-        <a href="/" class="btn btn-back"><i class="fas fa-arrow-left"></i> Home</a>
-        <a href="{% url 'booking_ticket_pdf' booking.booking_ref %}" class="btn btn-print">
-            <i class="fas fa-file-pdf"></i> Download Ticket (PDF)
+        <a href="/" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Home
         </a>
+        
+        <div style="display:flex; gap:8px;"> <a href="javascript:void(0)" onclick="window.print()" class="btn btn-print-secondary">
+                <i class="fas fa-print"></i> Print Ticket
+            </a>
+
+            <a href="{% url 'booking_ticket_pdf' booking.booking_ref %}" class="btn btn-print">
+                <i class="fas fa-file-pdf"></i> Download Ticket (PDF)
+            </a>
+        </div>
     </div>
 
     <div class="ticket">

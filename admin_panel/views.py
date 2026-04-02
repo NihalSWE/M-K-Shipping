@@ -2,14 +2,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+import sys
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import F
+from io import BytesIO
 from datetime import timedelta, datetime
 from django.utils.crypto import get_random_string
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone            # <--- NEW IMPORT
 from .tasks import send_sms_task, auto_cancel_booking  # <--- NEW IMPORT
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 import csv
 from decimal import Decimal
 from django.db.models import Sum, Q, Count, F, DecimalField, ExpressionWrapper, Value
@@ -18,6 +23,7 @@ from django.http import HttpResponse
 import uuid 
 import json
 from .models import *
+import logging
 from django.db.models import Max
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
@@ -32,7 +38,7 @@ from .utils import send_booking_sms, get_logged_in_counter
 from portal.utils import seat_hold_key, get_holder_id
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
+from PIL import Image
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from django.db.models import Sum, Q
@@ -46,6 +52,9 @@ from django.db.models import Sum, Q
 
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
 
 @login_required
 def dashboard(request):
@@ -4901,6 +4910,602 @@ def counter_sales_report_csv(request, counter_id):
         ])
 
     return response
+
+
+@login_required
+def vessel_showcase_list(request):
+    # Handle the AJAX Delete Request
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get("action")
+            
+            if action == "delete":
+                showcase_id = data.get("id")
+                showcase = VesselShowcase.objects.get(id=showcase_id)
+                showcase.delete()
+                
+                return JsonResponse({"status": "success", "message": "Vessel showcase deleted successfully."})
+                
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # Handle the standard GET Request
+    showcases = VesselShowcase.objects.select_related('ship').all().order_by('-created_at')
+    
+    context = {
+        'showcases': showcases
+    }
+    return render(request, 'admin_panel/content/vessels/vessel_showcase_list.html', context)
+
+# --- Placeholders for next steps ---
+@login_required
+def add_vessel_showcase(request):
+    if request.method == "POST":
+        try:
+            name = request.POST.get('name')
+            ship_id = request.POST.get('ship_id')
+            tagline = request.POST.get('tagline')
+            short_description = request.POST.get('short_description')
+            full_description = request.POST.get('full_description')
+            video_tour_url = request.POST.get('video_tour_url')
+            display_capacity = request.POST.get('display_capacity')
+            hero_image = request.FILES.get('hero_image')
+
+            # Basic Validation
+            if not name or not hero_image:
+                return JsonResponse({"status": "error", "message": "Name and Hero Image are required."})
+
+            # --- Backend Image Validation ---
+            # 1. File Size Validation (<= 500KB)
+            if hero_image.size > 500 * 1024:
+                return JsonResponse({"status": "error", "message": "Image size must not exceed 500KB."})
+
+            # 2. Dimensions & Format Validation
+            try:
+                img = Image.open(hero_image)
+                img.verify() # Verifies it is a valid image file (handles jpg, png, webp, etc.)
+
+                # Re-open the file for size/dimension reading (verify() leaves it in a closed state)
+                hero_image.seek(0)
+                img = Image.open(hero_image)
+                width, height = img.size
+
+                if width != height:
+                    return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
+                
+                if width > 800 or height > 800:
+                    return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
+
+            except Exception:
+                return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+            # --------------------------------
+
+            # Check if Ship is selected and valid
+            ship_instance = None
+            if ship_id:
+                if VesselShowcase.objects.filter(ship_id=ship_id).exists():
+                    return JsonResponse({"status": "error", "message": "This ship already has a showcase."})
+                ship_instance = Ship.objects.get(id=ship_id)
+
+            # Create the showcase
+            showcase = VesselShowcase.objects.create(
+                name=name,
+                ship=ship_instance,
+                tagline=tagline,
+                short_description=short_description,
+                full_description=full_description,
+                video_tour_url=video_tour_url,
+                display_capacity=display_capacity,
+                hero_image=hero_image
+            )
+
+            return JsonResponse({"status": "success", "message": "Vessel showcase created successfully!"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # GET Request: Fetch ships that don't already have a showcase linked
+    available_ships = Ship.objects.filter(showcase__isnull=True)
+    
+    context = {
+        'available_ships': available_ships
+    }
+    return render(request, 'admin_panel/content/vessels/add_vessel_showcase.html', context)
+
+@login_required
+def edit_vessel_showcase(request, id):
+    showcase = get_object_or_404(VesselShowcase, id=id)
+
+    if request.method == "POST":
+        try:
+            name = request.POST.get('name')
+            ship_id = request.POST.get('ship_id')
+            tagline = request.POST.get('tagline')
+            short_description = request.POST.get('short_description')
+            full_description = request.POST.get('full_description')
+            video_tour_url = request.POST.get('video_tour_url')
+            display_capacity = request.POST.get('display_capacity')
+            new_hero_image = request.FILES.get('hero_image')
+
+            # Basic Validation
+            if not name:
+                return JsonResponse({"status": "error", "message": "Name is required."})
+
+            # --- Backend Image Validation (Only if a new image is provided) ---
+            if new_hero_image:
+                if new_hero_image.size > 500 * 1024:
+                    return JsonResponse({"status": "error", "message": "Image size must not exceed 500KB."})
+
+                try:
+                    img = Image.open(new_hero_image)
+                    img.verify()
+
+                    new_hero_image.seek(0)
+                    img = Image.open(new_hero_image)
+                    width, height = img.size
+
+                    if width != height:
+                        return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
+                    
+                    if width > 800 or height > 800:
+                        return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+                
+                # If valid, assign the new image
+                showcase.hero_image = new_hero_image
+            # ----------------------------------------------------------------
+
+            # Check if Ship is selected and valid
+            ship_instance = None
+            if ship_id:
+                # Exclude the current showcase ID to allow saving the same ship
+                if VesselShowcase.objects.filter(ship_id=ship_id).exclude(id=showcase.id).exists():
+                    return JsonResponse({"status": "error", "message": "This ship is already linked to another showcase."})
+                ship_instance = Ship.objects.get(id=ship_id)
+
+            # Update the showcase fields
+            showcase.name = name
+            showcase.ship = ship_instance
+            showcase.tagline = tagline
+            showcase.short_description = short_description
+            showcase.full_description = full_description
+            showcase.video_tour_url = video_tour_url
+            showcase.display_capacity = display_capacity
+            
+            showcase.save()
+
+            return JsonResponse({"status": "success", "message": "Vessel showcase updated successfully!"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # GET Request: Fetch ships that don't already have a showcase, OR the one currently linked
+    available_ships = Ship.objects.filter(Q(showcase__isnull=True) | Q(id=showcase.ship_id))
+    
+    context = {
+        'showcase': showcase,
+        'available_ships': available_ships
+    }
+    return render(request, 'admin_panel/content/vessels/edit_vessel_showcase.html', context)
+
+
+@login_required
+def cabin_showcases(request):
+    # Handle the AJAX Delete Request
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get("action")
+            
+            if action == "delete":
+                cabin_id = data.get("id")
+                cabin = CabinShowcase.objects.get(id=cabin_id)
+                cabin.delete()
+                
+                return JsonResponse({"status": "success", "message": "Cabin showcase deleted successfully."})
+                
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # Handle the standard GET Request
+    cabins = CabinShowcase.objects.select_related('vessel').all().order_by('-created_at')
+    
+    context = {
+        'cabins': cabins
+    }
+    return render(request, 'admin_panel/content/cabins/cabin_showcase_list.html', context)
+
+
+@login_required
+def add_cabin_showcase(request):
+    if request.method == "POST":
+        try:
+            # --- Extract Fields ---
+            title = request.POST.get('title')
+            vessel_id = request.POST.get('vessel_id')
+            subtitle = request.POST.get('subtitle', '')
+            guest_capacity = request.POST.get('guest_capacity')
+            room_size = request.POST.get('room_size', '')
+            bed_type = request.POST.get('bed_type', '')
+            short_description = request.POST.get('short_description')
+            full_description = request.POST.get('full_description')
+            cover_image = request.FILES.get('cover_image')
+            
+            # --- Extract M2M Fields ---
+            operational_categories = request.POST.getlist('operational_categories')
+            features = request.POST.getlist('features')
+
+            # --- Basic Validation ---
+            if not title or not guest_capacity or not cover_image:
+                return JsonResponse({"status": "error", "message": "Title, Guest Capacity, and Cover Image are required."})
+
+            # --- Backend Image Validation ---
+            # 1. File Size Validation (<= 500KB)
+            if cover_image.size > 500 * 1024:
+                return JsonResponse({"status": "error", "message": "Image size must not exceed 500KB."})
+
+            # 2. Dimensions & Format Validation
+            try:
+                img = Image.open(cover_image)
+                img.verify() # Verifies it is a valid image file (handles jpg, png, webp, etc.)
+
+                # Re-open the file for size/dimension reading (verify() leaves it in a closed state)
+                cover_image.seek(0)
+                img = Image.open(cover_image)
+                width, height = img.size
+
+                if width != height:
+                    return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
+                
+                if width > 800 or height > 800:
+                    return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
+
+            except Exception:
+                return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+            # --------------------------------
+
+            # Handle Foreign Key
+            vessel_instance = None
+            if vessel_id:
+                vessel_instance = VesselShowcase.objects.get(id=vessel_id)
+
+            # Create the showcase
+            # Note: Fields omitted from the form (booleans, display_order) will take their default model values
+            cabin = CabinShowcase.objects.create(
+                vessel=vessel_instance,
+                title=title,
+                subtitle=subtitle,
+                guest_capacity=guest_capacity,
+                room_size=room_size,
+                bed_type=bed_type,
+                short_description=short_description,
+                full_description=full_description,
+                cover_image=cover_image
+            )
+
+            # Set Many-to-Many Relationships
+            if operational_categories:
+                cabin.operational_categories.set(operational_categories)
+            if features:
+                cabin.features.set(features)
+
+            return JsonResponse({"status": "success", "message": "Cabin showcase created successfully!"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # GET Request: Fetch context for dropdowns
+    context = {
+        'vessels': VesselShowcase.objects.all(),
+        'categories': SeatCategory.objects.all(),
+        'features': SeatFeature.objects.all(),
+    }
+    return render(request, 'admin_panel/content/cabins/add_cabin_showcase.html', context)
+
+
+@login_required
+def edit_cabin_showcase(request, pk):
+    # Fetch the existing cabin showcase
+    cabin = get_object_or_404(CabinShowcase, pk=pk)
+
+    if request.method == "POST":
+        try:
+            # --- Extract Fields ---
+            title = request.POST.get('title')
+            vessel_id = request.POST.get('vessel_id')
+            subtitle = request.POST.get('subtitle', '')
+            guest_capacity = request.POST.get('guest_capacity')
+            room_size = request.POST.get('room_size', '')
+            bed_type = request.POST.get('bed_type', '')
+            short_description = request.POST.get('short_description')
+            full_description = request.POST.get('full_description')
+            cover_image = request.FILES.get('cover_image')
+            
+            # --- Extract M2M Fields ---
+            operational_categories = request.POST.getlist('operational_categories')
+            features = request.POST.getlist('features')
+
+            # --- Basic Validation ---
+            if not title or not guest_capacity:
+                return JsonResponse({"status": "error", "message": "Title and Guest Capacity are required."})
+
+            # --- Backend Image Validation (Only if a NEW image is uploaded) ---
+            if cover_image:
+                # 1. File Size Validation (<= 500KB)
+                if cover_image.size > 500 * 1024:
+                    return JsonResponse({"status": "error", "message": "Image size must not exceed 500KB."})
+
+                # 2. Dimensions & Format Validation
+                try:
+                    img = Image.open(cover_image)
+                    img.verify() 
+
+                    cover_image.seek(0)
+                    img = Image.open(cover_image)
+                    width, height = img.size
+
+                    if width != height:
+                        return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
+                    
+                    if width > 800 or height > 800:
+                        return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+                
+                # Assign new image if it passes validation
+                cabin.cover_image = cover_image
+
+            # --- Update Fields ---
+            cabin.title = title
+            # Handle Foreign Key (set to None if empty string is passed)
+            cabin.vessel_id = vessel_id if vessel_id else None
+            cabin.subtitle = subtitle
+            cabin.guest_capacity = guest_capacity
+            cabin.room_size = room_size
+            cabin.bed_type = bed_type
+            cabin.short_description = short_description
+            cabin.full_description = full_description
+            
+            cabin.save()
+
+            # --- Update Many-to-Many Relationships ---
+            cabin.operational_categories.set(operational_categories)
+            cabin.features.set(features)
+
+            return JsonResponse({"status": "success", "message": "Cabin showcase updated successfully!"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+        
+    vessels = VesselShowcase.objects.all()
+    logger.info(f"Editing Cabin Showcase ID {pk}: Found {vessels.count()} vessels for dropdown selection.")
+    print(f"Editing Cabin Showcase ID {pk}: Found {vessels.count()} vessels for dropdown selection.")
+
+    # GET Request: Fetch context for dropdowns and pre-selected M2M data
+    context = {
+        'cabin': cabin,
+        'vessels': vessels,
+        'categories': SeatCategory.objects.all(),
+        'features': SeatFeature.objects.all(),
+        # Pass lists of IDs for easy checking in the template
+        'selected_categories': list(cabin.operational_categories.values_list('id', flat=True)),
+        'selected_features': list(cabin.features.values_list('id', flat=True)),
+    }
+    return render(request, 'admin_panel/content/cabins/edit_cabin_showcase.html', context)
+
+
+@login_required
+def featured_articles(request):
+    # Handle the AJAX Delete Request
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get("action")
+            
+            if action == "delete":
+                article_id = data.get("id")
+                article = FeaturedArticle.objects.get(id=article_id)
+                article.delete()
+                
+                return JsonResponse({"status": "success", "message": "Featured article deleted successfully."})
+                
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # Handle the standard GET Request
+    # Relying on the model's default ordering, or explicitly defining it here
+    articles = FeaturedArticle.objects.all().order_by('-publication_date', '-created_at')
+    
+    context = {
+        'articles': articles
+    }
+    return render(request, 'admin_panel/content/featured_articles/featured_article_list.html', context)
+
+
+def validate_image_upload(image_file, max_size_mb=1):
+    """
+    Helper function to validate file size and MIME type on the backend.
+    Returns an error message string if invalid, or None if valid.
+    """
+    if not image_file:
+        return None
+
+    # 1. Validate File Size
+    if image_file.size > max_size_mb * 1024 * 1024:
+        return f"Image size must be {max_size_mb}MB or less."
+
+    # 2. Validate MIME Type (prevents someone from uploading a .exe renamed as .jpg)
+    allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+    if image_file.content_type not in allowed_types:
+        return "Invalid file type. Only JPG, PNG, and WEBP are allowed."
+
+    return None
+
+def process_and_compress_logo(uploaded_file, threshold_kb=80, target_kb=50):
+    """
+    Checks if the image exceeds threshold_kb. If so, scales down the resolution 
+    proportionally until the file size is approximately under target_kb.
+    """
+    if not uploaded_file:
+        return None
+
+    # 1. If the file is already under the threshold (80KB), return it as-is
+    if uploaded_file.size <= threshold_kb * 1024:
+        return uploaded_file
+
+    try:
+        # 2. Open the image using Pillow
+        img = Image.open(uploaded_file)
+        file_format = img.format if img.format else 'PNG'
+        
+        # Prevent black backgrounds if a transparent image is accidentally saved as JPEG
+        if file_format == 'JPEG' and img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+
+        output_io = BytesIO()
+        quality = 90
+        resize_factor = 0.85 # Reduce dimensions by 15% each iteration
+
+        # Initial save to the buffer
+        img.save(output_io, format=file_format, quality=quality, optimize=True)
+
+        # 3. Loop: Keep shrinking the image until it falls under the target size (50KB)
+        while output_io.tell() > target_kb * 1024:
+            output_io.seek(0)
+            output_io.truncate()
+
+            # For JPEGs/WEBPs, we can drop quality. For PNGs, quality doesn't reduce file size much, 
+            # so we strictly rely on reducing the resolution (dimensions).
+            if file_format in ['JPEG', 'WEBP']:
+                quality -= 10
+                if quality < 30:
+                    quality = 30
+                    # Reduce resolution proportionally
+                    new_width = int(img.width * resize_factor)
+                    new_height = int(img.height * resize_factor)
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            else:
+                # Reduce resolution proportionally for PNGs
+                new_width = int(img.width * resize_factor)
+                new_height = int(img.height * resize_factor)
+                img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            img.save(output_io, format=file_format, quality=quality, optimize=True)
+
+            # Failsafe: break out if the image becomes ridiculously small to prevent infinite loops
+            if img.width < 50 or img.height < 50:
+                break
+
+        output_io.seek(0)
+        
+        # 4. Wrap the compressed BytesIO buffer back into a Django InMemoryUploadedFile
+        compressed_file = InMemoryUploadedFile(
+            output_io,
+            'ImageField',
+            uploaded_file.name,
+            uploaded_file.content_type,
+            sys.getsizeof(output_io),
+            None
+        )
+        return compressed_file
+        
+    except Exception as e:
+        logger.error(f"Error compressing image: {str(e)}")
+        return uploaded_file # Fallback to the original file if compression fails
+
+
+@login_required
+def add_featured_article(request):
+    if request.method == "POST":
+        try:
+            name = request.POST.get('name', '').strip()
+            organization_name = request.POST.get('organization_name', '').strip()
+            url = request.POST.get('url', '').strip()
+            publication_date = request.POST.get('publication_date', '').strip()
+            description = request.POST.get('description', '').strip()
+            is_active = request.POST.get('is_active') == 'true'
+            logo = request.FILES.get('logo')
+
+            if not all([name, organization_name, url, description, logo]):
+                return JsonResponse({"status": "error", "message": "Please fill in all required fields and upload a logo."})
+
+            validate_url = URLValidator()
+            try:
+                validate_url(url)
+            except ValidationError:
+                return JsonResponse({"status": "error", "message": "Please provide a valid URL."})
+
+            # Compress the image if it exceeds 80KB
+            processed_logo = process_and_compress_logo(logo, threshold_kb=80, target_kb=50)
+
+            FeaturedArticle.objects.create(
+                name=name,
+                organization_name=organization_name,
+                url=url,
+                description=description,
+                logo=processed_logo,
+                is_active=is_active,
+                publication_date=publication_date if publication_date else None 
+            )
+
+            return JsonResponse({"status": "success", "message": "Featured Article added successfully!"})
+
+        except Exception as e:
+            logger.error(f"Error adding featured article: {str(e)}")
+            return JsonResponse({"status": "error", "message": "An unexpected server error occurred."})
+
+    return render(request, 'admin_panel/content/featured_articles/add_featured_article.html')
+
+
+@login_required
+def edit_featured_article(request, article_id):
+    article = get_object_or_404(FeaturedArticle, id=article_id)
+
+    if request.method == "POST":
+        try:
+            name = request.POST.get('name', '').strip()
+            organization_name = request.POST.get('organization_name', '').strip()
+            url = request.POST.get('url', '').strip()
+            publication_date = request.POST.get('publication_date', '').strip()
+            description = request.POST.get('description', '').strip()
+            is_active = request.POST.get('is_active') == 'true'
+            logo = request.FILES.get('logo')
+
+            if not all([name, organization_name, url, description]):
+                return JsonResponse({"status": "error", "message": "Please fill in all required fields."})
+
+            validate_url = URLValidator()
+            try:
+                validate_url(url)
+            except ValidationError:
+                return JsonResponse({"status": "error", "message": "Please provide a valid URL."})
+
+            # Compress the image if a new one was uploaded
+            if logo:
+                processed_logo = process_and_compress_logo(logo, threshold_kb=80, target_kb=50)
+                article.logo = processed_logo
+
+            article.name = name
+            article.organization_name = organization_name
+            article.url = url
+            article.description = description
+            article.is_active = is_active
+            article.publication_date = publication_date if publication_date else None 
+
+            article.save()
+
+            return JsonResponse({"status": "success", "message": "Featured Article updated successfully!"})
+
+        except Exception as e:
+            logger.error(f"Error editing featured article {article_id}: {str(e)}")
+            return JsonResponse({"status": "error", "message": "An unexpected server error occurred."})
+
+    context = {'article': article}
+    return render(request, 'admin_panel/content/featured_articles/edit_featured_article.html', context)
 
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

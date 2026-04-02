@@ -1,0 +1,347 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'portal/assets/css/select2_custom_style.css' %}">
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<style>
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ce2222;
+    }
+
+    /* Modern Error/Success Messages */
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .error-success-div.show {
+        max-height: 100px;
+        opacity: 1;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+    }
+
+    .success-message {
+        background-color: rgba(16, 207, 16, 0.15);
+        color: #096009;
+        border: 1px solid rgba(16, 207, 16, 0.3);
+    }
+
+    .error-message {
+        background-color: rgba(255, 13, 13, 0.15);
+        color: #890000;
+        border: 1px solid rgba(255, 13, 13, 0.3);
+    }
+
+    /* Quill Editor Adjustments */
+    .quill-wrapper {
+        display: block;
+    }
+    .ql-container {
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+        height: 250px !important;
+        font-family: inherit;
+    }
+    .ql-toolbar {
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .image-preview-wrapper img {
+        max-width: 150px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        object-fit: cover;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>Edit Vessel Showcase</h1>
+                            <p class="text-muted">Update the marketing profile for {{ showcase.name }}.</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'vessel_showcases' %}" class="btn btn-secondary btn-pill">Back to List</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <form id="edit-showcase-form" class="form theme-form dark-inputs" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field" for="name">Display Name</label>
+                                <input class="form-control btn-pill" id="name" name="name" type="text" value="{{ showcase.name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="ship">Linked Operational Ship</label>
+                                <select class="form-control js-example-basic-single" id="ship" name="ship_id">
+                                    <option value="">-- Select a Ship (Optional for Pre-launch) --</option>
+                                    {% for ship in available_ships %}
+                                        <option value="{{ ship.id }}" {% if showcase.ship_id == ship.id %}selected{% endif %}>
+                                            {{ ship.name }} ({{ ship.code }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted ms-2">Leave blank if the vessel is not yet operational.</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="tagline">Tagline</label>
+                                <input class="form-control btn-pill" id="tagline" name="tagline" type="text" value="{{ showcase.tagline|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="display_capacity">Display Capacity</label>
+                                <input class="form-control btn-pill" id="display_capacity" name="display_capacity" type="text" value="{{ showcase.display_capacity|default_if_none:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label" for="video_tour_url">Video Tour URL</label>
+                                <input class="form-control btn-pill" id="video_tour_url" name="video_tour_url" type="url" value="{{ showcase.video_tour_url|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label required-field" for="short_description">Short Description</label>
+                                <textarea class="form-control btn-pill" id="short_description" name="short_description"
+                                 rows="3" required style="border-radius: 10px;">{{ showcase.short_description }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                <label class="form-label required-field" for="full_description">Full Description</label>
+                                
+                                <div class="quill-wrapper">
+                                    <div id="full-description-editor" class="richtext-editor">{{ showcase.full_description|safe }}</div>
+                                </div>
+                                
+                                <textarea name="full_description" id="hidden_full_description" style="display:none;"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label class="form-label" for="hero_image">Hero Image (Leave blank to keep current image)</label>
+                                <input class="form-control btn-pill" id="hero_image" name="hero_image" type="file" accept="image/*">
+                                <small class="text-muted ms-2">Format: JPG, PNG, WEBP. Must be Square (up to 800x800) and max 500KB.</small>
+                                
+                                <div class="mt-3 image-preview-wrapper">
+                                    {% if showcase.hero_image %}
+                                        <div id="current-image-container">
+                                            <p class="mb-1 text-muted"><small>Current Image:</small></p>
+                                            <img src="{{ showcase.hero_image.url }}" alt="Current Hero Image">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div id="preview-image-container" style="display: none;">
+                                        <p class="mb-1 text-info"><small>New Selection Preview:</small></p>
+                                        <img id="hero-preview" src="" alt="New Image Preview">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="error-success-div" id="message-container"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button class="btn btn-primary btn-lg btn-pill custom-large-btn px-5" type="submit" id="submit-btn">
+                                Update Showcase Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scriptcontent %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Initialize Select2
+        $('.js-example-basic-single').select2({
+            width: '100%'
+        });
+
+        // 2. Initialize Quill Editor
+        const toolbarOptions = [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'header': 1 }, { 'header': 2 }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            ['link', 'image', 'video'],
+            ['clean']
+        ];
+
+        const quill = new Quill('#full-description-editor', {
+            theme: 'snow',
+            placeholder: 'Write the detailed vessel description here...',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        const hiddenFullDesc = document.getElementById('hidden_full_description');
+        // Initial setup for the pre-populated content
+        hiddenFullDesc.value = quill.root.innerHTML; 
+        
+        quill.on('text-change', () => {
+            hiddenFullDesc.value = quill.root.innerHTML;
+        });
+
+        // 3. Message Display Logic
+        function showMessage(type, message) {
+            const div = $("#message-container");
+            
+            function expand() {
+                div.removeClass("error-message success-message").addClass(`${type}-message`).text(message);
+                requestAnimationFrame(() => div.addClass("show"));
+                
+                if (type === "success") {
+                    // Redirect back to list after success
+                    setTimeout(() => window.location.href = "{% url 'vessel_showcases' %}", 2000);
+                }
+            }
+
+            if (div.hasClass("show")) {
+                div.removeClass("show");
+                div.one("transitionend", expand);
+            } else {
+                expand();
+            }
+        }
+
+        // 4. Image Preview and Client-Side Validation
+        const heroInput = document.getElementById('hero_image');
+        const currentImageContainer = document.getElementById('current-image-container');
+        const previewContainer = document.getElementById('preview-image-container');
+        const heroPreview = document.getElementById('hero-preview');
+
+        function resetToCurrent() {
+            previewContainer.style.display = 'none';
+            heroPreview.src = '';
+            if (currentImageContainer) currentImageContainer.style.display = 'block';
+        }
+
+        heroInput.addEventListener('change', function() {
+            const file = this.files[0];
+            $("#message-container").removeClass("show");
+
+            if (!file) {
+                resetToCurrent();
+                return;
+            }
+
+            // Size validation (Max 500KB)
+            if (file.size > 500 * 1024) {
+                showMessage("error", "Image size must be 500KB or less.");
+                this.value = ''; // Clear input
+                resetToCurrent();
+                return;
+            }
+
+            // Dimension and Aspect Ratio validation
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            
+            img.onload = function() {
+                if (img.width !== img.height) {
+                    showMessage("error", "Image must be a perfect square (1:1 ratio).");
+                    heroInput.value = ''; 
+                    URL.revokeObjectURL(objectUrl);
+                    resetToCurrent();
+                    return;
+                }
+                if (img.width > 800 || img.height > 800) {
+                    showMessage("error", "Image dimensions cannot exceed 800x800 pixels.");
+                    heroInput.value = ''; 
+                    URL.revokeObjectURL(objectUrl);
+                    resetToCurrent();
+                    return;
+                }
+                
+                // Passed validation - Show preview, hide current
+                if (currentImageContainer) currentImageContainer.style.display = 'none';
+                heroPreview.src = objectUrl;
+                previewContainer.style.display = 'block';
+            };
+            
+            img.src = objectUrl;
+        });
+
+        // 5. Form Submission
+        $("#edit-showcase-form").on("submit", function (e) {
+            e.preventDefault();
+            const submitBtn = $("#submit-btn");
+
+            if (quill.getText().trim().length === 0) {
+                showMessage("error", "Full Description is required.");
+                return;
+            }
+
+            submitBtn.prop("disabled", true).text("Updating...");
+
+            const formData = new FormData(this);
+            formData.set("full_description", hiddenFullDesc.value);
+
+            fetch("{% url 'edit_vessel_showcase' showcase.id %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage(data.status, data.message);
+                if (data.status === "error") {
+                    submitBtn.prop("disabled", false).text("Update Showcase Profile");
+                }
+            })
+            .catch(error => {
+                showMessage("error", "A network error occurred.");
+                submitBtn.prop("disabled", false).text("Update Showcase Profile");
+            });
+        });
+    });
+</script>
+{% endblock scriptcontent %}

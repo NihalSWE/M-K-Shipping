@@ -53,18 +53,83 @@ from admin_panel.utils import send_sms_task, send_booking_sms
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
-def home (request):
+
+
+
+
+
+# def home(request):
+#     banner = HomeBanner.objects.filter(is_active=True).first()
+#     locations = Location.objects.all().order_by('name')
+#     overview = CompanyOverview.objects.filter(is_active=True).first()
+    
+#     # Fetch the latest 8 cabins for the slider
+#     latest_cabins = CabinShowcase.objects.all().order_by('-id')[:8]
+    
+#     context = {
+#         'banner': banner,
+#         'locations': locations,
+#         'overview': overview, 
+#         'latest_cabins': latest_cabins,
+#     }
+    
+#     return render(request, 'portal/index.html', context)
+
+
+def home(request):
     banner = HomeBanner.objects.filter(is_active=True).first()
     locations = Location.objects.all().order_by('name')
     overview = CompanyOverview.objects.filter(is_active=True).first()
     
-    context={
+    # Fetch the latest 8 cabins for the slider
+    latest_cabins = CabinShowcase.objects.all().order_by('-id')[:8]
+    
+    # --- NEW ROUTING LOGIC ---
+    now = timezone.now()
+    
+    # 1. Get active trips (looking back 12 hours for ongoing trips)
+    active_trips = Trip.objects.filter(
+        departure_datetime__gte=now - timedelta(hours=12),
+        is_published=True
+    ).select_related('route')
+    
+    # 2. Get unique route IDs
+    active_route_ids = active_trips.values_list('route_id', flat=True).distinct()
+    
+    # 3. Fetch segments for active routes
+    active_segments = RouteSegmentPricing.objects.filter(
+        route_id__in=active_route_ids
+    ).select_related(
+        'from_stop__location',
+        'to_stop__location'
+    )
+    
+    # 4. Use a set to grab purely unique source -> destination pairs
+    unique_routes_set = set()
+    for segment in active_segments:
+        src = segment.from_stop.location.name
+        dest = segment.to_stop.location.name
+        unique_routes_set.add((src, dest))
+        
+    # Convert to a list and sort it alphabetically
+    available_routes = sorted(list(unique_routes_set))
+    # -------------------------
+    
+    # --- FEATURED ARTICLES LOGIC ---
+    featured_articles = FeaturedArticle.objects.filter(is_active=True)
+
+    context = {
         'banner': banner,
         'locations': locations,
         'overview': overview, 
+        'latest_cabins': latest_cabins,
+        'available_routes': available_routes,
+        'featured_articles': featured_articles,
     }
     
-    return render (request,'portal/index.html',context)
+    return render(request, 'portal/index.html', context)
+
+
 
 def contact(request):
     # ==========================================
@@ -259,6 +324,26 @@ def get_available_destinations(request):
     ]
 
     return JsonResponse({'results': results})
+
+
+def all_cabins_view(request):
+    # Fetch all cabins, order by newest first
+    cabins = CabinShowcase.objects.all().order_by('-id')
+    
+    context = {
+        'cabins': cabins,
+    }
+    return render(request, 'portal/cabin_showcase/all_cabins.html', context)
+
+
+def all_vessels(request):
+    # Fetch all vessels. You can add .order_by('name') or similar if needed.
+    vessels = VesselShowcase.objects.all()
+    
+    context = {
+        'vessels': vessels
+    }
+    return render(request, 'portal/vessels_showcase/all_vessels.html', context)
 
 
 
@@ -1434,9 +1519,27 @@ def profile_edit_view(request):
     form_type = (request.POST.get("form_type") or "").strip()
 
     if form_type == "profile":
-        first_name = (request.POST.get("first_name") or "").strip()
-        last_name = (request.POST.get("last_name") or "").strip()
+        full_name = (request.POST.get("full_name") or "").strip()
         email = (request.POST.get("email") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        
+        if not full_name:
+            return JsonResponse({"success": False, "error": "Full name is required."}, status=400)
+
+        if not email:
+            return JsonResponse({"success": False, "error": "Email is required."}, status=400)
+
+        if not address:
+            return JsonResponse({"success": False, "error": "Address is required."}, status=400)
+        
+        name_parts = full_name.split()
+
+        if len(name_parts) == 1:
+            first_name = name_parts[0]
+            last_name = ""
+        else:
+            first_name = name_parts[0]
+            last_name = " ".join(name_parts[1:])
 
         if email:
             email_conflict = (
@@ -1461,7 +1564,12 @@ def profile_edit_view(request):
             user.last_name = last_name
             dirty_fields.append("last_name")
 
-        normalized_email = email if email else None
+        if user.address != address:
+            user.address = address
+            dirty_fields.append("address")
+
+        normalized_email = email
+        
         if user.email != normalized_email:
             user.email = normalized_email
             dirty_fields.append("email")
@@ -1473,10 +1581,10 @@ def profile_edit_view(request):
             "success": True,
             "message": "Profile updated successfully.",
             "user": {
-                "first_name": user.first_name or "",
-                "last_name": user.last_name or "",
+                "full_name": f"{user.first_name or ''} {user.last_name or ''}".strip(),
                 "email": user.email or "",
                 "phone_number": user.phone_number or "",
+                "address": user.address or "",
                 "display_name": (user.get_display_name() or "").strip(),
             }
         })

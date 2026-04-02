@@ -7,22 +7,62 @@
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
 <style>
-    .custom-large-btn:hover { background-color: #4a3dd9 !important; }
-    .custom-delete-btn:hover { background-color: #ff0000 !important; }
-    .modal-body { padding-top: 34px !important; }
-    .success-message { background-color: #10cf1057; color: #096009; }
-    .error-message { background-color: #ff0d0d78 !important; color: #890000; }
-    .edit, .delete, .edit-icon, .delete-icon { cursor: pointer; transition: 0.3s ease-in-out; }
-    .edit-icon:hover, .delete-icon:hover { transform: scale(1.15); }
-    
-    .error-success-div {
-        max-height: 0; opacity: 0; padding: 10px 20px; border-radius: 20px;
-        overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease;
+    .custom-large-btn:hover {
+        background-color: #4a3dd9 !important;
     }
-    .error-success-div.show { max-height: 200px; opacity: 1; }
-    
+
+    .custom-delete-btn:hover {
+        background-color: #ff0000 !important;
+    }
+
+    .modal-body {
+        padding-top: 34px !important;
+    }
+
+    .success-message {
+        background-color: #10cf1057;
+        color: #096009;
+    }
+
+    .error-message {
+        background-color: #ff0d0d78 !important;
+        color: #890000;
+    }
+
+    .edit,
+    .delete,
+    .edit-icon,
+    .delete-icon {
+        cursor: pointer;
+        transition: 0.3s ease-in-out;
+    }
+
+    .edit-icon:hover,
+    .delete-icon:hover {
+        transform: scale(1.15);
+    }
+
+    .error-success-div {
+        max-height: 0;
+        opacity: 0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .error-success-div.show {
+        max-height: 200px;
+        opacity: 1;
+    }
+
     /* Small preview image in table */
-    .table-img { width: 80px; height: 40px; object-fit: cover; border-radius: 4px; }
+    .table-img {
+        width: 80px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
 </style>
 {% endblock css %}
 
@@ -109,6 +149,7 @@
     </div>
 </div>
 
+<!-- Add Modal -->
 <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -127,15 +168,21 @@
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
                                     <textarea class="form-control btn-pill" name="description" id="id_description" 
-                                              rows="3" placeholder="Description..." maxlength="107">{{ form.description.value|default_if_none:"" }}</textarea>
+                                            rows="3" placeholder="Description..." maxlength="107"
+                                            style="border-radius: 5px !important;">
+                                            {{ form.description.value|default_if_none:"" }}
+                                    </textarea>
                                     <small class="form-text text-muted">
                                         <span id="char-count">{{ form.description.value|default_if_none:""|length }}</span> / 107 characters
                                     </small>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Background (1760x500)</label>
+                                    <label class="form-label">Background (1920x480)</label>
                                     <input class="form-control" name="background_image" type="file" required>
+                                    <small class="text-muted d-block mt-1">
+                                        For best results across all devices, upload an image with a <strong>4:1 aspect ratio</strong> (Recommended size: <strong>1920 x 480 pixels</strong>). Leave empty to keep the current image.
+                                    </small>
                                 </div>
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
@@ -157,6 +204,7 @@
     </div>
 </div>
 
+<!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -175,13 +223,18 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
-                                    <textarea class="form-control btn-pill" id="edit-description" name="description" rows="3"></textarea>
+                                    <textarea class="form-control btn-pill" id="edit-description"
+                                            name="description" rows="3"
+                                            style="border-radius: 5px !important;"
+                                    ></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Change Background (1760x500)</label>
+                                    <label class="form-label">Change Background (1920x480)</label>
                                     <input class="form-control" name="background_image" type="file">
-                                    <small class="text-muted">Leave empty to keep current</small>
+                                    <small class="text-muted d-block mt-1">
+                                        For best results across all devices, upload an image with a <strong>4:1 aspect ratio</strong> (Recommended size: <strong>1920 x 480 pixels</strong>). Leave empty to keep the current image.
+                                    </small>
                                 </div>
                                 <div class="mb-3">
                                     <div class="form-check form-switch">

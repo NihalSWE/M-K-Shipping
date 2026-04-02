@@ -18,18 +18,204 @@
         --ocean: #21a2dc;
     }
 
+    /* UPDATED: Homepage hero + glass navbar alignment to match the reference banner */
+    body.tour-marketplace{
+        background: #ffffff;
+    }
+
+    @media (min-width: 992px){
+        /* UPDATED: Match the requested 16:5 desktop hero frame */
+        .tour-marketplace .mk-home-hero.rts-banner-area-six{
+            aspect-ratio: 16 / 5;
+            min-height: 600px;
+            align-items: center;
+            background-position: center center;
+        }
+
+        .tour-marketplace .mk-home-hero.rts-banner-area-six::after{
+            background:
+                linear-gradient(180deg, rgba(7, 46, 71, 0.30) 0%, rgba(5, 37, 58, 0.42) 100%);
+        }
+
+        .tour-marketplace .mk-home-hero .rts-banner-wrapper{
+            padding: 150px 0 120px;
+        }
+
+        .tour-marketplace .mk-home-hero .banner-wrapper-inner{
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        .tour-marketplace .mk-home-hero .banner-logo{
+            display: none;
+        }
+
+        .tour-marketplace .mk-home-hero .banner-title{
+            font-size: clamp(64px, 5.8vw, 96px) !important;
+            line-height: 0.96 !important;
+            letter-spacing: -0.03em !important;
+            text-transform: uppercase;
+            text-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+            margin-bottom: 20px !important;
+        }
+
+        .tour-marketplace .mk-home-hero .desc{
+            max-width: 760px !important;
+            font-size: 23px;
+            line-height: 1.45;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95) !important;
+            text-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+        }
+
+        /* UPDATED: Pull the search card into the hero footer area like the reference */
+        .tour-marketplace .mk-home-search.advance__search__section.tour-marketplace{
+            margin-top: -88px;
+            position: relative;
+            z-index: 21;
+            padding-bottom: 36px;
+        }
+
+        .tour-marketplace .mk-home-search .container{
+            max-width: 1320px;
+        }
+
+        .tour-marketplace .mk-home-search .form-area-v2{
+            border-radius: 24px;
+            padding: 16px;
+            gap: 14px;
+            box-shadow: 0 26px 55px rgba(14, 33, 56, 0.16);
+        }
+
+        .tour-marketplace .mk-home-search .search-input-group{
+            min-height: 74px;
+            border-radius: 18px;
+            padding: 12px 14px;
+        }
+
+        .tour-marketplace .mk-home-search .exchange-icon{
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+        }
+
+        .tour-marketplace .mk-home-search .search-submit-btn{
+            min-width: 128px;
+            height: 74px;
+            border-radius: 18px;
+            font-size: 15px;
+        }
+    }
+
+    /* UPDATED: Clean tablet/mobile scaling so the new hero still behaves nicely */
+    @media (max-width: 991.98px){
+        .tour-marketplace .mk-home-hero.rts-banner-area-six{
+            min-height: 440px;
+            aspect-ratio: auto;
+            padding-top: 120px;
+        }
+
+        .tour-marketplace .mk-home-hero .banner-title{
+            font-size: clamp(38px, 10vw, 60px) !important;
+            line-height: 1.02 !important;
+        }
+
+        .tour-marketplace .mk-home-hero .desc{
+            font-size: 16px;
+            max-width: 92% !important;
+        }
+
+        .tour-marketplace .mk-home-search.advance__search__section.tour-marketplace{
+            margin-top: -44px;
+            padding-bottom: 24px;
+        }
+    }
+
     /* Ensure container/form can stretch */
     .form-area-v2{
         width: 100% !important;
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
 
         background: var(--surface) !important;
         border: 1px solid var(--border);
         border-radius: 18px;
         padding: 12px 14px;
         box-shadow: var(--shadow);
+    }
+
+    /* UPDATED: Added the two requested static items on the current search bar */
+    .search-top-strip,
+    .search-trip-mode{
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-top-strip{
+        justify-content: center;
+        padding-bottom: 10px;
+        margin-bottom: 2px;
+        border-bottom: 1px solid rgba(10, 60, 95, 0.12);
+    }
+
+    .search-top-tabs{
+        display: inline-flex;
+        align-items: center;
+        gap: 28px;
+    }
+
+    .search-top-tab{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 800;
+        color: #1f1f25;
+        text-transform: uppercase;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .search-top-tab.is-active{
+        color: #00abea;
+    }
+
+    .search-trip-mode{
+        padding: 0 2px 2px;
+    }
+
+    .search-trip-pill{
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #1f1f25;
+        line-height: 1;
+    }
+
+    .search-trip-pill .dot{
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid #00abea;
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .search-trip-pill .dot::after{
+        content: "";
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #00abea;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
     /* each input group stretches properly */
@@ -252,6 +438,952 @@
     }
 
     /* =========================
+    Cabin Showcase styles sarts
+    ========================= */
+    /* Scoped Variables for Ocean Blue Theme */
+    .mbx-cs-section {
+        --cs-blue-900: #0A2540; 
+        --cs-blue-600: #0077B6; 
+        --cs-blue-400: #00B4D8; 
+        --cs-white: #FFFFFF;
+        --cs-shadow: 0 10px 30px -10px rgba(0, 119, 182, 0.2);
+        --cs-transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        
+        /* New Animated Gradient Background */
+        /*background: linear-gradient(-45deg, #ffffff, #f0f8ff, #e6f7ff, #ffffff);*/
+        background-size: 400% 400%;
+        animation: mbx-cs-gradient-shift 12s ease infinite;
+        padding: 80px 0;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+    }
+
+    /* Keyframes for the soft background breathing effect */
+    @keyframes mbx-cs-gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .mbx-cs-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 20px;
+        position: relative;
+    }
+
+    /* Header Styles */
+    .mbx-cs-header {  
+        display: flex;  
+        justify-content: space-between;  
+        align-items: center; /* Changed from flex-end so the line sits perfectly in the middle vertically */
+        /* UPDATED: Reduced seat category header-to-card gap to match the reference */
+        margin-bottom: 18px;  
+        flex-wrap: wrap;  
+        gap: 20px;  
+    }
+
+    .mbx-cs-header-line {
+        flex: 1; /* Automatically grows to fill the empty space */
+        height: 2px;
+        /* Creates a modern, faded gradient line using your theme's blue */
+        background: linear-gradient(to right, transparent, var(--cs-blue-400), transparent);
+        opacity: 0.5;
+        margin: 0 15px; /* Adds breathing room between the text and the button */
+        border-radius: 2px;
+    }
+
+    .mbx-cs-title {  
+        font-size: 2.5rem;  
+        font-weight: 700;  
+        color: var(--cs-blue-900);  
+        margin: 0 0 8px 0;  
+        line-height: 1.2;  
+    }
+
+    .mbx-cs-subtitle {
+        color: var(--cs-blue-600);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .mbx-cs-view-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--cs-white);
+        color: var(--cs-blue-600);
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 600;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: var(--cs-transition);
+        border: 1px solid rgba(0, 119, 182, 0.1);
+    }
+
+    .mbx-cs-view-all:hover {
+        background-color: var(--cs-blue-600);
+        color: var(--cs-white);
+        transform: translateY(-2px);
+        box-shadow: var(--cs-shadow);
+    }
+
+    /* UPDATED: Seat category slider layout changed to a clean 3-card, dot-navigation layout */
+    .mbx-cs-slider-wrapper {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mbx-cs-blur-left,
+    .mbx-cs-blur-right {
+        display: none;
+    }
+
+    /* Fixed blurs: Uses a soft, semi-transparent blend of the gradient colors to match the animation */
+    .mbx-cs-blur-left {
+        left: -20px;
+        /*background: linear-gradient(to right, rgba(245, 250, 255, 0.9), transparent);*/
+        backdrop-filter: blur(8px);
+        -webkit-mask-image: linear-gradient(to right, black 20%, transparent);
+        mask-image: linear-gradient(to right, black 20%, transparent);
+    }
+
+    .mbx-cs-blur-right {
+        right: -20px;
+        /*background: linear-gradient(to left, rgba(245, 250, 255, 0.9), transparent);*/
+        backdrop-filter: blur(8px);
+        -webkit-mask-image: linear-gradient(to left, black 20%, transparent);
+        mask-image: linear-gradient(to left, black 20%, transparent);
+    }
+
+    .mbx-cs-track {
+        display: flex;
+        gap: 24px;
+        overflow: hidden;
+        scroll-behavior: smooth;
+        /* UPDATED: Reduced top spacing above the seat category cards */
+        padding-top: 8px;
+        padding-bottom: 18px; 
+        align-items: stretch;
+        box-sizing: border-box;
+        -ms-overflow-style: none;  
+        scrollbar-width: none;  
+    }
+    
+    .mbx-cs-track::-webkit-scrollbar { 
+        display: none; 
+    }
+
+    /* Card Styles */
+    .mbx-cs-card {
+        /* UPDATED: Desktop now shows exactly 3 cards with no side peeking */
+        flex: 0 0 calc((100% - 48px) / 3); 
+        min-width: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        cursor: pointer;
+        background: var(--cs-white);
+        aspect-ratio: 1 / 1; 
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    .mbx-cs-card.mbx-cs-active {
+        box-shadow: 0 12px 28px rgba(0, 119, 182, 0.16);
+    }
+
+    .mbx-cs-image-wrapper {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mbx-cs-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .mbx-cs-img-placeholder {
+        width: 100%;
+        height: 100%;
+        background-color: #d1e8f2;
+    }
+
+    /* Overlay & Text Animation */
+    .mbx-cs-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60%;
+        background: linear-gradient(to top, rgba(10, 37, 64, 0.95) 0%, rgba(10, 37, 64, 0.4) 60%, transparent 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 24px;
+        color: var(--cs-white);
+        transition: var(--cs-transition);
+    }
+
+    .mbx-cs-content {
+        transform: translateY(20px);
+        transition: var(--cs-transition);
+    }
+
+    .mbx-cs-card-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0 0 6px 0;
+        color: var(--cs-white);
+        line-height: 1.2;
+    }
+
+    .mbx-cs-card-subtitle {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin: 0 0 12px 0;
+        opacity: 0;
+        transition: var(--cs-transition);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .mbx-cs-meta {
+        display: flex;
+        gap: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        opacity: 0.8;
+    }
+
+    .mbx-cs-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(0, 119, 182, 0.18);
+    }
+
+    .mbx-cs-card:hover .mbx-cs-img {
+        transform: scale(1.05); 
+    }
+    
+    .mbx-cs-card.mbx-cs-active .mbx-cs-overlay, 
+    .mbx-cs-card:hover .mbx-cs-overlay {
+        background: linear-gradient(to top, rgba(10, 37, 64, 0.98) 0%, rgba(0, 119, 182, 0.6) 80%, transparent 100%);
+    }
+
+    .mbx-cs-card.mbx-cs-active .mbx-cs-content, 
+    .mbx-cs-card:hover .mbx-cs-content {
+        transform: translateY(0);
+    }
+
+    .mbx-cs-card.mbx-cs-active .mbx-cs-card-subtitle, 
+    .mbx-cs-card:hover .mbx-cs-card-subtitle {
+        opacity: 1;
+    }
+
+    /* UPDATED: Seat category arrow buttons removed */
+    .mbx-cs-nav-btn {
+        display: none !important;
+    }
+
+    /* UPDATED: Dot navigation added under the seat category cards */
+    .mbx-cs-dots {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .mbx-cs-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1.5px solid #00abea;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .mbx-cs-dot.is-active {
+        background: #00abea;
+        transform: scale(1.05);
+    }
+
+    /* Responsive */ 
+    @media (max-width: 1024px) {  
+        .mbx-cs-card {  
+            flex: 0 0 calc((100% - 24px) / 2);  
+        }  
+    }
+
+    @media (max-width: 768px) {  
+        .mbx-cs-card {  
+            flex: 0 0 100%;  
+        }  
+        .mbx-cs-header {  
+            flex-direction: column;  
+            align-items: flex-start;  
+            gap: 15px;
+        }  
+        /* NEW: Adjusts the line for mobile devices */
+        .mbx-cs-header-line {
+            width: 100%; /* Spans the full width of the container */
+            flex: none; /* Stops acting as a flexible spacer */
+            /* Changes gradient to fade out towards the right side only */
+            background: linear-gradient(to right, var(--cs-blue-400), transparent); 
+            margin: 5px 0;
+        }
+    }  
+
+    @media (max-width: 480px) {  
+        .mbx-cs-card {  
+            flex: 0 0 100%;   
+            min-width: unset;   
+        }  
+    }
+    /* =========================
+    Cabin Showcase styles ends
+    ========================= */
+
+    /* ==========================================================================
+   FULL WIDTH APP DOWNLOAD PROMO SECTION
+   Namespace: tkt-app-dl-
+   ========================================================================== */
+
+    /* Full Width Container with Solid Blue Background */
+    .tkt-app-dl-section {
+        background-color: #00abea;
+        padding: 100px 0 100px 0;
+        font-family: 'Manrope', sans-serif !important;
+        overflow: visible;
+        position: relative;
+        width: 100%;
+        margin-top: 182px;
+    }
+
+    /* Centered content block */
+    .tkt-app-dl-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Equal grid for text and phone centering */
+        align-items: center;
+        gap: 60px;
+        padding: 0 20px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* --- Left Column: Text & Buttons --- */
+    .tkt-app-dl-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        text-align: left;
+    }
+
+    .tkt-app-dl-title {
+        /* CHANGE 4: Heading size made much bigger */
+        font-size: 4.8rem;
+        font-weight: 800;
+        color: #ffffff; /* White title text */
+        line-height: 1.1;
+        margin: 0;
+    }
+
+    .tkt-app-dl-subtitle {
+        /* CHANGE 4: Subtitle size made much bigger */
+        font-size: 2rem;
+        color: #ffffff; /* White subtitle text */
+        line-height: 1.6;
+        font-weight: 500;
+        margin: 0;
+        max-width: 100%;
+    }
+
+    /* Buttons Container */
+    .tkt-app-dl-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        /* CHANGE 5: Increased gap for bigger buttons */
+        gap: 25px;
+        margin-top: 30px;
+    }
+
+    /* CHANGE 5: Stylized Store Buttons with ENHANCED Glassy/Shining Effect */
+    .tkt-app-dl-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 15px;
+        /* Use a slightly transparent black with a gradient for depth */
+        background: linear-gradient(135deg, rgba(30,30,30,1) 0%, rgba(0,0,0,1) 100%);
+        border: 1px solid rgba(255,255,255,0.15);
+        /* CHANGE 5: Bigger border radius and padding */
+        border-radius: 16px;
+        padding: 16px 36px 16px 24px;
+        color: #ffffff;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+        /* Complex box shadow for inner glaze, outer depth, and a soft glow */
+        box-shadow: 
+            inset 0 1px 1px rgba(255, 255, 255, 0.3), /* Top glaze */
+            inset 0 -2px 5px rgba(0, 0, 0, 0.5), /* Bottom depth */
+            0 4px 6px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+
+    /* CHANGE 5: Glass shine sweep effect on hover */
+    .tkt-app-dl-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -100px;
+        width: 50px;
+        height: 200%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: rotate(30deg);
+        transition: all 0.5s ease;
+    }
+
+    .tkt-app-dl-btn:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255,255,255,0.4);
+        box-shadow: 
+            inset 0 1px 1px rgba(255, 255, 255, 0.4),
+            0 10px 20px rgba(0,0,0,0.4),
+            0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    .tkt-app-dl-btn:hover::after {
+        left: 120%;
+    }
+
+    .tkt-app-dl-btn-text {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .tkt-app-dl-btn-text span {
+        /* CHANGE 5: Slightly bigger font */
+        font-size: 0.85rem;
+        font-weight: 500;
+        opacity: 0.8;
+        line-height: 1.2;
+    }
+
+    .tkt-app-dl-btn-text strong {
+        /* CHANGE 5: Significantly bigger font */
+        font-size: 1.7rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* --- Right Column: Phone Mockup --- */
+    .tkt-app-dl-visual {
+        display: flex;
+        justify-content: end;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+
+    .tkt-app-dl-phone {
+        width: 300px;
+        height: 610px;
+        /* CHANGE 2: Updated background to create a dark metallic 3D frame look */
+        background: linear-gradient(135deg, #111 0%, #333 100%);
+        border-radius: 40px;
+        padding: 12px;
+        position: relative;
+        /* CHANGE 1: Move the visual wrapper up, so the phone protrudes */
+        margin-top: -300px;
+        /* CHANGE 2: ENHANCED 3D effects and shines. 
+        Multiple shadows create a hard metallic rim, specular highlights, 
+        and deep outer drop shadow for depth. */
+        box-shadow: 
+            /* Outer Floating Shadow */
+            0 40px 100px rgba(0, 0, 0, 0.4),
+            /* Hard Specular Shine on top-left edge */
+            -1px -1px 1px rgba(255,255,255,0.7),
+            /* Secondary Metallic edge highlight */
+            -4px -4px 10px rgba(255,255,255,0.2),
+            /* Darker definition on bottom-right edge */
+            inset -2px -2px 4px rgba(0,0,0,0.8),
+            /* Main Inner shadow creating the bezel depth */
+            inset 0 0 0 6px #000;
+    }
+
+    /* CHANGE 2: Pseudo-element for extra glare shine across the frame */
+    .tkt-app-dl-phone::before {
+        content: '';
+        position: absolute;
+        top: 50px;
+        right: 6px;
+        width: 1px;
+        height: 150px;
+        background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%);
+    }
+
+    /* Phone Notch */
+    .tkt-app-dl-notch {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 26px;
+        background: #000;
+        border-radius: 0 0 14px 14px;
+        z-index: 11;
+    }
+
+    /* Phone Screen and Content */
+    .tkt-app-dl-screen {
+        width: 100%;
+        height: 100%;
+        border-radius: 30px;
+        overflow: hidden;
+        position: relative;
+        color: white;
+    }
+
+    /* Screen background with vertical gradient */
+    .tkt-app-dl-screen-bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(180deg, #dcd831 0%, #00abea 100%);
+        z-index: 0;
+    }
+
+    .tkt-app-dl-inner-content {
+        position: relative;
+        z-index: 1;
+        padding: 60px 20px 20px 20px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Screen content styles updated for Change 3 */
+    .tkt-app-dl-screen-welcome { 
+        color: #333; 
+        /* CHANGE 3: Welcome text bigger, keep same weight (default 400-500) */
+        font-size: 2rem; 
+        font-weight: 500;
+        margin: 0; 
+    }
+    .tkt-app-dl-screen-title { 
+        color: #000; 
+        /* CHANGE 3: MOBILE APPS text slightly bigger and bolder */
+        font-size: 2.2rem; 
+        font-weight: 600 !important; 
+        margin: 3px 0 0 0; 
+        letter-spacing: -0.5px;
+    }
+    .tkt-app-dl-screen-lorem { color: #333; font-size: 0.85rem; margin: 8px 0; }
+
+    /* Login Form Box */
+    .tkt-app-dl-login-form {
+        background: rgba(58, 58, 58, 0.9);
+        width: 100%;
+        border-radius: 18px;
+        padding: 18px 22px;
+        margin: 20px 0 auto 0;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        backdrop-filter: blur(5px);
+
+        /* ADD THIS LINE */
+        pointer-events: none; 
+        
+        /* OPTIONAL: Add this so text can't be highlighted either */
+        user-select: none;
+    }
+
+    .tkt-app-dl-form-header { color: #fff; font-size: 0.95rem; font-weight: 700; margin: 0; text-align: left; padding-left: 2px; }
+
+    /* Input Fields */
+    .tkt-app-dl-form-input {
+        background: #ffffff;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        padding: 0 10px 0 12px;
+        height: 38px;
+    }
+    .tkt-app-dl-form-input .tkt-form-icon { margin-top: 3px; }
+    .tkt-app-dl-form-input input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #333;
+        font-size: 0.8rem;
+        padding: 0 10px;
+    }
+    .tkt-app-dl-form-input input::placeholder { color: #bbb; }
+    .tkt-app-dl-form-input .tkt-form-eye { color: #AAA; margin-left: auto; cursor: pointer; margin-top: 3px; }
+
+    /* Sign In Button */
+    .tkt-app-dl-form-btn {
+        background: #ffae00;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        padding: 10px 0;
+        width: 100%;
+        cursor: pointer;
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Footer Links */
+    .tkt-app-dl-form-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #ccc;
+        font-size: 0.75rem;
+        padding-top: 5px;
+    }
+    .tkt-app-dl-form-footer .tkt-checkbox { display: flex; align-items: center; gap: 5px; }
+    .tkt-app-dl-form-footer a { color: #ccc; text-decoration: none; }
+    .tkt-app-dl-form-footer a:hover { color: #fff; }
+
+    /* CHANGE 3: Bottom Icons container updated */
+    .tkt-app-dl-bottom-bar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-bottom: 5px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    /* CHANGE 3: Circular background style for bottom icons */
+    .tkt-bottom-icon-wrap {
+        width: 44px;
+        height: 44px;
+        background: rgb(255, 165, 0); /* Orange background requested */
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    /* Responsive Design UPDATED for Changes 1, 4, 5 */
+    @media (max-width: 1200px) { 
+        .tkt-app-dl-title { font-size: 3.8rem; } /* Responsive heading */
+        .tkt-app-dl-section { padding-top: 150px; }
+    }
+
+    @media (max-width: 1200px) { 
+        .tkt-app-dl-visual {
+            justify-content: center; /* Center the phone on smaller screens */
+        }
+    }
+
+    @media (max-width: 992px) {
+        .tkt-app-dl-section { overflow: hidden; padding-top: 80px; padding-bottom: 80px;} /* Stop overflow when stacking */
+        .tkt-app-dl-container { grid-template-columns: 1fr; text-align: center; gap: 40px; }
+        .tkt-app-dl-content { align-items: center; text-align: center; }
+        .tkt-app-dl-buttons { justify-content: center; }
+        .tkt-app-dl-phone { margin-top: 0; } /* Reset overlap when stacked */
+    }
+    @media (max-width: 576px) {
+        .tkt-app-dl-section { padding: 60px 0; }
+        .tkt-app-dl-title { font-size: 2.5rem; } /* Responsive heading */
+        .tkt-app-dl-subtitle { font-size: 1.3rem; } /* Responsive subtitle */
+        .tkt-app-dl-buttons { flex-direction: column; width: 100%; max-width: 320px; }
+        .tkt-app-dl-btn { justify-content: center; width: 100%; padding: 12px 28px; }
+        .tkt-app-dl-btn-text strong { font-size: 1.4rem; } /* Responsive button text */
+        .tkt-app-dl-phone { width: 240px; height: 490px; border-radius: 36px; padding: 10px; }
+        .tkt-app-dl-notch { width: 100px; height: 22px; top: 10px; border-radius: 0 0 12px 12px; }
+    }
+    /* ==========================================================================
+       APP DOWNLOAD PROMO SECTION
+       Namespace: tkt-app-dl-
+       ========================================================================== */
+
+    /* =========================
+    Available Routes List Styles
+    ========================= */
+    .custom-radio-list .route-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px; /* Slightly more padding for breathability */
+        border-radius: 8px;
+        background: transparent;
+        transition: all 0.3s ease;
+    }
+
+    /* Optional hover: Slight background highlight and gentle nudge */
+    .custom-radio-list .route-item:hover {
+        background: rgba(0, 171, 234, 0.05);
+        transform: translateX(4px);
+    }
+
+    /* The outer circle of the radio button (Colored by default) */
+    .custom-radio-list .radio-indicator {
+        position: relative;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #00abea; /* Accent color by default */
+        border-radius: 50%;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    /* The inner dot of the radio button (Visible by default) */
+    .custom-radio-list .radio-indicator::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(1); /* scale(1) makes it permanently visible */
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #00abea; 
+    }
+
+    /* Make text bigger, readable, but NOT bolder */
+    .custom-radio-list .route-text {
+        font-size: 1.35rem; /* Larger text */
+        font-weight: 400;   /* Normal weight */
+        color: var(--cs-blue-900, #0A2540);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .custom-radio-list .route-location {
+        transition: color 0.3s ease;
+    }
+
+    /* Text changes color slightly on hover to feel interactive */
+    .custom-radio-list .route-item:hover .route-location {
+        color: #00abea;
+    }
+    /* =========================
+    Available Routes List Styles
+    ========================= */
+
+    /* =========================
+   Featured in the Press Styles (Isolated)
+   ========================= */
+
+    .mbx-press-section {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif; /* Forces clean font */
+        padding: 60px 0;
+    }
+
+    .mbx-press-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    /* Main Section Heading */
+    .mbx-press-main-title {
+        font-family: inherit;
+        font-size: 4rem !important; /* Forces size */
+        font-weight: 700 !important;
+        color: var(--cs-blue-900, #0A2540) !important;
+        text-align: center;
+        margin: 0 0 50px 0 !important; /* Proper spacing below heading */
+        line-height: 1.2 !important;
+        letter-spacing: -0.5px;
+    }
+
+    /* Slider Layout */
+    .mbx-press-slider-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 0 50px; /* Room for buttons */
+        margin-bottom: 40px;
+    }
+
+    .mbx-press-logo-track {
+        display: flex;
+        gap: 50px; /* More breathing room between logos */
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        align-items: center;
+        padding: 20px 0;
+        -ms-overflow-style: none;  
+        scrollbar-width: none;  
+    }
+
+    .mbx-press-logo-track::-webkit-scrollbar {
+        display: none; 
+    }
+
+    .mbx-press-logo-item {
+        flex: 0 0 auto;
+    }
+
+    /* Fixed Height, Auto Width for Logos */
+    .mbx-press-logo-img {
+        height: 65px; 
+        width: auto;  
+        object-fit: contain;
+        filter: grayscale(100%);
+        opacity: 0.4; /* Slightly more faded by default */
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .mbx-press-logo-img:hover {
+        filter: grayscale(40%);
+        opacity: 0.8;
+    }
+
+    .mbx-press-logo-img.mbx-press-active {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: scale(1.08); /* Slightly more pop */
+    }
+
+    /* Slider Navigation Buttons */
+    .mbx-press-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 44px; /* Slightly larger buttons */
+        height: 44px;
+        border-radius: 50%;
+        background-color: #fff;
+        color: var(--cs-blue-900, #0A2540);
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.3s ease;
+    }
+
+    .mbx-press-nav-btn:hover {
+        background-color: #00abea;
+        color: #fff;
+        border-color: #00abea;
+        box-shadow: 0 6px 15px rgba(0, 171, 234, 0.3);
+    }
+
+    .mbx-press-prev { left: 0; }
+    .mbx-press-next { right: 0; }
+
+    /* Description Box */
+    .mbx-press-details-box {
+        border: 1px solid #00abea; 
+        border-radius: 12px;
+        padding: 35px 40px; /* Better internal padding */
+        background-color: #fff;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+    }
+
+    .mbx-press-details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        border-bottom: 1px solid rgba(0, 171, 234, 0.15);
+        padding-bottom: 20px; /* Space between header and border line */
+        margin-bottom: 20px;  /* Space between border line and description text */
+    }
+
+    /* Inner Article Title */
+    .mbx-press-article-title {
+        font-family: inherit;
+        font-size: 2.2rem !important; /* Forced size to prevent inheritance */
+        font-weight: 700 !important;
+        color: var(--cs-blue-900, #0A2540) !important;
+        margin: 0 !important;
+        line-height: 1.3 !important;
+    }
+
+    .mbx-press-read-more {
+        font-family: inherit;
+        color: #00abea !important; /* Force color */
+        text-decoration: none !important;
+        font-size: 1.75rem !important;
+        font-weight: 600 !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        transition: color 0.3s ease;
+        margin-top: 5px; /* Slight alignment tweak */
+    }
+
+    .mbx-press-read-more:hover {
+        color: var(--cs-blue-900, #0A2540) !important;
+    }
+
+    /* 6-7 Lines Text Truncation */
+    .mbx-press-article-desc {
+        font-family: inherit;
+        color: #4b5563 !important; /* Stronger grey for readability */
+        font-size: 1.45rem !important; /* Larger text */
+        line-height: 1.7 !important; /* More breathing room between lines */
+        margin: 0 !important;
+        font-weight: 500 !important;
+        
+        /* Modern CSS to guarantee exactly 6 lines */
+        display: -webkit-box;
+        -webkit-line-clamp: 6;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .mbx-press-details-header {
+            flex-direction: column;
+            gap: 15px;
+        }
+        .mbx-press-slider-wrapper {
+            padding: 0 35px;
+        }
+        .mbx-press-logo-img {
+            height: 50px; 
+        }
+        .mbx-press-main-title {
+            font-size: 2rem !important;
+        }
+        .mbx-press-article-title {
+            font-size: 1.35rem !important;
+        }
+        .mbx-press-details-box {
+            padding: 25px;
+        }
+    }
+    /* =========================
+    Featured Articles Styles
+    ========================= */
+
+    /* =========================
     RESPONSIVE
     ========================= */
     @media (max-width: 991px){
@@ -297,109 +1429,138 @@
 
 
 {% block content %}
-    <!-- rts banner area start -->
-    <div class="rts-banner-area-six overflow-hidden radius-10" 
-     style="{% if banner.background_image %}background-image: url('{{ banner.background_image.url }}');{% else %}background-image: url('{% static 'portal/assets/images/banner/bg-11.webp' %}');{% endif %}">
-    <div class="container">
-        <div class="rts-banner-wrapper">
-            <div class="row justify-content-center">
-                <div class="col-xl-8 col-lg-10">
-                    <div class="banner-wrapper-inner text-center">
-                        
-                        {% if banner.logo %}
-                        <div class="banner-logo wow fadeInUp" data-wow-delay="0.2s">
-                            <a href="{% url 'home' %}">
-                                <img style="height:50px" src="{{ banner.logo.url }}" alt="Banner Logo">
-                            </a>
+    <!-- UPDATED: Homepage hero wrapper for the new 16:5 banner styling -->
+    <div class="mk-home-hero rts-banner-area-six overflow-hidden" 
+            style="{% if banner.background_image %}background-image: url('{{ banner.background_image.url }}');{% else %}background-image: url('{% static 'portal/assets/images/banner/bg-11.webp' %}');{% endif %}">
+        <div class="container">
+            <div class="rts-banner-wrapper">
+                <div class="row justify-content-center">
+                    <div class="col-xl-8 col-lg-10">
+                        <div class="banner-wrapper-inner text-center">
+                            
+                            {% if banner.logo %}
+                            <div class="banner-logo wow fadeInUp" data-wow-delay="0.2s">
+                                <a href="{% url 'home' %}">
+                                    <img style="height:50px" src="{{ banner.logo.url }}" alt="Banner Logo">
+                                </a>
+                            </div>
+                            {% endif %}
+
+                            <h1 class="banner-title wow fadeInUp" data-wow-delay="0.4s">
+                                {{ banner.title|default:"Gateway to Global Tours" }}
+                            </h1>
+
+                            <p class="desc wow fadeInUp" data-wow-delay="0.6s">
+                                {{ banner.description|default:"Discover exclusive travel packages from trusted agents around the world."|truncatechars:107 }}
+                            </p>
+
                         </div>
-                        {% endif %}
-
-                        <h1 class="banner-title wow fadeInUp" data-wow-delay="0.4s">
-                            {{ banner.title|default:"Gateway to Global Tours" }}
-                        </h1>
-
-                        <p class="desc wow fadeInUp" data-wow-delay="0.6s">
-                            {{ banner.description|default:"Discover exclusive travel packages from trusted agents around the world."|truncatechars:107 }}
-                        </p>
-
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-    <!-- rts banner area end -->
+    <!-- UPDATED: Homepage hero wrapper end -->
 
-<div id="advance_search" class="rts__section advance__search__section is__home__one tour-marketplace">
-    <div class="container">
-        <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
-            {% csrf_token %}
+    <!-- UPDATED: Search card wrapper aligned to overlap the hero like the target design -->
+    <div id="advance_search" class="mk-home-search rts__section advance__search__section is__home__one tour-marketplace">
+        <div class="container">
+            <form action="{% url 'search_trips' %}" method="GET" class="form-area-v2 bg-white">
+                {% csrf_token %}
 
-            <div class="search-input-group">
-                <div class="icon-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#21a2dc"/>
+                <!-- UPDATED: Static top service tabs added as requested -->
+                <div class="search-top-strip" aria-hidden="true">
+                    <div class="search-top-tabs">
+                        <span class="search-top-tab is-active">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 16L4.5 18H20.5L22 16H3ZM5 6V14H19V6H5ZM7 8H17V12H7V8Z" fill="currentColor"/>
+                            </svg>
+                            Launch
+                        </span>
+                        <span class="search-top-tab">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 16H20V18H4V16ZM6 6H18L19.5 11H4.5L6 6ZM7 13H17V15H7V13Z" fill="currentColor"/>
+                            </svg>
+                            Ferry
+                        </span>
+                        <span class="search-top-tab">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 20H20V22H4V20ZM5 10H9V18H5V10ZM10 4H14V18H10V4ZM15 8H19V18H15V8Z" fill="currentColor"/>
+                            </svg>
+                            Hotel
+                        </span>
+                    </div>
+                </div>
+
+                <!-- UPDATED: Static one-way option added as requested -->
+                <div class="search-trip-mode" aria-hidden="true">
+                    <span class="search-trip-pill">
+                        <span class="dot"></span>
+                        <span>One Way</span>
+                    </span>
+                </div>
+
+                <div class="search-input-group">
+                    <div class="icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#21a2dc"/>
+                        </svg>
+                    </div>
+
+                    <div class="input-content">
+                        <p class="label-tag">FROM</p>
+                        <select id="search-from" class="search-field select2" name="from">
+                            <option value="" selected disabled>Select Origin</option>
+                            {% for location in locations %}
+                                <option value="{{ location.id }}">{{ location.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="exchange-icon" id="switch-location">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
                     </svg>
                 </div>
 
-                <div class="input-content">
-                    <p class="label-tag">FROM</p>
-                    <select id="search-from" class="search-field select2" name="from">
-                        <option value="" selected disabled>Select Origin</option>
-                        {% for location in locations %}
-                            <option value="{{ location.id }}">{{ location.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+                <div class="search-input-group">
+                    <div class="icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#21a2dc"/>
+                        </svg>
+                    </div>
 
-            <div class="exchange-icon" id="switch-location">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17 17H7V14L3 18L7 22V19H18V13H17V17ZM7 7H17V10L21 6L17 2V5H6V11H7V7Z" fill="#2C3E50"/>
-                </svg>
-            </div>
-
-            <div class="search-input-group">
-                <div class="icon-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#21a2dc"/>
-                    </svg>
+                    <div class="input-content">
+                        <p class="label-tag">TO</p>
+                        <select id="search-to" class="search-field select2" name="to" disabled>
+                            <option value="" selected disabled>Select Destination</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="input-content">
-                    <p class="label-tag">TO</p>
-                    <select id="search-to" class="search-field select2" name="to" disabled>
-                        <option value="" selected disabled>Select Destination</option>
-                    </select>
+                <div class="search-input-group calendar-trigger">
+                    <div class="input-content ps-3">
+                        <p class="label-tag">JOURNEY DATE</p>
+                        <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" name="date" readonly>
+                    </div>
                 </div>
-            </div>
 
-            <div class="search-input-group calendar-trigger">
-                <div class="input-content ps-3">
-                    <p class="label-tag">JOURNEY DATE</p>
-                    <input type="text" id="journey-date" placeholder="Pick a date" class="search-field" name="date" readonly>
+                <div class="button-area">
+                    <button type="submit" class="search-submit-btn" style="background-color:#21a2dc;">
+                        SEARCH
+                    </button>
                 </div>
-            </div>
-
-            <div class="button-area">
-                <button type="submit" class="search-submit-btn" style="background-color:#21a2dc;">
-                    SEARCH
-                </button>
-            </div>
-        </form>
-    </div>
-
- 
-
+            </form>
+        </div>
 
     
 
 
 <!-- MBX: Launch Steps + Overview (isolated redesign) -->
 <section class="mbx-launch">
-
     <!-- Steps -->
-    <div class="mbx-launch__steps">
+    {% comment %} <div class="mbx-launch__steps">
         <div class="mbx-launch__container">
 
             <header class="mbx-launch__header">
@@ -473,51 +1634,268 @@
             </div>
 
         </div>
-    </div>
+    </div> {% endcomment %}
 
-    <!-- Overview -->
-    {% if overview %}
-    <div class="mbx-launch__overview">
-        <div class="mbx-launch__container">
-
-            <div class="mbx-launch__overview-grid">
-                <div class="mbx-launch__overview-left">
-                    <h2 class="mbx-launch__overview-title">
-                        {{ overview.title }}
-                    </h2>
-
-                    <div class="mbx-launch__overview-desc">
-                        {{ overview.description|safe }}
-                    </div>
-
-                    <div class="mbx-launch__highlights">
-                        <h3 class="mbx-launch__highlights-title">Key Highlights</h3>
-                        <div class="mbx-launch__highlights-list">
-                            {{ overview.key_points|safe }}
-                        </div>
-                    </div>
+    <!-- Cabin Showcase Section -->
+    {% if latest_cabins %}
+        <section class="mbx-cs-section">
+            <div class="mbx-cs-container">
+                
+                <div class="mbx-cs-header">  
+                    <div class="mbx-cs-title-wrapper">  
+                        <h2 class="mbx-cs-title"><span style="color: #00abea;" class="fw-bold">SEAT </span>Category</h2>  
+                    </div>  
+                    
+                    <div class="mbx-cs-header-line"></div>
+                    
+                    <a href="{% url 'all_cabins' %}" class="mbx-cs-view-all">  
+                        View All 
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  
+                            <line x1="5" y1="12" x2="19" y2="12"></line>  
+                            <polyline points="12 5 19 12 12 19"></polyline>  
+                        </svg>  
+                    </a>  
                 </div>
 
-                <div class="mbx-launch__overview-right">
-                    {% if overview.image %}
-                    <div class="mbx-launch__image-wrap">
-                        <img
-                            src="{{ overview.image.url }}"
-                            alt="{{ overview.title }}"
-                            class="mbx-launch__image"
-                            loading="lazy"
-                        />
+                <div class="mbx-cs-slider-wrapper">
+                    <div class="mbx-cs-blur-left"></div>
+
+                    <!-- UPDATED: Seat category left/right arrow buttons removed from use -->
+                    <button class="mbx-cs-nav-btn mbx-cs-prev" aria-label="Previous cabins">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    
+                    <div class="mbx-cs-track" id="mbx-cs-track">
+                        {% for cabin in latest_cabins %}
+                        <div class="mbx-cs-card">
+                            <div class="mbx-cs-image-wrapper">
+                                {% if cabin.cover_image %}
+                                    <img src="{{ cabin.cover_image.url }}" alt="{{ cabin.title }}" class="mbx-cs-img" loading="lazy">
+                                {% else %}
+                                    <div class="mbx-cs-img-placeholder"></div>
+                                {% endif %}
+                                <div class="mbx-cs-overlay">
+                                    <div class="mbx-cs-content">
+                                        <h3 class="mbx-cs-card-title">{{ cabin.title }}</h3>
+                                        {% if cabin.subtitle %}
+                                            <p class="mbx-cs-card-subtitle">{{ cabin.subtitle }}</p>
+                                        {% endif %}
+                                        <div class="mbx-cs-meta">
+                                            <span class="mbx-cs-capacity">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                                {{ cabin.guest_capacity }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endif %}
+
+                    <button class="mbx-cs-nav-btn mbx-cs-next" aria-label="Next cabins">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                    
+                    <div class="mbx-cs-blur-right"></div>
+                </div>
+
+                <!-- UPDATED: Seat category slider now uses bottom dots instead of autoplay/arrows -->
+                <div class="mbx-cs-dots" id="mbx-cs-dots" aria-label="Seat category slider navigation"></div>
+
+            </div>
+        </section>
+    {% endif %}
+    <!-- Cabin Showcase Section -->
+
+    <!-- Available Routes -->
+    {% if available_routes %}
+        <section class="mbx-cs-section" style="padding-bottom: 40px;">
+            <div class="mbx-cs-container">
+                
+                <div class="mbx-cs-header">  
+                    <div class="mbx-cs-title-wrapper">  
+                        <h2 class="mbx-cs-title"><span style="color: #00abea;" class="fw-bold">AVAILABLE </span>Routes</h2>  
+                    </div>  
+                    
+                    <div class="mbx-cs-header-line"></div>
+                    </div>
+
+                <div class="route-list-wrapper mt-4">
+                    <ul class="row list-unstyled custom-radio-list m-0 p-0">
+                        {% for src, dest in available_routes %}
+                        <li class="col-12 col-md-6 col-lg-4 mb-4">
+                            <div class="route-item">
+                                <span class="radio-indicator"></span>
+                                <span class="route-text">
+                                    <span class="route-location">{{ src }}</span> 
+                                    
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00abea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                    
+                                    <span class="route-location">{{ dest }}</span>
+                                </span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+    {% endif %}
+    <!-- Available Routes -->
+
+    <!-- Downloa APP section-->
+    <section class="tkt-app-dl-section">
+        <div class="tkt-app-dl-container">
+            
+            <div class="tkt-app-dl-content">
+                <h2 class="tkt-app-dl-title text-center">Most Reliable Launch Ticket Solution App</h2>
+                <p class="tkt-app-dl-subtitle text-center">Make convenience a part of your life.</p>
+                
+                <div class="tkt-app-dl-buttons justify-content-center">
+                    <a href="#" class="tkt-app-dl-btn">
+                        <svg class="tkt-btn-icon" viewBox="0 0 384 512" style="width: 32px; height: 32px;">
+                            <path fill="#ffffff" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 0 184.8 0 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                        </svg>
+                        <div class="tkt-app-dl-btn-text">
+                            <span>Available on the</span>
+                            <strong>App Store</strong>
+                        </div>
+                    </a>
+
+                    <a href="#" class="tkt-app-dl-btn">
+                        <svg class="tkt-btn-icon" viewBox="0 0 512 512" style="width: 32px; height: 32px;">
+                            <path fill="#00C0FF" d="M280.8 241.6L104.6 13l280.8 161.2-60.1 60.1z"/>
+                            <path fill="#00E060" d="M47 512C34 505.2 25.3 492.8 25.3 476.7V35.3c0-16.1 8.7-28.5 21.7-35.3l222.3 222.3L47 512z"/>
+                            <path fill="#FF3030" d="M354.4 251.6l-60.1 60.1 61.6 61.6 131.5-75.3c13.2-7.6 13.2-20.5 0-28.1L354.4 251.6z"/>
+                            <path fill="#FFD000" d="M342.6 324.4l-182 182c1.7.9 3.5 1.5 5.6 1.5 13 0 263.1-150.7 263.1-150.7l-86.7-86.7z"/>
+                        </svg>
+                        <div class="tkt-app-dl-btn-text">
+                            <span>Get it on</span>
+                            <strong>Google play</strong>
+                        </div>
+                    </a>
                 </div>
             </div>
 
-        </div>
-    </div>
-    {% endif %}
+            <div class="tkt-app-dl-visual">
+                <div class="tkt-app-dl-phone">
+                    <div class="tkt-app-dl-notch"></div>
+                    <div class="tkt-app-dl-screen">
+                        <div class="tkt-app-dl-screen-bg"></div>
+                        <div class="tkt-app-dl-inner-content">
+                            <p class="tkt-app-dl-screen-welcome">Welcome to</p>
+                            <h3 class="tkt-app-dl-screen-title">MOBILE APPS</h3>
+                            <p class="tkt-app-dl-screen-lorem">Lorem ipsum dolor sit amet</p>
 
+                            <div class="tkt-app-dl-login-form">
+                                <p class="tkt-app-dl-form-header">Member Sign In</p>
+                                
+                                <div class="tkt-app-dl-form-input">
+                                    <span class="tkt-form-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFA500" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </span>
+                                    <input type="text" placeholder="Username / Email">
+                                </div>
+                                
+                                <div class="tkt-app-dl-form-input">
+                                    <span class="tkt-form-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFA500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                    </span>
+                                    <input type="password" placeholder="Password">
+                                    <span class="tkt-form-eye">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#AAA" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </span>
+                                </div>
+
+                                <button class="tkt-app-dl-form-btn">Sign In</button>
+                                
+                                <div class="tkt-app-dl-form-footer">
+                                    <label class="tkt-checkbox"><input type="checkbox"> Remember me</label>
+                                    <a href="#">Forgot Password?</a>
+                                </div>
+                            </div>
+
+                            <div class="tkt-app-dl-bottom-bar">
+                                <div class="tkt-bottom-icon-wrap">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-10a2 2 0 1 0 2 2 2 2 0 0 0-2-2zM12 6c-2.206 0-4 1.794-4 4a1 1 0 0 0 2 0 2.001 2.001 0 0 1 4 0 1 1 0 0 0 2 0c0-2.206-1.794-4-4-4z"/></svg>
+                                </div>
+                                <div class="tkt-bottom-icon-wrap">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Downloa APP section-->
+
+    <!-- UPDATED: Overview block removed as requested -->
 </section>
 <!-- /MBX -->
+
+
+    <!-- Featured in the Press -->
+    {% if featured_articles %}
+<section class="mbx-press-section">
+    <div class="mbx-press-container">
+        
+        <h2 class="mbx-press-main-title">
+            Featured in the Press
+        </h2>
+
+        <div class="mbx-press-slider-wrapper">
+            <button class="mbx-press-nav-btn mbx-press-prev" id="mbxPressPrevBtn" aria-label="Previous logos">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            
+            <div class="mbx-press-logo-track" id="mbxPressLogoTrack">
+                {% for article in featured_articles %}
+                <div class="mbx-press-logo-item">
+                    <img src="{{ article.logo.url }}" 
+                         alt="{{ article.organization_name }} Logo" 
+                         class="mbx-press-logo-img {% if forloop.first %}mbx-press-active{% endif %}"
+                         data-name="{{ article.name }}"
+                         data-url="{{ article.url }}"
+                         data-desc="{{ article.description }}">
+                </div>
+                {% endfor %}
+            </div>
+
+            <button class="mbx-press-nav-btn mbx-press-next" id="mbxPressNextBtn" aria-label="Next logos">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+
+        {% with first_article=featured_articles.first %}
+        <div class="mbx-press-details-box shadow-sm" id="mbxPressDetailsBox">
+            <div class="mbx-press-details-header">
+                <h3 class="mbx-press-article-title" id="mbxPressArticleTitle">{{ first_article.name }}</h3>
+                <a href="{{ first_article.url }}" target="_blank" class="mbx-press-read-more" id="mbxPressArticleUrl">
+                    View Full article
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+            </div>
+            <div class="mbx-press-article-desc" id="mbxPressArticleDesc">
+                {{ first_article.description }}
+            </div>
+        </div>
+        {% endwith %}
+
+    </div>
+</section>
+{% endif %}
+    <!-- Featured in the Press -->
 
 {% endblock content %}
 
@@ -665,5 +2043,169 @@
             }
         });
     });
-    </script>
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // UPDATED: Seat category slider now shows paged cards with bottom dots only.
+        const track = document.getElementById("mbx-cs-track");
+        const dotsWrap = document.getElementById("mbx-cs-dots");
+        const cards = track ? Array.from(track.querySelectorAll(".mbx-cs-card")) : [];
+
+        if (track && dotsWrap && cards.length > 0) {
+            let cardsPerPage = 3;
+            let currentPage = 0;
+
+            const getCardsPerPage = () => {
+                if (window.innerWidth <= 768) return 1;
+                if (window.innerWidth <= 1024) return 2;
+                return 3;
+            };
+
+            const getPageCount = () => {
+                cardsPerPage = getCardsPerPage();
+                return Math.max(1, Math.ceil(cards.length / cardsPerPage));
+            };
+
+            const updateActiveCards = () => {
+                const start = currentPage * cardsPerPage;
+                const end = start + cardsPerPage;
+
+                cards.forEach((card, index) => {
+                    card.classList.toggle("mbx-cs-active", index >= start && index < end);
+                });
+            };
+
+            const goToPage = (pageIndex, behavior = "smooth") => {
+                const pageCount = getPageCount();
+                currentPage = Math.max(0, Math.min(pageIndex, pageCount - 1));
+
+                const firstCard = cards[currentPage * cardsPerPage];
+                if (!firstCard) return;
+
+                track.scrollTo({
+                    left: firstCard.offsetLeft,
+                    behavior,
+                });
+
+                const dots = dotsWrap.querySelectorAll(".mbx-cs-dot");
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle("is-active", index === currentPage);
+                    dot.setAttribute("aria-current", index === currentPage ? "true" : "false");
+                });
+
+                updateActiveCards();
+            };
+
+            const renderDots = () => {
+                const pageCount = getPageCount();
+                dotsWrap.innerHTML = "";
+
+                for (let i = 0; i < pageCount; i += 1) {
+                    const dot = document.createElement("button");
+                    dot.type = "button";
+                    dot.className = "mbx-cs-dot";
+                    dot.setAttribute("aria-label", `Go to seat category slide ${i + 1}`);
+                    dot.addEventListener("click", () => goToPage(i));
+                    dotsWrap.appendChild(dot);
+                }
+
+                goToPage(Math.min(currentPage, pageCount - 1), "auto");
+            };
+
+            window.addEventListener("resize", () => {
+                renderDots();
+            });
+
+            renderDots();
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // UPDATED: Featured press logos now use manual arrow clicks only with no auto-slide and no loop/cloned items.
+        const track = document.getElementById('mbxPressLogoTrack');
+        const prevBtn = document.getElementById('mbxPressPrevBtn');
+        const nextBtn = document.getElementById('mbxPressNextBtn');
+        
+        const titleEl = document.getElementById('mbxPressArticleTitle');
+        const urlEl = document.getElementById('mbxPressArticleUrl');
+        const descEl = document.getElementById('mbxPressArticleDesc');
+
+        if (!track || track.children.length === 0) return;
+        const items = Array.from(track.querySelectorAll('.mbx-press-logo-item'));
+
+        // --- NEW: Helper function to swap active styling and update the text box ---
+        function activateLogo(logoElement) {
+            if (!logoElement) return;
+            
+            // Remove active class from all logos, add to the target
+            track.querySelectorAll('.mbx-press-logo-img').forEach(l => l.classList.remove('mbx-press-active'));
+            logoElement.classList.add('mbx-press-active');
+
+            // Update text content in the description box
+            if(titleEl) titleEl.textContent = logoElement.getAttribute('data-name');
+            if(urlEl) urlEl.setAttribute('href', logoElement.getAttribute('data-url'));
+            if(descEl) descEl.textContent = logoElement.getAttribute('data-desc');
+        }
+
+        // UPDATED: Manual slide target uses only the real uploaded logos.
+        function scrollToItem(item) {
+            if (!item) return;
+            track.scrollTo({
+                left: item.offsetLeft - Math.max(0, (track.clientWidth - item.offsetWidth) / 2),
+                behavior: 'smooth'
+            });
+        }
+
+        // 2. Event Delegation (Manual Clicks)
+        track.addEventListener('click', function(e) {
+            const logo = e.target.closest('.mbx-press-logo-img');
+            if (logo) {
+                activateLogo(logo);
+                scrollToItem(logo.closest('.mbx-press-logo-item'));
+            }
+        });
+
+        // UPDATED: Arrow navigation now stops at the first/last uploaded logo and does not loop.
+        function handleNext() {
+            const currentActive = track.querySelector('.mbx-press-logo-img.mbx-press-active');
+            if (currentActive) {
+                const currentItem = currentActive.closest('.mbx-press-logo-item');
+                const currentIndex = items.indexOf(currentItem);
+                const nextItem = items[Math.min(currentIndex + 1, items.length - 1)];
+                if (nextItem) {
+                    activateLogo(nextItem.querySelector('.mbx-press-logo-img'));
+                    scrollToItem(nextItem);
+                }
+            }
+        }
+
+        function handlePrev() {
+            const currentActive = track.querySelector('.mbx-press-logo-img.mbx-press-active');
+            if (currentActive) {
+                const currentItem = currentActive.closest('.mbx-press-logo-item');
+                const currentIndex = items.indexOf(currentItem);
+                const prevItem = items[Math.max(currentIndex - 1, 0)];
+                if (prevItem) {
+                    activateLogo(prevItem.querySelector('.mbx-press-logo-img'));
+                    scrollToItem(prevItem);
+                }
+            }
+        }
+
+        // UPDATED: Manual-only arrow controls
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', handlePrev);
+            nextBtn.addEventListener('click', handleNext);
+        }
+
+        // UPDATED: Keep the first uploaded logo selected on initial load.
+        const firstLogo = items[0]?.querySelector('.mbx-press-logo-img');
+        if (firstLogo) {
+            activateLogo(firstLogo);
+        }
+    });
+</script>
 {% endblock custom_js %}

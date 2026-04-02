@@ -199,7 +199,7 @@
 </div>
 
 <!-- Inline booking panel (replaces drawer) -->
- <div id="inlineBookingOverlay" class="inline-booking-overlay"></div>
+<div id="inlineBookingOverlay" class="inline-booking-overlay"></div>
 <div id="inlineBookingPanel" class="inline-booking-panel" style="display: none;">
     <div class="inline-booking-panel__inner">
         <div class="inline-booking-header border-0 position-relative" style="z-index: 10; flex-shrink: 0;">
@@ -297,8 +297,8 @@
         <div class="success-icon-circle">
             <i class="fas fa-check"></i>
         </div>
-        <h3 style="color: #1e293b; margin-bottom: 8px;">Booking Confirmed!</h3>
-        <p style="color: #64748b; font-size: 15px;">Your trip has been successfully booked. Your reference is <span id="modalRef" style="font-weight: 600; color: #059669;"></span></p>
+        <h3 style="color: #1e293b; margin-bottom: 8px;">Confirmed!</h3>
+        <p style="color: #64748b; font-size: 15px;">Your ticket has been successfully issued. Your reference is <span id="modalRef" style="font-weight: 600; color: #059669;"></span></p>
         <button id="finalRedirectBtn" class="view-tickets-btn">View My Tickets</button>
     </div>
 </div>
@@ -2079,8 +2079,8 @@
                 const canSendOtp = hasSelected && phoneLooksBd(phone) && name.length > 0;
 
                 // Main button is only for SEND OTP
-                $('#btnText').text('SEND OTP');
-                $('#desktopSubmitBookingBtn').text('SEND OTP');
+                $('#btnText').text('Next');
+                $('#desktopSubmitBookingBtn').text('Next');
 
                 $('#checkoutBtn').show();
                 $('#desktopSubmitBookingBtn').show();

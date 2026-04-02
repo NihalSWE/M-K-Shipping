@@ -29,30 +29,17 @@
                             <input type="hidden" name="form_type" value="profile">
 
                             <div class="row">
-                                <div class="col-12 col-md-6">
+                                <div class="col-12">
                                     <div class="prf-field-wrap">
-                                        <label class="prf-field-label" for="prfFirstName">First Name</label>
+                                        <label class="prf-field-label" for="prfFullName">Full Name</label>
                                         <input
-                                            id="prfFirstName"
-                                            name="first_name"
+                                            id="prfFullName"
+                                            name="full_name"
                                             type="text"
                                             class="prf-input"
-                                            value="{{ request.user.first_name|default:'' }}"
-                                            placeholder="Enter first name"
-                                        >
-                                    </div>
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <div class="prf-field-wrap">
-                                        <label class="prf-field-label" for="prfLastName">Last Name</label>
-                                        <input
-                                            id="prfLastName"
-                                            name="last_name"
-                                            type="text"
-                                            class="prf-input"
-                                            value="{{ request.user.last_name|default:'' }}"
-                                            placeholder="Enter last name"
+                                            value="{{ request.user.first_name }} {{ request.user.last_name }}"
+                                            placeholder="Enter full name"
+                                            required
                                         >
                                     </div>
                                 </div>
@@ -66,9 +53,9 @@
                                             type="email"
                                             class="prf-input"
                                             value="{{ request.user.email|default:'' }}"
-                                            placeholder="Enter email (optional)"
+                                            placeholder="Enter email"
+                                            required
                                         >
-                                        <div class="prf-field-help">Email is optional, but if provided it must be unique.</div>
                                     </div>
                                 </div>
 
@@ -83,6 +70,21 @@
                                             disabled
                                         >
                                         <div class="prf-field-help">Phone number cannot be changed from this page.</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="prf-field-wrap">
+                                        <label class="prf-field-label" for="prfAddress">Address</label>
+                                        <input
+                                            id="prfAddress"
+                                            name="address"
+                                            type="text"
+                                            class="prf-input"
+                                            value="{{ request.user.address|default:'' }}"
+                                            placeholder="Enter address"
+                                            required
+                                        >
                                     </div>
                                 </div>
 

@@ -907,13 +907,225 @@ class TeamMember(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
 
+class VesselShowcase(models.Model):
+    """ Comprehensive marketing and display information for a Vessel/Ship """
+    
+    # --- Link to Operations (Optional for Pre-launch) ---
+    ship = models.OneToOneField(
+        'Ship', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='showcase',
+        help_text="Leave blank if this vessel is not yet operational/bookable."
+    )
+    
+    # --- Basic Display Info ---
+    name = models.CharField(max_length=100, help_text="Display name (e.g., Carnival Cruise)")
+    slug = models.SlugField(max_length=120, unique=True, blank=True, help_text="Auto-generated if left blank. Used for the URL (e.g., mv-grand-aqua)")
+    tagline = models.CharField(max_length=200, blank=True, help_text="E.g., The Queen of the River")
+    short_description = models.TextField(max_length=500, help_text="Brief summary for list/grid views")
+    full_description = models.TextField(help_text="Detailed description for the main vessel page")
+    
+    # --- Media ---
+    hero_image = models.ImageField(upload_to='vessel_showcase/heroes/')
+    video_tour_url = models.URLField(blank=True, help_text="YouTube or Vimeo link for a virtual tour")
+    
+    # --- Technical Specifications (For Display) ---
+    build_year = models.CharField(max_length=4, blank=True)
+    length_meters = models.CharField(max_length=20, blank=True, help_text="E.g., 85m")
+    top_speed = models.CharField(max_length=50, blank=True, help_text="E.g., 15 Knots")
+    display_capacity = models.CharField(max_length=50, blank=True, help_text="E.g., 500+ Passengers")
+    
+    # --- Key Amenities (Booleans for quick icons/filtering) ---
+    has_wifi = models.BooleanField(default=False)
+    has_restaurant = models.BooleanField(default=False)
+    has_cafe_bar = models.BooleanField(default=False)
+    has_prayer_room = models.BooleanField(default=False)
+    has_medical_facility = models.BooleanField(default=False)
+    is_wheelchair_accessible = models.BooleanField(default=False)
+    has_kids_play_area = models.BooleanField(default=False)
+    has_entertainment = models.BooleanField(default=False, help_text="Live music, TV lounges, etc.")
+    
+    # --- Marketing & Status ---
+    is_published = models.BooleanField(default=True, help_text="Show on the public website")
+    is_upcoming = models.BooleanField(default=False, help_text="Flag as 'Coming Soon'")
+    launch_date = models.DateField(null=True, blank=True, help_text="Expected launch date if upcoming")
+    
+    # --- SEO Metadata ---
+    meta_title = models.CharField(max_length=150, blank=True)
+    meta_description = models.TextField(max_length=160, blank=True)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"{self.name} (Showcase)"
+    
+    def save(self, *args, **kwargs):
+        # Only generate a slug if one doesn't already exist
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            
+            # Keep checking the database until we find a unique slug
+            while VesselShowcase.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                
+            self.slug = slug
+            
+        super().save(*args, **kwargs)
+    
+    
+class CabinShowcase(models.Model):
+    """ Comprehensive marketing information for Seat/Cabin categories """
+    
+    # --- Display Hierarchy & Operations ---
+    vessel = models.ForeignKey(
+        'VesselShowcase', 
+        on_delete=models.SET_NULL,  # Changed from CASCADE to prevent accidental deletion
+        null=True,                  # Allows the database to store it as empty
+        blank=True,                 # Allows the admin form to be submitted empty
+        related_name='cabins',
+        help_text="Optional: Link this to a specific vessel, or leave blank to use as a generic cabin/seat type across the fleet."
+    )
+    
+    # Optional link to operational categories (can map to multiple if needed)
+    operational_categories = models.ManyToManyField(
+        'SeatCategory', 
+        blank=True, 
+        related_name='showcases',
+        help_text="Link to the actual bookable categories in the system."
+    )
+    
+    features = models.ManyToManyField(
+        'SeatFeature', 
+        blank=True, 
+        related_name='showcases',
+        help_text="Select the operational features (e.g., AC, River Side) that apply to this cabin class."
+    )
+    
+    # --- Basic Info ---
+    title = models.CharField(max_length=100, help_text="E.g., VIP Balcony Suite")
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    subtitle = models.CharField(max_length=150, blank=True, help_text="E.g., Ultimate comfort with a private view")
+    short_description = models.TextField(max_length=300)
+    full_description = models.TextField()
+    
+    # --- Media ---
+    cover_image = models.ImageField(upload_to='cabin_showcase/covers/')
+    video_tour_url = models.URLField(blank=True, help_text="YouTube or Vimeo link")
+    
+    # --- Cabin Specifications ---
+    guest_capacity = models.CharField(max_length=50, help_text="E.g., 2 Adults, 1 Child")
+    room_size = models.CharField(max_length=50, blank=True, help_text="E.g., 250 sq. ft.")
+    bed_type = models.CharField(max_length=100, blank=True, help_text="E.g., 1 King Bed or 2 Twin Beds")
+    view_type = models.CharField(max_length=100, blank=True, help_text="E.g., River View, Interior, Forward-facing")
+    
+    # --- Cabin Features & Amenities ---
+    is_air_conditioned = models.BooleanField(default=True)
+    has_attached_washroom = models.BooleanField(default=False)
+    has_tv = models.BooleanField(default=False)
+    has_mini_fridge = models.BooleanField(default=False)
+    has_balcony = models.BooleanField(default=False)
+    includes_breakfast = models.BooleanField(default=False)
+    has_room_service = models.BooleanField(default=False)
+    
+    # --- Marketing ---
+    display_order = models.PositiveIntegerField(default=0, help_text="Order in which cabins appear on the vessel page")
+    is_published = models.BooleanField(default=True)
+    is_sold_out_badge = models.BooleanField(default=False, help_text="Manually flag as High Demand or Sold Out")
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['vessel', 'display_order']
 
+    def __str__(self):
+        return f"{self.vessel.name} - {self.title}"
+    
+    def save(self, *args, **kwargs):
+        # Only generate a slug if one doesn't already exist
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            
+            # Keep checking the database until we find a unique slug
+            while CabinShowcase.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                
+            self.slug = slug
+            
+        super().save(*args, **kwargs)
+        
+        
+        
+class FeaturedArticle(models.Model):
+    # --- Core/Mandatory Fields ---
+    name = models.CharField(
+        max_length=255, 
+        help_text="The headline or title of the article."
+    )
+    organization_name = models.CharField(
+        max_length=255, 
+        help_text="Name of the publisher or newspaper (e.g., Forbes, TechCrunch)."
+    )
+    logo = models.ImageField(
+        upload_to='featured_articles/logos/', 
+        help_text="The logo of the organization."
+    )
+    description = models.TextField(
+        help_text="A short excerpt, quote, or summary of the article."
+    )
+    url = models.URLField(
+        max_length=500, 
+        help_text="The direct link to the published article."
+    )
+    
+    # --- Article Identification ---
+    article_identifier = models.SlugField(
+        max_length=255, 
+        unique=True, 
+        blank=True, 
+        help_text="Unique identifier/slug. Auto-generates from the name if left blank."
+    )
 
+    # --- Other Important Fields ---
+    publication_date = models.DateField(
+        null=True, 
+        blank=True, 
+        help_text="The official date the article was published."
+    )
+    is_active = models.BooleanField(
+        default=True, 
+        help_text="Uncheck this to hide the article from the live website without deleting it."
+    )
+    
+    # --- Timestamps ---
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        # Default sorting: Newest publications first, falling back to newest added
+        ordering = ['-publication_date', '-created_at']
+        verbose_name = "Featured Article"
+        verbose_name_plural = "Featured Articles"
 
+    def __str__(self):
+        return f"{self.name} | {self.organization_name}"
 
+    def save(self, *args, **kwargs):
+        # Auto-generate the unique identifier from the name if it isn't provided
+        if not self.article_identifier:
+            # We add a bit of the organization name to make it truly unique
+            base_string = f"{self.organization_name}-{self.name}"
+            self.article_identifier = slugify(base_string)[:250] 
+        super().save(*args, **kwargs)

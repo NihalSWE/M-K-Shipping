@@ -203,6 +203,48 @@
                     </li>
                     <!-- About Menu -->
 
+                    <!-- Vessels Display -->
+                    <li class="sidebar-list">
+                        <a class="sidebar-link sidebar-title" href="#">
+                            <span class="iconify" data-icon="mdi:information-outline"></span>
+                            <span>Vessels Display</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
+                                <li><a href="{% url 'vessel_showcases' %}">Vessels</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    <!-- Vessels Display -->
+
+                    <!-- Cabin Showcase -->
+                    <li class="sidebar-list">
+                        <a class="sidebar-link sidebar-title" href="#">
+                            <span class="iconify" data-icon="mdi:information-outline"></span>
+                            <span>Cabin Display</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
+                                <li><a href="{% url 'cabin_showcases' %}">Cabins/Seats</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    <!-- Cabin Showcase -->
+
+                    <!-- Cabin Showcase -->
+                    <li class="sidebar-list">
+                        <a class="sidebar-link sidebar-title" href="#">
+                            <span class="iconify" data-icon="mdi:information-outline"></span>
+                            <span>Featured Articles</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.featuredarticle %}
+                                <li><a href="{% url 'featured_articles' %}">Featured Articles</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    <!-- Cabin Showcase -->
+
                     <!-- Services Menu -->
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">

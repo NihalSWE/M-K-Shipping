@@ -1984,7 +1984,7 @@ h5, h6, .h5, .h6{
     position: absolute;
     width: 140%;
     height: 2px;
-    background: rgba(239, 68, 68, 0.65);
+    /* background: rgba(239, 68, 68, 0.65); */
     transform: rotate(-45deg);
     top: 9px;
     left: -6px;
@@ -1995,12 +1995,13 @@ h5, h6, .h5, .h6{
     background: rgba(236, 72, 153, 0.30);
     border: 1px solid rgba(236, 72, 153, 0.45);
 }
+
 .l-box.occupied-female::after {
     content: "";
     position: absolute;
     width: 140%;
     height: 2px;
-    background: rgba(236, 72, 153, 0.65);
+    /* background: rgba(236, 72, 153, 0.65); */
     transform: rotate(-45deg);
     top: 9px;
     left: -6px;

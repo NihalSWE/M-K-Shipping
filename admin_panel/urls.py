@@ -119,4 +119,19 @@ urlpatterns = [
     path('pos/select-trip/', views.pos_trip_select, name='pos_trip_select'),
     path('pos/booking/<int:trip_id>/', views.pos_booking_interface, name='pos_booking_interface'),
     path('pos/booking/confirm/', views.pos_book_confirm, name='pos_book_confirm'),
+    
+    # Vessel Showcase
+    path('vessel-showcases/', views.vessel_showcase_list, name='vessel_showcases'),
+    path('vessel-showcases/add/', views.add_vessel_showcase, name='add_vessel_showcase'),
+    path('vessel-showcases/edit/<int:id>/', views.edit_vessel_showcase, name='edit_vessel_showcase'),
+    
+    # Cabin showcase
+    path('cabins/', views.cabin_showcases, name='cabin_showcases'),
+    path('cabins/add/', views.add_cabin_showcase, name='add_cabin_showcase'),
+    path('cabins/edit/<int:pk>/', views.edit_cabin_showcase, name='edit_cabin_showcase'),
+    
+    # Featured Articles
+    path('featured-articles/', views.featured_articles, name='featured_articles'),
+    path('featured-articles/add/', views.add_featured_article, name='add_featured_article'),
+    path('featured-articles/edit/<int:article_id>/', views.edit_featured_article, name='edit_featured_article'),
 ]

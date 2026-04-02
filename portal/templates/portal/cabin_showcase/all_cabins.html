@@ -1,0 +1,589 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block custom_css %}
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* Namespaced to prevent global theme CSS from bleeding in.
+       'uxc-' stands for UX Cabin.
+    */
+    .uxc-namespace {
+        --uxc-blue-900: #0A2540; 
+        --uxc-blue-600: #0077B6; 
+        --uxc-blue-400: #00B4D8; 
+        --uxc-blue-50: #F0F8FF;
+        --uxc-white: #FFFFFF;
+        --uxc-gray-100: #f3f4f6;
+        --uxc-gray-500: #6b7280;
+        --uxc-transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --uxc-shadow-hover: 0 20px 40px -10px rgba(0, 119, 182, 0.25);
+        
+        font-family: 'Manrope', sans-serif !important;
+        background-color: #fafbfc;
+    }
+
+    /* Force overrides on typography to fix the congested global styles */
+    .uxc-namespace h1, .uxc-namespace h2, .uxc-namespace h3, 
+    .uxc-namespace h4, .uxc-namespace p, .uxc-namespace span {
+        font-family: 'Manrope', sans-serif !important;
+        letter-spacing: 0.01em !important; 
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Grid Layout */
+    .uxc-grid-section {
+        padding: 80px 20px;
+        max-width: 1320px;
+        margin: 0 auto;
+    }
+
+    .uxc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 32px;
+    }
+
+    /* Card Styling */
+    .uxc-card {
+        background: var(--uxc-white);
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        aspect-ratio: 1 / 1;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        transition: var(--uxc-transition);
+        transform-origin: center center;
+    }
+
+    .uxc-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: var(--uxc-shadow-hover);
+        z-index: 2;
+    }
+
+    .uxc-card-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .uxc-card:hover .uxc-card-img {
+        transform: scale(1.08);
+    }
+
+    .uxc-card-overlay {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 65%;
+        background: linear-gradient(to top, rgba(10, 37, 64, 0.95) 0%, rgba(10, 37, 64, 0.3) 60%, transparent 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 24px;
+        color: var(--uxc-white);
+        transition: var(--uxc-transition);
+    }
+
+    .uxc-card:hover .uxc-card-overlay {
+        background: linear-gradient(to top, rgba(10, 37, 64, 0.98) 0%, rgba(0, 119, 182, 0.75) 80%, transparent 100%);
+    }
+
+    .uxc-card-title {
+        font-size: 1.6rem !important;
+        font-weight: 800 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 6px !important;
+        color: var(--uxc-white) !important;
+    }
+
+    .uxc-card-subtitle {
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        line-height: 1.4 !important;
+        margin-bottom: 14px !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Modal / Expanded View */
+    .uxc-modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(10, 37, 64, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        padding: 20px;
+    }
+
+    .uxc-modal-backdrop.is-active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .uxc-modal-content {
+        background: var(--uxc-white);
+        border-radius: 24px;
+        width: 100%;
+        max-width: 1100px;
+        max-height: 90vh;
+        overflow-y: auto;
+        display: block; 
+        padding: 32px;
+        position: relative;
+        transform: scale(0.95) translateY(20px);
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4);
+    }
+
+    .uxc-modal-content::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .uxc-modal-backdrop.is-active .uxc-modal-content {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+
+    .uxc-close-btn {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--uxc-gray-100);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--uxc-blue-900);
+        transition: var(--uxc-transition);
+        z-index: 10;
+    }
+
+    .uxc-close-btn:hover {
+        background: var(--uxc-blue-600);
+        color: var(--uxc-white);
+        transform: rotate(90deg);
+    }
+
+    .uxc-modal-left {
+        float: left;
+        width: 500px; 
+        margin-right: 40px;
+        margin-bottom: 24px;
+    }
+
+    .uxc-modal-img {
+        width: 100%;
+        height: 500px;
+        object-fit: scale-down;
+        border-radius: 16px;
+        background-color: var(--uxc-gray-100);
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    .uxc-modal-right {
+        display: block;
+        padding-top: 8px;
+    }
+
+    .uxc-modal-right > * {
+        margin-bottom: 24px;
+    }
+    .uxc-modal-right > *:last-child {
+        margin-bottom: 0;
+    }
+
+    .uxc-m-title {
+        font-size: 2.4rem !important;
+        font-weight: 800 !important;
+        color: var(--uxc-blue-900) !important;
+        line-height: 1.2 !important;
+        padding-right: 50px; 
+        margin-bottom: 8px !important;
+    }
+
+    .uxc-m-subtitle {
+        font-size: 1.15rem !important;
+        color: var(--uxc-blue-600) !important;
+        font-weight: 600 !important;
+        line-height: 1.5 !important;
+    }
+
+    .uxc-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 20px;
+        padding: 24px;
+        background: var(--uxc-blue-50);
+        border-radius: 16px;
+        border: 1px solid rgba(0, 119, 182, 0.1);
+    }
+
+    .uxc-meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .uxc-meta-label {
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        color: var(--uxc-gray-500) !important;
+        font-weight: 700 !important;
+    }
+
+    .uxc-meta-val {
+        font-size: 1.1rem !important;
+        color: var(--uxc-blue-900) !important;
+        font-weight: 700 !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Fixed Badges */
+    .uxc-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .uxc-badge {
+        background: var(--uxc-white);
+        border: 1px solid var(--uxc-blue-400);
+        color: var(--uxc-blue-600) !important;
+        padding: 10px 18px !important;
+        border-radius: 50px;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        line-height: 1.2 !important; 
+        white-space: nowrap;
+    }
+    
+    .uxc-badge svg {
+        flex-shrink: 0;
+    }
+    
+    .uxc-badge.cat {
+        background: var(--uxc-blue-600);
+        color: var(--uxc-white) !important;
+        border-color: var(--uxc-blue-600);
+    }
+
+    .uxc-badge-overlay {
+        background: rgba(255,255,255,0.25);
+        color: #fff !important;
+        border: none;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* Fixed Description Block */
+    .uxc-desc-block {
+        display: block; 
+    }
+
+    .uxc-desc-title {
+        font-size: 1.25rem !important;
+        font-weight: 800 !important;
+        color: var(--uxc-blue-900) !important;
+        margin-bottom: 12px !important;
+        display: block;
+    }
+
+    .uxc-desc-text {
+        font-size: 1.05rem !important;
+        color: #4b5563 !important;
+        line-height: 1.8 !important; 
+        font-weight: 500 !important;
+        display: block;
+    }
+
+    /* --- ADDED: Rich Text formatting for Lists and Paragraphs --- */
+    
+    /* Restore paragraph spacing stripped by global styles */
+    .uxc-desc-text p {
+        margin-bottom: 16px !important;
+    }
+    .uxc-desc-text p:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    /* Modern List Styling */
+    .uxc-desc-text ul, 
+    .uxc-desc-text ol {
+        margin: 16px 0 16px 24px !important;
+        padding: 0 !important;
+    }
+
+    .uxc-desc-text li {
+        margin-bottom: 10px !important;
+        padding-left: 8px !important;
+    }
+
+    .uxc-desc-text li:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .uxc-desc-text ul li {
+        list-style-type: disc !important;
+    }
+
+    .uxc-desc-text ol li {
+        list-style-type: decimal !important;
+    }
+
+    /* Color the bullets/numbers to match the theme */
+    .uxc-desc-text ul li::marker,
+    .uxc-desc-text ol li::marker {
+        color: var(--uxc-blue-600) !important;
+        font-weight: 700 !important;
+    }
+
+    /* Custom Scrollbar */
+    .uxc-modal-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    .uxc-modal-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .uxc-modal-content::-webkit-scrollbar-thumb {
+        background-color: var(--uxc-blue-400);
+        border-radius: 20px;
+    }
+
+    @media (max-width: 992px) {
+        .uxc-modal-content {
+            padding: 24px;
+        }
+        .uxc-modal-left {
+            float: none;
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 24px;
+        }
+        .uxc-modal-img {
+            max-width: 100%;
+            height: auto;
+            max-height: 450px;
+        }
+    }
+    @media (max-width: 576px) {
+        .uxc-m-title { font-size: 1.9rem !important; }
+        .uxc-grid { grid-template-columns: 1fr; }
+        .uxc-grid-section { padding: 50px 15px; }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+    <div class="rts-breadcrumb-area one" data-bg-src="{% static 'portal/assets/images/breadcrumb/07.webp'%}">
+        <div class="container h-100">
+            <div class="breadcrumb-area-wrapper">
+                <div class="nav-bread-crumb">
+                    <a href="{% url 'home' %}">Home</a>
+                    <span><i class="fa-regular fa-chevron-right"></i></span>
+                    <a href="#" class="current">All Cabins</a>
+                </div>
+                <h1 class="title">Explore Our Cabins</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="uxc-namespace">
+        <section class="uxc-grid-section">
+            <div class="uxc-grid">
+                {% for cabin in cabins %}
+                    <div class="uxc-card" onclick="openUxcModal('uxc-modal-{{ cabin.id }}')">
+                        {% if cabin.cover_image %}
+                            <img src="{{ cabin.cover_image.url }}" alt="{{ cabin.title }}" class="uxc-card-img" loading="lazy">
+                        {% else %}
+                            <div class="uxc-card-img" style="background: var(--uxc-blue-50);"></div>
+                        {% endif %}
+                        
+                        <div class="uxc-card-overlay">
+                            <h3 class="uxc-card-title">{{ cabin.title }}</h3>
+                            {% if cabin.subtitle %}
+                                <p class="uxc-card-subtitle">{{ cabin.subtitle }}</p>
+                            {% endif %}
+                            <div class="uxc-badges">
+                                {% if cabin.guest_capacity %}
+                                    <span class="uxc-badge uxc-badge-overlay">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        {{ cabin.guest_capacity }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="uxc-modal-{{ cabin.id }}" class="uxc-modal-backdrop" onclick="closeUxcModal(event, 'uxc-modal-{{ cabin.id }}')">
+                        <div class="uxc-modal-content" onclick="event.stopPropagation()">
+                            <button class="uxc-close-btn" onclick="forceCloseUxcModal('uxc-modal-{{ cabin.id }}')">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+
+                            <div class="uxc-modal-left">
+                                {% if cabin.cover_image %}
+                                    <img src="{{ cabin.cover_image.url }}" alt="{{ cabin.title }}" class="uxc-modal-img">
+                                {% else %}
+                                    <div class="uxc-modal-img" style="background: var(--uxc-blue-50);"></div>
+                                {% endif %}
+                            </div>
+
+                            <div class="uxc-modal-right">
+                                <div>
+                                    <h2 class="uxc-m-title">{{ cabin.title }}</h2>
+                                    {% if cabin.subtitle %}
+                                        <p class="uxc-m-subtitle">{{ cabin.subtitle }}</p>
+                                    {% endif %}
+                                </div>
+
+                                <div class="uxc-meta-grid">
+                                    {% if cabin.guest_capacity %}
+                                    <div class="uxc-meta-item">
+                                        <span class="uxc-meta-label">Capacity</span>
+                                        <span class="uxc-meta-val">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                            {{ cabin.guest_capacity }} Guests
+                                        </span>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if cabin.room_size %}
+                                    <div class="uxc-meta-item">
+                                        <span class="uxc-meta-label">Room Size</span>
+                                        <span class="uxc-meta-val">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                                            {{ cabin.room_size }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if cabin.bed_type %}
+                                    <div class="uxc-meta-item">
+                                        <span class="uxc-meta-label">Bed Type</span>
+                                        <span class="uxc-meta-val">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+                                            {{ cabin.bed_type }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if cabin.vessel %}
+                                    <div class="uxc-meta-item">
+                                        <span class="uxc-meta-label">Vessel</span>
+                                        <span class="uxc-meta-val">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 12h20"></path><path d="M5 12V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6"></path><path d="M12 4v8"></path></svg>
+                                            {{ cabin.vessel.name|default:"Assigned" }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if cabin.operational_categories.all or cabin.features.all %}
+                                    <div class="uxc-badges">
+                                        {% for cat in cabin.operational_categories.all %}
+                                            <span class="uxc-badge cat">{{ cat.name }}</span>
+                                        {% endfor %}
+                                        {% for feature in cabin.features.all %}
+                                            <span class="uxc-badge">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                {{ feature.name }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if cabin.short_description %}
+                                    <div class="uxc-desc-block">
+                                        <h4 class="uxc-desc-title">Overview</h4>
+                                        <p class="uxc-desc-text">{{ cabin.short_description }}</p>
+                                    </div>
+                                {% endif %}
+
+                                {% if cabin.full_description %}
+                                    <div class="uxc-desc-block">
+                                        <h4 class="uxc-desc-title">Details</h4>
+                                        <div class="uxc-desc-text">
+                                            {{ cabin.full_description|safe }}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; background: #fff; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                        <h3 class="uxc-m-title" style="padding:0;">No Cabins Available</h3>
+                        <p class="uxc-desc-text" style="margin-top: 10px;">Check back soon for our latest accommodations.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    const uxcBody = document.body;
+
+    function openUxcModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('is-active');
+            uxcBody.style.overflow = 'hidden'; 
+        }
+    }
+
+    function closeUxcModal(event, modalId) {
+        if (event.target.classList.contains('uxc-modal-backdrop')) {
+            forceCloseUxcModal(modalId);
+        }
+    }
+
+    function forceCloseUxcModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('is-active');
+            uxcBody.style.overflow = ''; 
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            const activeModal = document.querySelector('.uxc-modal-backdrop.is-active');
+            if (activeModal) {
+                activeModal.classList.remove('is-active');
+                uxcBody.style.overflow = '';
+            }
+        }
+    });
+</script>
+{% endblock custom_js %}
