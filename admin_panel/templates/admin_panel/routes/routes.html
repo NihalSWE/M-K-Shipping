@@ -521,12 +521,23 @@
             headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
             body: JSON.stringify({ action: "delete", id: deleteId })
         })
-            .then(r => r.json())
-            .then(d => {
+        .then(r => r.json())
+        .then(d => {
+            if (d.status === 'success') {
                 $("#deleteConfirmationModal").modal('hide');
                 $("#deleteSuccessModal").modal('show');
                 setTimeout(() => location.reload(), 1500);
-            });
+            } else {
+                // If the backend returns an error (like the ProtectedError)
+                $("#deleteConfirmationModal").modal('hide');
+                alert("Error: " + d.message); // You can replace this alert with a toast notification if you prefer
+            }
+        })
+        .catch(err => {
+            // Failsafe for network errors
+            $("#deleteConfirmationModal").modal('hide');
+            alert("An unexpected error occurred while deleting the route.");
+        });
     });
 </script>
 {% endblock %}

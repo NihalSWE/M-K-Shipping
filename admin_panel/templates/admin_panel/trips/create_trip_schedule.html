@@ -293,6 +293,27 @@
         </div>
     </div>
 </div>
+
+<!-- CONFLICT MODAL -->
+ <div class="modal fade" id="conflictModal" tabindex="-1" aria-labelledby="conflictModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header" style="background-color: rgba(255, 193, 7, 0.2); border-bottom: none;">
+                <h5 class="modal-title text-dark fw-bold" id="conflictModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Schedule Conflict
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-0" id="conflictModalMessage"></p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning rounded-pill px-4" id="confirmOverrideBtn">Proceed & Override</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scriptcontent %}
@@ -331,22 +352,53 @@
         const submitBtn = document.getElementById('submitBtn');
         const responseDiv = document.getElementById('responseMessage');
 
+        // 🟢 PINPOINT CHANGE 6: Add state flag for override
+        let isForceSave = false; 
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             submitBtn.disabled = true;
             submitBtn.querySelector('.spinner-border').classList.remove('d-none');
 
+            // 🟢 PINPOINT CHANGE 7: Append force_save to FormData
+            const formData = new FormData(this);
+            if (isForceSave) {
+                formData.append('force_save', 'true');
+            }
+
             fetch("{% url 'save_trip_schedule' %}", {
                 method: "POST",
-                body: new FormData(this),
+                body: formData,
                 headers: { "X-CSRFToken": "{{ csrf_token }}" }
             })
             .then(response => response.json())
             .then(data => {
+                
+                // 🟢 PINPOINT CHANGE 8: Intercept the soft conflict and show Modal
+                if (data.requires_confirmation) {
+                    document.getElementById('conflictModalMessage').innerHTML = data.message;
+                    
+                    // Initialize and show modal (assuming you are using Bootstrap 5)
+                    const conflictModal = new bootstrap.Modal(document.getElementById('conflictModal'));
+                    conflictModal.show();
+                    
+                    // Re-enable form button for now
+                    submitBtn.disabled = false;
+                    submitBtn.querySelector('.spinner-border').classList.add('d-none');
+                    
+                    // Handle Confirm Click inside Modal
+                    document.getElementById('confirmOverrideBtn').onclick = function() {
+                        conflictModal.hide();
+                        isForceSave = true; // Set flag
+                        form.dispatchEvent(new Event('submit')); // Re-trigger the submission
+                    };
+                    
+                    return; // Stop execution here until modal is resolved
+                }
+
                 responseDiv.style.display = 'block';
-                // 2. PINPOINT CHANGE: MODERN STYLING (Opacity reduced via rgba)
                 if (data.success) {
-                    responseDiv.style.backgroundColor = "rgba(40, 167, 69, 0.15)"; // Green with opacity
+                    responseDiv.style.backgroundColor = "rgba(40, 167, 69, 0.15)";
                     responseDiv.style.color = "#1e7e34";
                     responseDiv.style.padding = "15px";
                     responseDiv.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i> ${data.message}`;
@@ -354,15 +406,21 @@
                 } else {
                     throw new Error(data.message);
                 }
+                
+                // Reset flag on normal success
+                isForceSave = false; 
             })
             .catch(error => {
                 responseDiv.style.display = 'block';
-                responseDiv.style.backgroundColor = "rgba(220, 53, 69, 0.15)"; // Red with opacity
+                responseDiv.style.backgroundColor = "rgba(220, 53, 69, 0.15)";
                 responseDiv.style.color = "#a71d2a";
                 responseDiv.style.padding = "15px";
                 responseDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle me-2"></i> ${String(error.message).replaceAll('|', '<br>')}`;
                 submitBtn.disabled = false;
                 submitBtn.querySelector('.spinner-border').classList.add('d-none');
+                
+                // Reset flag on error
+                isForceSave = false;
             });
         });
     });

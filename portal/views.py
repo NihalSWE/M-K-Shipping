@@ -368,9 +368,8 @@ def search_trips(request):
         ).select_related('ship', 'route', 'schedule')
 
         for trip in all_trips:
-            # Do not show trips after booking cutoff
-            if now >= trip.booking_cutoff_datetime():
-                continue
+            # Evaluate if the trip is bookable, instead of skipping it entirely
+            is_bookable = now < trip.booking_cutoff_datetime()
 
             # 2. Get the specific stops for this route
             # We fetch them to verify they exist and check their order
@@ -410,6 +409,10 @@ def search_trips(request):
                     # Calculate segment-specific times using offsets
                     departure_time = trip.departure_datetime + timedelta(minutes=stop_from.time_offset_minutes)
                     arrival_time = trip.departure_datetime + timedelta(minutes=stop_to.time_offset_minutes)
+
+                    # ✅ NEW: Skip this trip entirely if the segment departure time has already passed
+                    if now >= departure_time:
+                        continue
 
                     # ---------------------------------------
                     # Segment-aware available seats calculation
@@ -455,6 +458,7 @@ def search_trips(request):
                         'segment_arrival': arrival_time,
                         'available_seats': available_seats,
                         'total_bookable_seats': total_bookable_seats,
+                        'is_bookable': is_bookable, # <-- Pass the flag to the template
                     })
                     
     # holder_id = request.user.id if request.user.is_authenticated else None
@@ -488,8 +492,14 @@ def search_trips(request):
 def get_seat_layout(request, trip_id):
     trip = get_object_or_404(Trip.objects.select_related('schedule'), id=trip_id)
 
-    if not trip.is_booking_open():
-        return HttpResponse("Booking for this trip is closed.", status=400)
+    # Calculate if booking is open, but do NOT return an error.
+    # We will pass this to the template to disable UI elements instead.
+    is_bookable = trip.is_booking_open()
+    
+    # uncomment this only if the above `is_bookable = trip.is_booking_open()` is commented
+    # if not trip.is_booking_open():
+    #     return HttpResponse("Booking for this trip is closed.", status=400)
+
 
     from_stop_id = request.GET.get('from_stop')
     to_stop_id = request.GET.get('to_stop')
@@ -605,6 +615,7 @@ def get_seat_layout(request, trip_id):
         'held_holder_ids': held_holder_ids,
         'held_expires': held_expires,
         'legend_categories': legend_categories,
+        'is_bookable': is_bookable,
     })
     
     

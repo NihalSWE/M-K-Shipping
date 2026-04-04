@@ -3,6 +3,11 @@
 
 <div class="deck-selection-container">
     {% comment %} <h3 class="deck-header text-center">Deck Selection</h3> {% endcomment %}
+        {% if not is_bookable %}
+        <div class="alert alert-warning m-3 text-center shadow-sm" style="border-radius: 8px; background-color: #fff3cd; color: #856404; border-color: #ffeeba;">
+            <i class="fas fa-lock me-2"></i> <strong>Booking Closed:</strong> You are viewing this layout in read-only mode. Seat selection is disabled.
+        </div>
+    {% endif %}
 
     <div class="deck-selection-wrapper">
         <div class="legend-container mb-4">
@@ -107,7 +112,15 @@
                                             background: #fff;
                                             width: max-content;
                                             max-width: none;
-                                            box-sizing: border-box;">
+                                            box-sizing: border-box;
+                                            
+                                            /* ✅ NEW: Disable interaction and dim if closed */
+                                            {% if not is_bookable %}
+                                            pointer-events: none;
+                                            opacity: 0.65;
+                                            filter: grayscale(30%);
+                                            {% endif %}
+                                            ">
                                 
                                 {% for obj in deck.layout_objects.all %}
                                     <div class="layout-item

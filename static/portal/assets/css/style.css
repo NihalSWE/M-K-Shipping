@@ -15427,7 +15427,7 @@ body.with-sidebar {
   width: 100%; /* Ensures full width */
   
   /* Dynamic height based on ratio, but never shorter than 400px to protect text */
-  aspect-ratio: 4 / 1;
+  aspect-ratio: 16 / 5;
   min-height: 400px; 
   
   /* Centering the content vertically */

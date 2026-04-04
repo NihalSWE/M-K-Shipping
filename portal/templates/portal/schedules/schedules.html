@@ -175,12 +175,28 @@
                         </div>
                     </div>
 
-                    <div class="price-action-side price-action-side--modern">
+                    {% comment %} <div class="price-action-side price-action-side--modern">
                         <a href="#"
                         class="book-btn-v2 book-btn--modern"
                         data-trip-id="{{ item.trip.id }}"
                         data-from-stop="{{ item.stop_from.id }}"
                         data-to-stop="{{ item.stop_to.id }}">
+                            <span class="seat-toggle-text">VIEW SEATS</span>
+                        </a>
+                    </div> {% endcomment %}
+
+                    <div class="price-action-side price-action-side--modern" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                        {% if not item.is_bookable %}
+                            <span style="font-size: 12px; color: #dc3545; font-weight: bold; background: #ffebeb; padding: 4px 8px; border-radius: 4px;">
+                                <i class="fas fa-ban"></i> Booking Closed
+                            </span>
+                        {% endif %}
+                        <a href="#"
+                                class="book-btn-v2 book-btn--modern"
+                                data-trip-id="{{ item.trip.id }}"
+                                data-from-stop="{{ item.stop_from.id }}"
+                                data-to-stop="{{ item.stop_to.id }}"
+                                {% if not item.is_bookable %}data-is-bookable="false"{% endif %}>
                             <span class="seat-toggle-text">VIEW SEATS</span>
                         </a>
                     </div>
@@ -302,6 +318,7 @@
         <button id="finalRedirectBtn" class="view-tickets-btn">View My Tickets</button>
     </div>
 </div>
+
 
 <!-- [NEW:PAYMENT_MODAL] Payment confirmation modal -->
 <div id="paymentModal" class="pay-modal" style="display:none;">

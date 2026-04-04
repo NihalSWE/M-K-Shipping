@@ -104,7 +104,7 @@
 
 <div class="container-fluid datatable-init">
     <div class="row">
-        <div class="col-sm-12">
+        <div class="col-sm-12 pt-4">
             <div class="card">
                 <div class="card-header pb-0 card-no-border">
                     <div class="row justify-content-center">
@@ -134,31 +134,29 @@
                             </thead>
                             <tbody>
                                 {% for loc in locations %}
-                                <tr data-id="{{ loc.id }}">
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ loc.name }}</td>
-                                    <td>{{ loc.code }}</td>
-                                    <td>
-                                        <ul class="action">
-                                            <li class="edit">
-                                                <span class="edit-icon-span">
-                                                    <i class="fa-regular fa-pen-to-square edit-icon"
-                                                        data-bs-toggle="modal" data-bs-target="#editModal"
-                                                        data-id="{{ loc.id }}" data-name="{{ loc.name }}"
-                                                        data-code="{{ loc.code }}"></i>
-                                                </span>
-                                            </li>
-                                            <li class="delete" data-id="{{ loc.id }}">
-                                                <span class="delete-icon-span">
-                                                    <i class="fa-solid fa-trash-can delete-icon" data-id="{{ loc.id }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#deleteConfirmationModal"></i>
-                                                </span>
-                                            </li>
-                                        </ul>
-                                    </td>
-                                </tr>
-                                {% endfor %}
+                                    <tr data-id="{{ loc.id }}">
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ loc.name }}</td>
+                                        <td>{{ loc.slug }}</td> <td>
+                                            <ul class="action">
+                                                <li class="edit">
+                                                    <span class="edit-icon-span">
+                                                        <i class="fa-regular fa-pen-to-square edit-icon"
+                                                            data-bs-toggle="modal" data-bs-target="#editModal"
+                                                            data-id="{{ loc.id }}" data-name="{{ loc.name }}"
+                                                            data-slug="{{ loc.slug }}"></i> </span>
+                                                </li>
+                                                <li class="delete" data-id="{{ loc.id }}">
+                                                    <span class="delete-icon-span">
+                                                        <i class="fa-solid fa-trash-can delete-icon" data-id="{{ loc.id }}"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteConfirmationModal"></i>
+                                                    </span>
+                                                </li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -180,19 +178,8 @@
                             {% csrf_token %}
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">Select Division</label>
-                                    <select class="form-select select2" id="add_division" style="width: 100%;">
-                                        <option value="">-- Select Division --</option>
-                                        {% for div in divisions %}
-                                        <option value="{{ div.id }}">{{ div.name }} ({{ div.bn_name }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Select District</label>
-                                    <select class="form-select select2" id="add_district" style="width: 100%;" disabled>
-                                        <option value="">-- Select Division First --</option>
-                                    </select>
+                                    <label class="form-label">Location Name</label>
+                                    <input class="form-control btn-pill" id="add-name" type="text" placeholder="e.g., Dhaka Ghat">
                                 </div>
                             </div>
                             <div style="padding-left: 20px; padding-right: 20px; margin-bottom: 10px;">
@@ -232,8 +219,8 @@
                                 <div class="row">
                                     <div class="col">
                                         <div class="mb-3">
-                                            <label class="form-label">Location Code</label>
-                                            <input class="form-control btn-pill" id="edit-code" type="text">
+                                            <label class="form-label">Slug (Auto-generated)</label>
+                                            <input class="form-control btn-pill" id="edit-slug" type="text" disabled>
                                         </div>
                                     </div>
                                 </div>
@@ -307,96 +294,73 @@
 
 <script>
     $(document).ready(function () {
-        $('.select2').select2({
-            dropdownParent: $('#addModal')
-        });
-    });
-
-    function showMessage(type, message) {
-        const div = $(".error-success-div");
-        function expand() {
-            div.removeClass("error-message success-message").addClass(type + "-message").text(message);
-            requestAnimationFrame(() => div.addClass("show"));
-            if (type === "success") { setTimeout(() => location.reload(), 1500); }
-        }
-        if (div.hasClass("show")) { div.removeClass("show").one("transitionend", expand); }
-        else { expand(); }
-    }
-
-    // CASCADE DROPDOWN
-    $("#add_division").on("change", function () {
-        const divId = $(this).val();
-        if (!divId) {
-            $("#add_district").html('<option value="">-- Select Division First --</option>').prop("disabled", true);
-            return;
+        function showMessage(type, message) {
+            const div = $(".error-success-div");
+            function expand() {
+                div.removeClass("error-message success-message").addClass(type + "-message").text(message);
+                requestAnimationFrame(() => div.addClass("show"));
+                if (type === "success") { setTimeout(() => location.reload(), 1500); }
+            }
+            if (div.hasClass("show")) { div.removeClass("show").one("transitionend", expand); }
+            else { expand(); }
         }
 
-        fetch("{% url 'locations' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-            body: JSON.stringify({ action: "get_districts", division_id: divId })
-        })
-            .then(r => r.json())
-            .then(d => {
-                let opts = '<option value="">-- Select District --</option>';
-                d.districts.forEach(dist => {
-                    opts += `<option value="${dist.id}">${dist.name}</option>`;
-                });
-                $("#add_district").html(opts).prop("disabled", false);
-            });
-    });
-
-    // ADD
-    $("#addModal form").on("submit", e => {
-        e.preventDefault();
-        fetch("{% url 'locations' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-            body: JSON.stringify({
-                action: "add",
-                district_id: $("#add_district").val()
+        // ADD
+        $("#addModal form").on("submit", e => {
+            e.preventDefault();
+            fetch("{% url 'locations' %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({
+                    action: "add",
+                    name: $("#add-name").val() // Now fetching the text input instead of district ID
+                })
             })
-        })
-            .then(r => r.json())
-            .then(d => showMessage(d.status, d.message));
-    });
+                .then(r => r.json())
+                .then(d => showMessage(d.status, d.message));
+        });
 
-    // EDIT
-    let editId = null;
-    $(document).on("click", ".edit-icon", function () {
-        const { id, name, code } = this.dataset;
-        editId = id;
-        $("#edit-name").val(name);
-        $("#edit-code").val(code);
-    });
+        // EDIT
+        let editId = null;
+        $(document).on("click", ".edit-icon", function () {
+            const { id, name, slug } = this.dataset;
+            editId = id;
+            $("#edit-name").val(name);
+            $("#edit-slug").val(slug); // Showing the slug as readonly
+        });
 
-    $("#editModal form").on("submit", e => {
-        e.preventDefault();
-        fetch("{% url 'locations' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-            body: JSON.stringify({ action: "edit", id: editId, name: $("#edit-name").val(), code: $("#edit-code").val() })
-        })
-            .then(r => r.json())
-            .then(d => showMessage(d.status, d.message));
-    });
+        $("#editModal form").on("submit", e => {
+            e.preventDefault();
+            fetch("{% url 'locations' %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({ 
+                    action: "edit", 
+                    id: editId, 
+                    name: $("#edit-name").val() 
+                })
+            })
+                .then(r => r.json())
+                .then(d => showMessage(d.status, d.message));
+        });
 
-    // DELETE
-    let deleteId = null;
-    $(document).on("click", ".delete-icon", function () { deleteId = this.dataset.id; });
+        // DELETE
+        let deleteId = null;
+        $(document).on("click", ".delete-icon", function () { deleteId = this.dataset.id; });
 
-    $("#confirm-delete").on("click", function () {
-        fetch("{% url 'locations' %}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-            body: JSON.stringify({ action: "delete", id: deleteId })
-        })
-            .then(r => r.json())
-            .then(d => {
-                $("#deleteConfirmationModal").modal('hide');
-                $("#deleteSuccessModal").modal('show');
-                setTimeout(() => location.reload(), 1500);
-            });
+        $("#confirm-delete").on("click", function () {
+            fetch("{% url 'locations' %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({ action: "delete", id: deleteId })
+            })
+                .then(r => r.json())
+                .then(d => {
+                    $("#deleteConfirmationModal").modal('hide');
+                    $("#deleteSuccessModal").modal('show');
+                    setTimeout(() => location.reload(), 1500);
+                });
+        });
     });
 </script>
 {% endblock %}

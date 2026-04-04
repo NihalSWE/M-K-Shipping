@@ -175,17 +175,35 @@ class Thana(models.Model): # Upazila
 
     def __str__(self):
         return self.name
+    
 
 class Location(models.Model):
-    name = models.CharField(max_length=100) # Can be same as district or custom
-    district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True, blank=True)
-    code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=100) 
+    district = models.ForeignKey('District', on_delete=models.SET_NULL, null=True, blank=True)
+    code = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     
+    def save(self, *args, **kwargs):
+        # Only generate a new slug if it's a new object OR the name has changed
+        if not self.slug or (self.pk and Location.objects.get(pk=self.pk).name != self.name):
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            # Check if this slug already exists (excluding the current instance if editing)
+            while Location.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+            
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
+    
+    
 
 class Counter(models.Model):
     name = models.CharField(max_length=100)
@@ -197,6 +215,7 @@ class Counter(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.location.name})"
+    
     
     
 class CounterUser(models.Model):
@@ -212,6 +231,7 @@ class CounterUser(models.Model):
     def __str__(self):
         return f"{self.user} -> {self.counter}"
     
+    
 
 class Route(models.Model):
     name = models.CharField(max_length=100)
@@ -223,6 +243,7 @@ class Route(models.Model):
     
     def __str__(self):
         return self.name
+
 
 class RouteStop(models.Model):
     route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='stops')
@@ -239,6 +260,7 @@ class RouteStop(models.Model):
 
     def __str__(self):
         return f"{self.route.name} - Stop {self.stop_order}: {self.location.name}"
+
 
 class RouteSegmentPricing(models.Model):
     route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='segment_prices')
@@ -302,8 +324,8 @@ class TripSchedule(models.Model):
 
 class Trip(models.Model):
     schedule = models.ForeignKey(TripSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_trips')
-    ship = models.ForeignKey(Ship, on_delete=models.PROTECT)
-    route = models.ForeignKey(Route, on_delete=models.PROTECT)
+    ship = models.ForeignKey(Ship, on_delete=models.CASCADE, related_name='trips')
+    route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name='routes')
     departure_datetime = models.DateTimeField()
     arrival_datetime = models.DateTimeField(null=True, blank=True)
     is_published = models.BooleanField(default=True, help_text="Set to False to hide this specific date from customers")

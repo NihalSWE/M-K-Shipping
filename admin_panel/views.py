@@ -812,36 +812,34 @@ def locations(request):
             data = json.loads(request.body)
             action = data.get('action')
             
-            if action == 'get_districts':
-                div_id = data.get('division_id')
-                districts = District.objects.filter(division_id=div_id).values('id', 'name')
-                return JsonResponse({'status': 'success', 'districts': list(districts)})
-
-            elif action == 'add':
-                # User selects a District to be a Location
-                district_id = data.get('district_id')
-                district = get_object_or_404(District, id=district_id)
+            if action == 'add':
+                name = data.get('name', '').strip()
                 
-                # Check if already exists
-                if Location.objects.filter(district_id=district_id).exists():
-                     return JsonResponse({'status': 'error', 'message': 'This district is already added as a location!'}, status=400)
+                if not name:
+                    return JsonResponse({'status': 'error', 'message': 'Location name is required!'}, status=400)
+                
+                # Validation: Name cannot be the same
+                if Location.objects.filter(name__iexact=name).exists():
+                     return JsonResponse({'status': 'error', 'message': 'This location name already exists!'}, status=400)
 
-                # Create Location
-                # Name defaults to District Name, Code defaults to first 3 letters uppercased
-                code = district.name[:3].upper()
-                # Ensure unique code (simple logic)
-                if Location.objects.filter(code=code).exists():
-                    code = f"{code}-{district.id}"
-
-                Location.objects.create(name=district.name, code=code, district=district)
+                # Slug is handled automatically in the model's save() method
+                Location.objects.create(name=name)
                 return JsonResponse({'status': 'success', 'message': 'Location added successfully!'})
             
             elif action == 'edit':
                 loc_id = data.get('id')
+                new_name = data.get('name', '').strip()
+                
+                if not new_name:
+                    return JsonResponse({'status': 'error', 'message': 'Location name is required!'}, status=400)
+                
+                # Check for duplicates excluding the current location
+                if Location.objects.filter(name__iexact=new_name).exclude(id=loc_id).exists():
+                     return JsonResponse({'status': 'error', 'message': 'This location name already exists!'}, status=400)
+
                 loc = get_object_or_404(Location, id=loc_id)
-                loc.name = data.get('name')
-                loc.code = data.get('code')
-                loc.save()
+                loc.name = new_name
+                loc.save() # The slug will auto-update if the name changed due to our model logic
                 return JsonResponse({'status': 'success', 'message': 'Location updated successfully!'})
             
             elif action == 'delete':
@@ -854,11 +852,13 @@ def locations(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
     locations = Location.objects.all().order_by('name')
-    divisions = Division.objects.all().order_by('name')
+    # Removed divisions as it's no longer needed for the template
     return render(request, 'admin_panel/routes/locations.html', {
         'locations': locations,
-        'divisions': divisions
     })
+    
+    
+    
 
 @login_required
 @csrf_exempt
@@ -1072,13 +1072,23 @@ def routes(request):
                     dest_stop.save(update_fields=['location_id', 'time_offset_minutes'])
 
                 return JsonResponse({'status': 'success', 'message': 'Route updated successfully!'})
-            
+        
             # --- ACTION: DELETE ---
             elif action == 'delete':
                 r_id = data.get('id')
                 route = get_object_or_404(Route, id=r_id)
-                route.delete()
-                return JsonResponse({'status': 'success', 'message': 'Route deleted successfully!'})
+                try:
+                    with transaction.atomic():
+                        # 1. Force delete all Trips attached to this route first
+                        # (This will also CASCADE delete any customer bookings for these trips)
+                        Trip.objects.filter(route=route).delete()
+                        
+                        # 2. Now the route is unprotected and can be safely deleted
+                        route.delete()
+                        
+                    return JsonResponse({'status': 'success', 'message': 'Route and all associated trips deleted successfully!'})
+                except Exception as e:
+                    return JsonResponse({'status': 'error', 'message': f'Error deleting route: {str(e)}'}, status=400)
                 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
@@ -1282,6 +1292,29 @@ def trip_schedule_list(request):
     return render(request, 'admin_panel/trips/trip_schedule_list.html', context)
 
     
+def check_exact_time_conflict(ship_id, departure_dt):
+    """
+    HARD CONFLICT: Checks if the ship already has a trip starting at the EXACT same time.
+    This should generally always be blocked to prevent duplicate identical dispatch times.
+    """
+    return Trip.objects.filter(
+        ship_id=ship_id,
+        departure_datetime=departure_dt
+    ).select_related('route').first()
+
+def check_overlap_conflict(ship_id, departure_dt, arrival_dt):
+    """
+    SOFT CONFLICT: Checks if the ship is scheduled for another route during this time window.
+    Depending on business logic, this can be strictly blocked or overridden by an admin.
+    """
+    return Trip.objects.filter(
+        ship_id=ship_id,
+        departure_datetime__lt=arrival_dt,
+        arrival_datetime__gt=departure_dt
+    ).select_related('route').order_by('departure_datetime').first()
+
+# --- MAIN VIEW ---
+
 @login_required
 def save_trip_schedule(request):
     if request.method == "POST":
@@ -1291,13 +1324,18 @@ def save_trip_schedule(request):
         date_list_str = request.POST.get('date_range')
         booking_close_offset_str = (request.POST.get('booking_close_offset_minutes') or '').strip()
         is_active = request.POST.get('is_active') == 'on'
+        
+        # 1. Capture the frontend override signal
+        force_save = request.POST.get('force_save') == 'true'
+        
+        # 2. THE TOGGLE SWITCH:
+        # Set to True -> Reverts to your old functionality (blocks ALL overlaps immediately).
+        # Set to False -> New functionality (warns on overlaps, allows override via modal).
+        STRICT_CONFLICT_CHECK = False 
 
         try:
             if not ship_id or not route_id or not departure_time_str:
-                return JsonResponse(
-                    {'success': False, 'message': 'Ship, route, and departure time are required.'},
-                    status=400
-                )
+                return JsonResponse({'success': False, 'message': 'Ship, route, and departure time are required.'}, status=400)
 
             dep_time_obj = datetime.strptime(departure_time_str, "%I:%M %p").time()
 
@@ -1306,24 +1344,14 @@ def save_trip_schedule(request):
                 try:
                     booking_close_offset_minutes = int(booking_close_offset_str)
                 except (TypeError, ValueError):
-                    return JsonResponse(
-                        {'success': False, 'message': 'Booking close offset must be a valid whole number.'},
-                        status=400
-                    )
+                    return JsonResponse({'success': False, 'message': 'Booking close offset must be a valid whole number.'}, status=400)
 
                 if booking_close_offset_minutes < 0:
-                    return JsonResponse(
-                        {'success': False, 'message': 'Booking close offset cannot be negative.'},
-                        status=400
-                    )
+                    return JsonResponse({'success': False, 'message': 'Booking close offset cannot be negative.'}, status=400)
 
                 if booking_close_offset_minutes > 10080:
-                    return JsonResponse(
-                        {'success': False, 'message': 'Booking close offset is too large. Maximum allowed is 10080 minutes (7 days).'},
-                        status=400
-                    )
+                    return JsonResponse({'success': False, 'message': 'Booking close offset is too large. Maximum allowed is 10080 minutes.'}, status=400)
 
-            # ✅ Get destination stop and compute destination_offset_minutes
             route = get_object_or_404(Route, id=route_id)
             dest_stop = RouteStop.objects.filter(route=route).order_by('-stop_order').first()
 
@@ -1332,47 +1360,61 @@ def save_trip_schedule(request):
 
             destination_offset_minutes = dest_stop.time_offset_minutes or 0
             if destination_offset_minutes <= 0:
-                return JsonResponse(
-                    {'success': False, 'message': 'Destination time offset must be greater than 0 for this route.'},
-                    status=400
-                )
+                return JsonResponse({'success': False, 'message': 'Destination time offset must be greater than 0.'}, status=400)
 
-            # ✅ Parse selected dates
             selected_dates = [d.strip() for d in (date_list_str or '').split(',') if d.strip()]
             if not selected_dates:
                 return JsonResponse({'success': False, 'message': 'Please select at least one trip date.'}, status=400)
 
-            # ✅ Build windows + validate conflicts first
             proposed_trip_windows = []
-            conflict_messages = []
+            hard_conflict_messages = []
+            soft_conflict_messages = []
 
             for date_str in selected_dates:
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
                 departure_dt = datetime.combine(date_obj, dep_time_obj)
                 arrival_dt = departure_dt + timedelta(minutes=destination_offset_minutes)
 
-                conflicting_trip = Trip.objects.filter(
-                    ship_id=ship_id,
-                    departure_datetime__lt=arrival_dt,
-                    arrival_datetime__gt=departure_dt
-                ).select_related('route').order_by('departure_datetime').first()
-
-                if conflicting_trip:
-                    conflict_messages.append(
-                        f"{date_str}: Ship already assigned to {conflicting_trip.route.name} "
-                        f"({conflicting_trip.departure_datetime.strftime('%Y-%m-%d %I:%M %p')} - "
-                        f"{conflicting_trip.arrival_datetime.strftime('%Y-%m-%d %I:%M %p')})"
+                # Check 1: Exact Time (Hard limit)
+                exact_conflict = check_exact_time_conflict(ship_id, departure_dt)
+                if exact_conflict:
+                    hard_conflict_messages.append(
+                        f"{date_str}: Exact departure time ({departure_dt.strftime('%I:%M %p')}) already exists for this ship."
                     )
-                else:
-                    proposed_trip_windows.append((departure_dt, arrival_dt))
+                    continue # Skip adding to proposed windows
 
-            if conflict_messages:
+                # Check 2: Time Window Overlap (Soft or Hard limit based on toggle)
+                overlap_conflict = check_overlap_conflict(ship_id, departure_dt, arrival_dt)
+                if overlap_conflict:
+                    msg = (f"{date_str}: Ship assigned to {overlap_conflict.route.name} "
+                           f"({overlap_conflict.departure_datetime.strftime('%I:%M %p')} - "
+                           f"{overlap_conflict.arrival_datetime.strftime('%I:%M %p')})")
+                    
+                    if STRICT_CONFLICT_CHECK:
+                        hard_conflict_messages.append(msg)
+                        continue # Skip adding to proposed windows
+                    else:
+                        soft_conflict_messages.append(msg)
+                
+                # If we get here, it's either clean, or it's a soft conflict we are allowing
+                proposed_trip_windows.append((departure_dt, arrival_dt))
+
+            # Handle response based on validation results
+            if hard_conflict_messages:
                 return JsonResponse({
                     'success': False,
-                    'message': "Cannot create schedule. Ship timing conflict found: " + " | ".join(conflict_messages)
+                    'message': "Cannot create schedule. Hard conflict found:<br>" + "<br>".join(hard_conflict_messages)
                 }, status=400)
 
-            # ✅ Derive schedule.arrival_time from destination offset (not manual input)
+            # If there are soft conflicts and the user hasn't clicked "Override" yet
+            if soft_conflict_messages and not force_save:
+                return JsonResponse({
+                    'success': False,
+                    'requires_confirmation': True,
+                    'message': "<strong>Overlap Warning:</strong><br>" + "<br>".join(soft_conflict_messages) + "<br><br>Do you want to ignore this and save anyway?"
+                }, status=200)
+
+            # --- Validation Passed or Overridden. Save Data ---
             base_departure_dt = datetime.combine(datetime.today().date(), dep_time_obj)
             derived_arrival_dt = base_departure_dt + timedelta(minutes=destination_offset_minutes)
 
@@ -1385,7 +1427,6 @@ def save_trip_schedule(request):
                 booking_close_offset_minutes=booking_close_offset_minutes
             )
 
-            # ✅ Create trips from validated windows
             for departure_dt, arrival_dt in proposed_trip_windows:
                 Trip.objects.create(
                     schedule=schedule,
@@ -1402,9 +1443,9 @@ def save_trip_schedule(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
+    # GET context remains exactly the same
     ships = Ship.objects.all()
     routes = Route.objects.all()
-
     days_mapping = [
         ('monday', 'Mon'), ('tuesday', 'Tue'), ('wednesday', 'Wed'),
         ('thursday', 'Thu'), ('friday', 'Fri'), ('saturday', 'Sat'), ('sunday', 'Sun')
