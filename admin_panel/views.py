@@ -3,6 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 import sys
+import re
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import F
@@ -28,6 +29,7 @@ from django.db.models import Max
 from django.views.decorators.http import require_POST
 from django.db.models import ProtectedError
 from django.db import transaction
+from django.db import IntegrityError
 from django.contrib.auth import get_user_model, logout
 from .services import sync_route_prices
 from .services import generate_smart_trips
@@ -2491,23 +2493,30 @@ def user_add(request):
         form = AdminUserAddForm(request.POST)
         
         if form.is_valid():
-            # 1. Save the new user first
-            new_user = form.save()
-            
-            # 2. Permission Saving Logic
-            # We look for the custom checkboxes named 'permissions[]'
-            selected_permission_ids = request.POST.getlist('permissions[]')
-            
-            # Convert strings to integers safely
-            selected_ids = [int(p_id) for p_id in selected_permission_ids if p_id.isdigit()]
-            
-            if selected_ids:
-                # Fetch permission objects and assign to the NEW user
-                permissions = Permission.objects.filter(id__in=selected_ids)
-                new_user.user_permissions.set(permissions)
-            
-            messages.success(request, f"User {new_user.email} created successfully!")
-            return redirect('admin_user_list')
+            try:
+                # 1. Save the new user first
+                new_user = form.save()
+                
+                # 2. Permission Saving Logic
+                # We look for the custom checkboxes named 'permissions[]'
+                selected_permission_ids = request.POST.getlist('permissions[]')
+                
+                # Convert strings to integers safely
+                selected_ids = [int(p_id) for p_id in selected_permission_ids if p_id.isdigit()]
+                
+                if selected_ids:
+                    # Fetch permission objects and assign to the NEW user
+                    permissions = Permission.objects.filter(id__in=selected_ids)
+                    new_user.user_permissions.set(permissions)
+                
+                messages.success(request, f"User {new_user.email} created successfully!")
+                return redirect('admin_user_list')
+            except IntegrityError:
+                # Fallback in case a duplicate slips past form validation during save.
+                form.add_error(None, "A user with this email or phone number already exists. Please correct the duplicate field and try again.")
+            except Exception as e:
+                # Surface unexpected errors on the form so the admin knows what to fix.
+                form.add_error(None, f"Something went wrong while creating the user: {str(e)}")
         else:
             # If form is invalid, we need to reload the permission form
             perm_form = AdminUserPermissionsForm(instance=User()) 
@@ -3572,8 +3581,20 @@ def update_booking_status(request, booking_id, new_status):
     
     # 1. Handle CONFIRM
     if new_status == 'CONFIRMED':
+        # NEW: allow pending-list quick confirm to choose paid or unpaid confirmation
+        selected_payment_status = request.GET.get('payment_status', 'PAID').upper()
+        if selected_payment_status not in ['PAID', 'UNPAID']:
+            selected_payment_status = 'PAID'
+
         booking.status = 'CONFIRMED'
-        booking.payment_status = 'PAID'
+        booking.payment_status = selected_payment_status
+        booking.expiry_at = None
+        booking.time_stopped = False
+        booking.stopped_at = None
+
+        if selected_payment_status == 'PAID':
+            booking.paid_amount = booking.total_amount
+
         booking.save()
         messages.success(request, "Booking Confirmed.")
 
@@ -3958,6 +3979,13 @@ def ticket_detail(request, pk):
 
 @login_required
 def booking_visual_map(request, booking_id):
+    booking_ref = request.GET.get('booking_ref', '').strip()
+    if booking_ref:
+        matched_booking = Booking.objects.filter(booking_ref__iexact=booking_ref).first()
+        if matched_booking:
+            return redirect('booking_visual_map', booking_id=matched_booking.id)
+        messages.error(request, f"Booking ref '{booking_ref}' not found.")
+
     booking = get_object_or_404(Booking, id=booking_id)
     trip = booking.trip
     ship = trip.ship
@@ -4042,6 +4070,9 @@ def booking_visual_map(request, booking_id):
     }
     
     return render(request, 'admin_panel/book/booking_visual_map.html', context)
+
+
+
 @login_required
 def cancel_booking(request, booking_id):
     if not request.user.is_staff: # Security check
@@ -4400,12 +4431,106 @@ def trip_report_list(request):
     }
     return render(request, 'admin_panel/book/trip_list.html', context)
 
+
+
 # 2. The Detail View (The Report)
 from django.db.models import Sum, Q
+# @login_required
+# def trip_passenger_manifest(request, trip_id):
+#     trip = get_object_or_404(Trip, id=trip_id)
+
+#     tickets = Ticket.objects.filter(
+#         trip=trip
+#     ).filter(
+#         Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+#         ~Q(status='CANCELLED')
+#     ).select_related(
+#         'booking',
+#         'booking__user',
+#         'seat_object',
+#         'from_stop__location',
+#         'to_stop__location'
+#     ).order_by('booking_id', 'seat_object__label')
+
+#     # Group by booking
+#     bookings_dict = {}
+
+#     for ticket in tickets:
+#         booking = ticket.booking
+#         bid = booking.id
+
+#         if bid not in bookings_dict:
+#             paid_amount = booking.paid_amount or 0
+
+#             bookings_dict[bid] = {
+#                 'booking': booking,
+#                 'tickets': [],
+#                 'total_fare': 0,
+#                 'paid_amount': paid_amount,
+#                 'due_amount': 0,
+#                 'payment_label': '',
+#             }
+
+#         bookings_dict[bid]['tickets'].append(ticket)
+#         bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+#     total_paid = 0
+#     total_due = 0
+
+#     # Finalize booking totals
+#     for bid, data in bookings_dict.items():
+#         booking = data['booking']
+#         total_fare = data['total_fare']
+#         paid_amount = data['paid_amount']
+
+#         # Confirmed booking = fully paid (for report display)
+#         if booking.status == 'CONFIRMED':
+#             paid_amount = total_fare
+#             due_amount = 0
+#         else:
+#             # Pending booking can have partial payment
+#             if paid_amount < 0:
+#                 paid_amount = 0
+#             if paid_amount > total_fare:
+#                 paid_amount = total_fare
+
+#             due_amount = total_fare - paid_amount
+
+#         data['paid_amount'] = paid_amount
+#         data['due_amount'] = due_amount
+
+#         if booking.status == 'CONFIRMED':
+#             data['payment_label'] = 'Paid'
+#         else:
+#             if paid_amount == 0:
+#                 data['payment_label'] = 'Unpaid'
+#             elif paid_amount < total_fare:
+#                 data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+#             else:
+#                 data['payment_label'] = 'Fully Paid'
+
+#         total_paid += paid_amount
+#         total_due += due_amount
+
+#     # Convert to list (preserve order)
+#     booking_groups = list(bookings_dict.values())
+
+#     context = {
+#         'trip': trip,
+#         'booking_groups': booking_groups,
+#         'total_tickets': tickets.count(),
+#         'total_paid': total_paid,
+#         'total_due': total_due,
+#         'print_date': timezone.now(),
+#     }
+#     return render(request, 'admin_panel/book/passenger_manifest.html', context)
+
+
 @login_required
 def trip_passenger_manifest(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
 
+    # 1. Fetch tickets
     tickets = Ticket.objects.filter(
         trip=trip
     ).filter(
@@ -4417,56 +4542,622 @@ def trip_passenger_manifest(request, trip_id):
         'seat_object',
         'from_stop__location',
         'to_stop__location'
-    ).order_by('booking_id', 'seat_object__label')
+    )
 
-    # Group by booking
-    bookings_dict = {}
-
+    # 2. Pre-calculate booking totals so they apply to all tickets within the same booking
+    booking_totals = {}
     for ticket in tickets:
-        booking = ticket.booking
-        bid = booking.id
-
-        if bid not in bookings_dict:
-            paid_amount = booking.paid_amount or 0
-
-            bookings_dict[bid] = {
-                'booking': booking,
-                'tickets': [],
+        bid = ticket.booking.id
+        if bid not in booking_totals:
+            booking_totals[bid] = {
                 'total_fare': 0,
-                'paid_amount': paid_amount,
-                'due_amount': 0,
+                'paid_amount': ticket.booking.paid_amount or 0,
+                'status': ticket.booking.status,
+                # NEW: keep payment status so confirmed-but-unpaid can show correctly in manifest
+                'payment_status': ticket.booking.payment_status,
                 'payment_label': '',
             }
-
-        bookings_dict[bid]['tickets'].append(ticket)
-        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+        booking_totals[bid]['total_fare'] += (ticket.fare_amount or 0)
 
     total_paid = 0
     total_due = 0
 
-    # Finalize booking totals
-    for bid, data in bookings_dict.items():
-        booking = data['booking']
+    # 3. Finalize booking totals (Paid / Due)
+    for bid, data in booking_totals.items():
         total_fare = data['total_fare']
         paid_amount = data['paid_amount']
 
-        # Confirmed booking = fully paid (for report display)
-        if booking.status == 'CONFIRMED':
+        # Confirmed + paid stays fully paid for report display.
+        # Confirmed + unpaid keeps the original paid/due values.
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
             paid_amount = total_fare
             due_amount = 0
         else:
-            # Pending booking can have partial payment
             if paid_amount < 0:
                 paid_amount = 0
             if paid_amount > total_fare:
                 paid_amount = total_fare
-
             due_amount = total_fare - paid_amount
 
         data['paid_amount'] = paid_amount
         data['due_amount'] = due_amount
 
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
+            data['payment_label'] = 'Paid'
+        elif data['status'] == 'CONFIRMED':
+            if due_amount > 0:
+                data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else:
+                data['payment_label'] = 'Paid'
+        else:
+            if paid_amount == 0:
+                data['payment_label'] = 'Unpaid'
+            elif paid_amount < total_fare:
+                data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else:
+                data['payment_label'] = 'Fully Paid'
+
+        # Add to Grand Totals (Added ONCE per booking)
+        total_paid += paid_amount
+        total_due += due_amount
+
+    # 4. Attach booking data to tickets and extract cabin number for sorting
+    ticket_list = []
+    for ticket in tickets:
+        bid = ticket.booking.id
+        label = ticket.seat_object.seat_identifier if ticket.seat_object.seat_identifier else ticket.seat_object.label
+        
+        # Extract numeric part from cabin name (e.g. "double cabin -118" -> 118)
+        match = re.search(r'\d+', label) if label else None
+        sort_key = int(match.group()) if match else 999999 # Default to high number if no digits found
+        
+        # Attach dynamic attributes to the ticket object
+        ticket.booking_data = booking_totals[bid]
+        ticket.sort_key = sort_key
+        ticket.display_label = label
+        ticket_list.append(ticket)
+
+    # 5. Sort the flat list by the extracted cabin number
+    ticket_list.sort(key=lambda x: x.sort_key)
+
+    context = {
+        'trip': trip,
+        'tickets': ticket_list, 
+        'total_tickets': len(ticket_list),
+        'total_paid': total_paid,
+        'total_due': total_due,
+        'print_date': timezone.now(),
+    }
+    return render(request, 'admin_panel/book/passenger_manifest.html', context)
+
+
+
+# group by booking format
+# @login_required
+# def export_manifest_xls(request, trip_id):
+#     trip = get_object_or_404(Trip, id=trip_id)
+    
+#     # 1. Fetch Data (Exact same logic as main view)
+#     tickets = Ticket.objects.filter(
+#         trip=trip
+#     ).filter(
+#         Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+#         ~Q(status='CANCELLED')
+#     ).select_related(
+#         'booking', 'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
+#     ).order_by('booking_id', 'seat_object__label')
+
+#     # Group by booking
+#     bookings_dict = {}
+#     for ticket in tickets:
+#         booking = ticket.booking
+#         bid = booking.id
+
+#         if bid not in bookings_dict:
+#             paid_amount = booking.paid_amount or 0
+#             bookings_dict[bid] = {
+#                 'booking': booking,
+#                 'tickets': [],
+#                 'total_fare': 0,
+#                 'paid_amount': paid_amount,
+#                 'due_amount': 0,
+#                 'payment_label': '',
+#             }
+#         bookings_dict[bid]['tickets'].append(ticket)
+#         bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+#     total_paid = 0
+#     total_due = 0
+
+#     # Finalize booking totals
+#     for bid, data in bookings_dict.items():
+#         booking = data['booking']
+#         total_fare = data['total_fare']
+#         paid_amount = data['paid_amount']
+
+#         if booking.status == 'CONFIRMED':
+#             paid_amount = total_fare
+#             due_amount = 0
+#         else:
+#             if paid_amount < 0: paid_amount = 0
+#             if paid_amount > total_fare: paid_amount = total_fare
+#             due_amount = total_fare - paid_amount
+
+#         data['paid_amount'] = paid_amount
+#         data['due_amount'] = due_amount
+        
+#         if booking.status == 'CONFIRMED':
+#             data['payment_label'] = 'Paid'
+#         else:
+#             if paid_amount == 0: data['payment_label'] = 'Unpaid'
+#             elif paid_amount < total_fare: data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+#             else: data['payment_label'] = 'Fully Paid'
+
+#         total_paid += paid_amount
+#         total_due += due_amount
+
+#     booking_groups = list(bookings_dict.values())
+
+#     # 2. Create Workbook & Sheet
+#     wb = openpyxl.Workbook()
+#     ws = wb.active
+#     ws.title = f"Trip-{trip.ship.name}"
+
+#     # --- STYLES ---
+#     bold_font = Font(bold=True)
+#     center_align = Alignment(horizontal='center', vertical='center')
+#     left_align = Alignment(horizontal='left', vertical='center')
+#     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+#                          top=Side(style='thin'), bottom=Side(style='thin'))
+#     fill_group = PatternFill(start_color="E8F4F8", end_color="E8F4F8", fill_type="solid")
+
+#     # 3. Write TRIP INFO
+#     ws.append(['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats'])
+#     ws.append([
+#         trip.ship.name, trip.route.name, trip.route.source.name,
+#         trip.departure_datetime.strftime("%Y-%m-%d %H:%M"),
+#         tickets.count(), tickets.count()
+#     ])
+#     ws.append([]) # Empty row
+
+#     # 4. Write PASSENGER TABLE Headers
+#     headers_main = [
+#         'SL', 'Ticket No', 'Cabin', 'Pass. Name', 'Phone No', 
+#         'Paid', 'Discount', 'Due', 'From', 'To', 
+#         'Status', 'Booked By', 'Issued By', 'Remarks'
+#     ]
+#     ws.append(headers_main)
+#     for cell in ws[ws.max_row]:
+#         cell.font = bold_font
+#         cell.alignment = center_align
+#         cell.border = thin_border
+
+#     # 5. Write Passenger Rows Grouped by Booking
+#     for group in booking_groups:
+#         booking = group['booking']
+        
+#         # Booking Header Row
+#         timer_text = " (Timer Stopped)" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else ""
+#         header_text = f"Booking #{booking.id} (Ref: {booking.booking_ref}) - Total Fare: {group['total_fare']:.0f} - Paid: {group['paid_amount']:.0f} - Due: {group['due_amount']:.0f} - {booking.status}{timer_text}"
+        
+#         ws.append([header_text] + [''] * 13)
+#         ws.merge_cells(start_row=ws.max_row, start_column=1, end_row=ws.max_row, end_column=14)
+#         header_cell = ws.cell(row=ws.max_row, column=1)
+#         header_cell.font = bold_font
+#         header_cell.fill = fill_group
+#         header_cell.alignment = left_align
+#         for cell in ws[ws.max_row]: cell.border = thin_border
+
+#         # Tickets for this booking
+#         for index, ticket in enumerate(group['tickets'], start=1):
+#             phone = getattr(ticket.passenger, 'phone', None) if hasattr(ticket, 'passenger') else None
+#             if not phone:
+#                 phone = ticket.booking.user.phone_number or "0"
+                
+#             row = [
+#                 index,
+#                 ticket.id,
+#                 ticket.seat_object.seat_identifier or ticket.seat_object.label,
+#                 ticket.passenger_name or "-",
+#                 phone,
+#                 group['paid_amount'] if index == 1 else "",  # Show paid only on first row
+#                 0, # Discount
+#                 group['due_amount'] if index == 1 else "",   # Show due only on first row
+#                 ticket.from_stop.location.name,
+#                 ticket.to_stop.location.name,
+#                 "Confirmed" if booking.status == 'CONFIRMED' else group['payment_label'],
+#                 ticket.booking.user.first_name or "Admin",
+#                 request.user.first_name or "Admin",
+#                 "Timer Stopped" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else "N/A"
+#             ]
+#             ws.append(row)
+#             for cell in ws[ws.max_row]:
+#                 cell.border = thin_border
+#                 cell.alignment = center_align
+
+#     # 6. Write FOOTER
+#     footer_row = ['', '', '', '', '', f"Total: {total_paid:.0f}", '', f"Due: {total_due:.0f}", '', '', '', '', '', '']
+#     ws.append(footer_row)
+#     for cell in ws[ws.max_row]:
+#         cell.font = bold_font
+#         cell.border = thin_border
+#         cell.alignment = center_align
+
+#     # 7. Response
+#     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     filename = f"Manifest_{trip.ship.name}_{trip.departure_datetime.date()}.xlsx"
+#     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+#     wb.save(response)
+#     return response
+
+
+
+@login_required
+def export_manifest_xls(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    # 1. Fetch Data
+    tickets = Ticket.objects.filter(
+        trip=trip
+    ).filter(
+        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+        ~Q(status='CANCELLED')
+    ).select_related(
+        'booking', 'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
+    )
+
+    # 2. Pre-calculate booking totals
+    booking_totals = {}
+    for ticket in tickets:
+        bid = ticket.booking.id
+        if bid not in booking_totals:
+            booking_totals[bid] = {
+                'total_fare': 0,
+                'paid_amount': ticket.booking.paid_amount or 0,
+                'status': ticket.booking.status,
+                # UPDATED: keep payment status for confirmed-but-unpaid PDF display
+                'payment_status': ticket.booking.payment_status,
+                'payment_label': '',
+            }
+        booking_totals[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+    total_paid = 0
+    total_due = 0
+
+    # 3. Finalize booking totals
+    for bid, data in booking_totals.items():
+        total_fare = data['total_fare']
+        paid_amount = data['paid_amount']
+
+        if data['status'] == 'CONFIRMED':
+            paid_amount = total_fare
+            due_amount = 0
+        else:
+            if paid_amount < 0: paid_amount = 0
+            if paid_amount > total_fare: paid_amount = total_fare
+            due_amount = total_fare - paid_amount
+
+        data['paid_amount'] = paid_amount
+        data['due_amount'] = due_amount
+        
+        if data['status'] == 'CONFIRMED':
+            data['payment_label'] = 'Paid'
+        else:
+            if paid_amount == 0: data['payment_label'] = 'Unpaid'
+            elif paid_amount < total_fare: data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else: data['payment_label'] = 'Fully Paid'
+
+        total_paid += paid_amount
+        total_due += due_amount
+
+    # 4. Attach booking data to tickets and extract cabin number for sorting
+    ticket_list = []
+    for ticket in tickets:
+        bid = ticket.booking.id
+        label = ticket.seat_object.seat_identifier if ticket.seat_object.seat_identifier else ticket.seat_object.label
+        
+        match = re.search(r'\d+', label) if label else None
+        sort_key = int(match.group()) if match else 999999
+        
+        ticket.booking_data = booking_totals[bid]
+        ticket.sort_key = sort_key
+        ticket.display_label = label
+        ticket_list.append(ticket)
+
+    # Sort the flat list
+    ticket_list.sort(key=lambda x: x.sort_key)
+
+    # 5. Create Workbook & Sheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Trip-{trip.ship.name}"
+
+    # --- STYLES ---
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal='center', vertical='center')
+    left_align = Alignment(horizontal='left', vertical='center')
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                         top=Side(style='thin'), bottom=Side(style='thin'))
+
+    # 6. Write TRIP INFO
+    ws.append(['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats'])
+    ws.append([
+        trip.ship.name, trip.route.name, trip.route.source.name,
+        trip.departure_datetime.strftime("%Y-%m-%d %H:%M"),
+        len(ticket_list), len(ticket_list)
+    ])
+    ws.append([]) # Empty row
+
+    # 7. Write PASSENGER TABLE Headers
+    headers_main = [
+        'SL', 'Ticket No', 'Booking Ref', 'Cabin', 'Pass. Name', 'Phone No', 
+        'Paid', 'Discount', 'Due', 'From', 'To', 
+        'Status', 'Booked By', 'Issued By', 'Remarks'
+    ]
+    ws.append(headers_main)
+    for cell in ws[ws.max_row]:
+        cell.font = bold_font
+        cell.alignment = center_align
+        cell.border = thin_border
+
+    # 8. Write Sorted Passenger Rows
+    for index, ticket in enumerate(ticket_list, start=1):
+        booking = ticket.booking
+        b_data = ticket.booking_data
+        
+        # Phone logic
+        phone = getattr(ticket.passenger, 'phone', None) if hasattr(ticket, 'passenger') else None
+        if not phone:
+            phone = booking.user.phone_number or "0"
+
+        # Remarks logic matching the HTML exactly
+        if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False):
+            remarks = "Timer Stopped"
+        elif booking.status == 'PENDING' and b_data['paid_amount'] > 0 and b_data['due_amount'] > 0:
+            remarks = "Partial Payment"
+        elif booking.status == 'PENDING' and b_data['paid_amount'] == 0:
+            remarks = "Unpaid"
+        elif booking.status == 'PENDING' and b_data['due_amount'] == 0:
+            remarks = "Paid*"
+        else:
+            remarks = "N/A"
+
+        # Status logic
         if booking.status == 'CONFIRMED':
+            status_text = "Confirmed"
+        else:
+            status_text = f"Pending ({b_data['payment_label']})"
+            
+        row = [
+            index,
+            ticket.id,
+            booking.booking_ref,
+            ticket.display_label,
+            ticket.passenger_name or "-",
+            phone,
+            round(b_data['paid_amount']),  # Shows total paid for booking on every row
+            0,                             # Discount
+            round(b_data['due_amount']),   # Shows total due for booking on every row
+            ticket.from_stop.location.name,
+            ticket.to_stop.location.name,
+            status_text,
+            booking.user.first_name or "Admin",
+            request.user.first_name or "Admin",
+            remarks
+        ]
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.border = thin_border
+            cell.alignment = center_align
+
+    # 9. Write FOOTER
+    footer_row = [
+        '', '', '', '', '', 'Grand Total:', 
+        round(total_paid), '', round(total_due), 
+        '', '', '', '', '', ''
+    ]
+    ws.append(footer_row)
+    for cell in ws[ws.max_row]:
+        cell.font = bold_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    # 10. Response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"Manifest_{trip.ship.name}_{trip.departure_datetime.date()}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+
+
+
+from django.template.loader import get_template
+from xhtml2pdf import pisa  # Make sure you installed this: pip install xhtml2pdf
+import io
+
+# groupo by booking format
+# --- NEW PDF VIEW (Does not touch Excel view) ---
+# @login_required
+# def download_manifest_pdf(request, trip_id):
+#     trip = get_object_or_404(Trip, id=trip_id)
+    
+#     # Fetch exactly like the screen view
+#     tickets = Ticket.objects.filter(
+#         trip=trip
+#     ).filter(
+#         Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+#         ~Q(status='CANCELLED')
+#     ).select_related(
+#         'booking', 'booking__user', 'seat_object', 
+#         'from_stop__location', 'to_stop__location'
+#     ).order_by('booking_id', 'seat_object__label')
+    
+#     # 1. Group tickets by booking
+#     bookings_dict = {}
+#     for ticket in tickets:
+#         bid = ticket.booking_id
+#         if bid not in bookings_dict:
+#             bookings_dict[bid] = {'booking': ticket.booking, 'tickets': [], 'total_fare': 0}
+#         bookings_dict[bid]['tickets'].append(ticket)
+#         bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+#     # 2. Build the "Flat List" for perfect PDF rendering
+#     pdf_rows = []
+#     sl_counter = 1
+#     total_paid = 0
+#     total_due = 0
+
+#     for bid, data in bookings_dict.items():
+#         booking = data['booking']
+#         total_fare = data['total_fare']
+#         paid_amount = booking.paid_amount or 0
+
+#         # Screen View Financial Logic
+#         if booking.status == 'CONFIRMED':
+#             paid_amount = total_fare
+#             due_amount = 0
+#         else:
+#             if paid_amount < 0: paid_amount = 0
+#             if paid_amount > total_fare: paid_amount = total_fare
+#             due_amount = total_fare - paid_amount
+
+#         # Determine label
+#         payment_label = 'Paid' if booking.status == 'CONFIRMED' else (
+#             'Unpaid' if paid_amount == 0 else 
+#             f'Partial ({paid_amount:.0f}/{total_fare:.0f})' if paid_amount < total_fare else 'Fully Paid'
+#         )
+
+#         total_paid += paid_amount
+#         total_due += due_amount
+
+#         # Add Booking Header Row
+#         pdf_rows.append({
+#             'is_header': True,
+#             'booking_id': booking.id,
+#             'booking_ref': getattr(booking, 'booking_ref', 'N/A'),
+#             'status': booking.status,
+#             'time_stopped': getattr(booking, 'time_stopped', False),
+#             'total_fare': total_fare,
+#             'paid_amount': paid_amount,
+#             'due_amount': due_amount,
+#         })
+
+#         # Add Ticket Rows (with visual merge flags)
+#         num_tickets = len(data['tickets'])
+#         for index, ticket in enumerate(data['tickets']):
+#             booked_by = booking.user.first_name if booking.user else "Admin"
+            
+#             # Safe parsing
+#             pass_name = getattr(ticket, 'passenger_name', '') or "-"
+#             phone = "0"
+#             if hasattr(ticket, 'passenger') and ticket.passenger and ticket.passenger.phone:
+#                 phone = ticket.passenger.phone
+#             elif booking.user and booking.user.phone_number:
+#                 phone = booking.user.phone_number
+
+#             cabin = ticket.seat_object.seat_identifier if getattr(ticket.seat_object, 'seat_identifier', None) else ticket.seat_object.label
+
+#             pdf_rows.append({
+#                 'is_header': False,
+#                 'sl': sl_counter,
+#                 'ticket_id': ticket.id,
+#                 'cabin': cabin,
+#                 'pass_name': pass_name,
+#                 'phone': phone,
+#                 'from_station': ticket.from_stop.location.name if ticket.from_stop else "",
+#                 'to_station': ticket.to_stop.location.name if ticket.to_stop else "",
+                
+#                 # Group Data
+#                 'group_paid': paid_amount,
+#                 'group_due': due_amount,
+#                 'payment_label': payment_label,
+#                 'status': booking.status,
+#                 'booked_by': booked_by,
+#                 'time_stopped': getattr(booking, 'time_stopped', False),
+
+#                 # CSS Flags for "Visual Merging"
+#                 'is_single': (num_tickets == 1),
+#                 'is_first': (index == 0),
+#                 'is_last': (index == num_tickets - 1),
+#             })
+#             sl_counter += 1
+
+#     context = {
+#         'trip': trip,
+#         'pdf_rows': pdf_rows,
+#         'total_tickets': tickets.count(),
+#         'total_paid': total_paid,
+#         'total_due': total_due,
+#         'current_user': request.user,
+#     }
+
+#     # IMPORTANT: Ensure this path matches where your HTML file actually lives
+#     template = get_template('admin_panel/book/manifest_pdf.html') 
+#     html = template.render(context)
+    
+#     response = HttpResponse(content_type='application/pdf')
+#     filename = f"TripSheet_{trip.ship.name}_{trip.departure_datetime.date()}.pdf"
+#     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+#     pisa_status = pisa.CreatePDF(html, dest=response)
+#     if pisa_status.err:
+#         return HttpResponse(f'PDF generation error: {pisa_status.err}')
+    
+#     return response
+
+
+@login_required
+def download_manifest_pdf(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+    
+    # 1. Fetch tickets (Exact same query as web view)
+    tickets = Ticket.objects.filter(
+        trip=trip
+    ).filter(
+        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
+        ~Q(status='CANCELLED')
+    ).select_related(
+        'booking', 'booking__user', 'seat_object', 
+        'from_stop__location', 'to_stop__location'
+    )
+
+    # 2. Pre-calculate booking totals
+    booking_totals = {}
+    for ticket in tickets:
+        bid = ticket.booking.id
+        if bid not in booking_totals:
+            booking_totals[bid] = {
+                'total_fare': 0,
+                'paid_amount': ticket.booking.paid_amount or 0,
+                'status': ticket.booking.status,
+                'payment_label': '',
+            }
+        booking_totals[bid]['total_fare'] += (ticket.fare_amount or 0)
+
+    total_paid = 0
+    total_due = 0
+
+    # 3. Finalize booking totals (Paid / Due)
+    for bid, data in booking_totals.items():
+        total_fare = data['total_fare']
+        paid_amount = data['paid_amount']
+
+        if data['status'] == 'CONFIRMED':
+            paid_amount = total_fare
+            due_amount = 0
+        else:
+            if paid_amount < 0:
+                paid_amount = 0
+            if paid_amount > total_fare:
+                paid_amount = total_fare
+            due_amount = total_fare - paid_amount
+
+        data['paid_amount'] = paid_amount
+        data['due_amount'] = due_amount
+
+        if data['status'] == 'CONFIRMED':
             data['payment_label'] = 'Paid'
         else:
             if paid_amount == 0:
@@ -4479,298 +5170,34 @@ def trip_passenger_manifest(request, trip_id):
         total_paid += paid_amount
         total_due += due_amount
 
-    # Convert to list (preserve order)
-    booking_groups = list(bookings_dict.values())
+    # 4. Attach booking data to tickets and extract cabin number for sorting
+    ticket_list = []
+    for ticket in tickets:
+        bid = ticket.booking.id
+        label = ticket.seat_object.seat_identifier if getattr(ticket.seat_object, 'seat_identifier', None) else ticket.seat_object.label
+        
+        match = re.search(r'\d+', label) if label else None
+        sort_key = int(match.group()) if match else 999999
+        
+        # Exact same attributes added to ticket as web view
+        ticket.booking_data = booking_totals[bid]
+        ticket.sort_key = sort_key
+        ticket.display_label = label
+        ticket_list.append(ticket)
 
+    # 5. Sort the flat list by the extracted cabin number
+    ticket_list.sort(key=lambda x: x.sort_key)
+
+    # Note: 'request' is passed into context so we can access request.user in the template
     context = {
         'trip': trip,
-        'booking_groups': booking_groups,
-        'total_tickets': tickets.count(),
+        'tickets': ticket_list, 
+        'total_tickets': len(ticket_list),
         'total_paid': total_paid,
         'total_due': total_due,
-        'print_date': timezone.now(),
-    }
-    return render(request, 'admin_panel/book/passenger_manifest.html', context)
-
-
-@login_required
-def export_manifest_xls(request, trip_id):
-    trip = get_object_or_404(Trip, id=trip_id)
-    
-    # 1. Fetch Data (Exact same logic as main view)
-    tickets = Ticket.objects.filter(
-        trip=trip
-    ).filter(
-        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
-        ~Q(status='CANCELLED')
-    ).select_related(
-        'booking', 'booking__user', 'seat_object', 'from_stop__location', 'to_stop__location'
-    ).order_by('booking_id', 'seat_object__label')
-
-    # Group by booking
-    bookings_dict = {}
-    for ticket in tickets:
-        booking = ticket.booking
-        bid = booking.id
-
-        if bid not in bookings_dict:
-            paid_amount = booking.paid_amount or 0
-            bookings_dict[bid] = {
-                'booking': booking,
-                'tickets': [],
-                'total_fare': 0,
-                'paid_amount': paid_amount,
-                'due_amount': 0,
-                'payment_label': '',
-            }
-        bookings_dict[bid]['tickets'].append(ticket)
-        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
-
-    total_paid = 0
-    total_due = 0
-
-    # Finalize booking totals
-    for bid, data in bookings_dict.items():
-        booking = data['booking']
-        total_fare = data['total_fare']
-        paid_amount = data['paid_amount']
-
-        if booking.status == 'CONFIRMED':
-            paid_amount = total_fare
-            due_amount = 0
-        else:
-            if paid_amount < 0: paid_amount = 0
-            if paid_amount > total_fare: paid_amount = total_fare
-            due_amount = total_fare - paid_amount
-
-        data['paid_amount'] = paid_amount
-        data['due_amount'] = due_amount
-        
-        if booking.status == 'CONFIRMED':
-            data['payment_label'] = 'Paid'
-        else:
-            if paid_amount == 0: data['payment_label'] = 'Unpaid'
-            elif paid_amount < total_fare: data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
-            else: data['payment_label'] = 'Fully Paid'
-
-        total_paid += paid_amount
-        total_due += due_amount
-
-    booking_groups = list(bookings_dict.values())
-
-    # 2. Create Workbook & Sheet
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = f"Trip-{trip.ship.name}"
-
-    # --- STYLES ---
-    bold_font = Font(bold=True)
-    center_align = Alignment(horizontal='center', vertical='center')
-    left_align = Alignment(horizontal='left', vertical='center')
-    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), 
-                         top=Side(style='thin'), bottom=Side(style='thin'))
-    fill_group = PatternFill(start_color="E8F4F8", end_color="E8F4F8", fill_type="solid")
-
-    # 3. Write TRIP INFO
-    ws.append(['Launch', 'Route', 'Starting Place', 'Journey Date', 'Tickets', 'Seats'])
-    ws.append([
-        trip.ship.name, trip.route.name, trip.route.source.name,
-        trip.departure_datetime.strftime("%Y-%m-%d %H:%M"),
-        tickets.count(), tickets.count()
-    ])
-    ws.append([]) # Empty row
-
-    # 4. Write PASSENGER TABLE Headers
-    headers_main = [
-        'SL', 'Ticket No', 'Cabin', 'Pass. Name', 'Phone No', 
-        'Paid', 'Discount', 'Due', 'From', 'To', 
-        'Status', 'Booked By', 'Issued By', 'Remarks'
-    ]
-    ws.append(headers_main)
-    for cell in ws[ws.max_row]:
-        cell.font = bold_font
-        cell.alignment = center_align
-        cell.border = thin_border
-
-    # 5. Write Passenger Rows Grouped by Booking
-    for group in booking_groups:
-        booking = group['booking']
-        
-        # Booking Header Row
-        timer_text = " (Timer Stopped)" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else ""
-        header_text = f"Booking #{booking.id} (Ref: {booking.booking_ref}) - Total Fare: {group['total_fare']:.0f} - Paid: {group['paid_amount']:.0f} - Due: {group['due_amount']:.0f} - {booking.status}{timer_text}"
-        
-        ws.append([header_text] + [''] * 13)
-        ws.merge_cells(start_row=ws.max_row, start_column=1, end_row=ws.max_row, end_column=14)
-        header_cell = ws.cell(row=ws.max_row, column=1)
-        header_cell.font = bold_font
-        header_cell.fill = fill_group
-        header_cell.alignment = left_align
-        for cell in ws[ws.max_row]: cell.border = thin_border
-
-        # Tickets for this booking
-        for index, ticket in enumerate(group['tickets'], start=1):
-            phone = getattr(ticket.passenger, 'phone', None) if hasattr(ticket, 'passenger') else None
-            if not phone:
-                phone = ticket.booking.user.phone_number or "0"
-                
-            row = [
-                index,
-                ticket.id,
-                ticket.seat_object.seat_identifier or ticket.seat_object.label,
-                ticket.passenger_name or "-",
-                phone,
-                group['paid_amount'] if index == 1 else "",  # Show paid only on first row
-                0, # Discount
-                group['due_amount'] if index == 1 else "",   # Show due only on first row
-                ticket.from_stop.location.name,
-                ticket.to_stop.location.name,
-                "Confirmed" if booking.status == 'CONFIRMED' else group['payment_label'],
-                ticket.booking.user.first_name or "Admin",
-                request.user.first_name or "Admin",
-                "Timer Stopped" if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False) else "N/A"
-            ]
-            ws.append(row)
-            for cell in ws[ws.max_row]:
-                cell.border = thin_border
-                cell.alignment = center_align
-
-    # 6. Write FOOTER
-    footer_row = ['', '', '', '', '', f"Total: {total_paid:.0f}", '', f"Due: {total_due:.0f}", '', '', '', '', '', '']
-    ws.append(footer_row)
-    for cell in ws[ws.max_row]:
-        cell.font = bold_font
-        cell.border = thin_border
-        cell.alignment = center_align
-
-    # 7. Response
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    filename = f"Manifest_{trip.ship.name}_{trip.departure_datetime.date()}.xlsx"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    wb.save(response)
-    return response
-
-
-
-from django.template.loader import get_template
-from xhtml2pdf import pisa  # Make sure you installed this: pip install xhtml2pdf
-import io
-# --- NEW PDF VIEW (Does not touch Excel view) ---
-@login_required
-def download_manifest_pdf(request, trip_id):
-    trip = get_object_or_404(Trip, id=trip_id)
-    
-    # Fetch exactly like the screen view
-    tickets = Ticket.objects.filter(
-        trip=trip
-    ).filter(
-        Q(booking__status__in=['CONFIRMED', 'PENDING']) &
-        ~Q(status='CANCELLED')
-    ).select_related(
-        'booking', 'booking__user', 'seat_object', 
-        'from_stop__location', 'to_stop__location'
-    ).order_by('booking_id', 'seat_object__label')
-    
-    # 1. Group tickets by booking
-    bookings_dict = {}
-    for ticket in tickets:
-        bid = ticket.booking_id
-        if bid not in bookings_dict:
-            bookings_dict[bid] = {'booking': ticket.booking, 'tickets': [], 'total_fare': 0}
-        bookings_dict[bid]['tickets'].append(ticket)
-        bookings_dict[bid]['total_fare'] += (ticket.fare_amount or 0)
-
-    # 2. Build the "Flat List" for perfect PDF rendering
-    pdf_rows = []
-    sl_counter = 1
-    total_paid = 0
-    total_due = 0
-
-    for bid, data in bookings_dict.items():
-        booking = data['booking']
-        total_fare = data['total_fare']
-        paid_amount = booking.paid_amount or 0
-
-        # Screen View Financial Logic
-        if booking.status == 'CONFIRMED':
-            paid_amount = total_fare
-            due_amount = 0
-        else:
-            if paid_amount < 0: paid_amount = 0
-            if paid_amount > total_fare: paid_amount = total_fare
-            due_amount = total_fare - paid_amount
-
-        # Determine label
-        payment_label = 'Paid' if booking.status == 'CONFIRMED' else (
-            'Unpaid' if paid_amount == 0 else 
-            f'Partial ({paid_amount:.0f}/{total_fare:.0f})' if paid_amount < total_fare else 'Fully Paid'
-        )
-
-        total_paid += paid_amount
-        total_due += due_amount
-
-        # Add Booking Header Row
-        pdf_rows.append({
-            'is_header': True,
-            'booking_id': booking.id,
-            'booking_ref': getattr(booking, 'booking_ref', 'N/A'),
-            'status': booking.status,
-            'time_stopped': getattr(booking, 'time_stopped', False),
-            'total_fare': total_fare,
-            'paid_amount': paid_amount,
-            'due_amount': due_amount,
-        })
-
-        # Add Ticket Rows (with visual merge flags)
-        num_tickets = len(data['tickets'])
-        for index, ticket in enumerate(data['tickets']):
-            booked_by = booking.user.first_name if booking.user else "Admin"
-            
-            # Safe parsing
-            pass_name = getattr(ticket, 'passenger_name', '') or "-"
-            phone = "0"
-            if hasattr(ticket, 'passenger') and ticket.passenger and ticket.passenger.phone:
-                phone = ticket.passenger.phone
-            elif booking.user and booking.user.phone_number:
-                phone = booking.user.phone_number
-
-            cabin = ticket.seat_object.seat_identifier if getattr(ticket.seat_object, 'seat_identifier', None) else ticket.seat_object.label
-
-            pdf_rows.append({
-                'is_header': False,
-                'sl': sl_counter,
-                'ticket_id': ticket.id,
-                'cabin': cabin,
-                'pass_name': pass_name,
-                'phone': phone,
-                'from_station': ticket.from_stop.location.name if ticket.from_stop else "",
-                'to_station': ticket.to_stop.location.name if ticket.to_stop else "",
-                
-                # Group Data
-                'group_paid': paid_amount,
-                'group_due': due_amount,
-                'payment_label': payment_label,
-                'status': booking.status,
-                'booked_by': booked_by,
-                'time_stopped': getattr(booking, 'time_stopped', False),
-
-                # CSS Flags for "Visual Merging"
-                'is_single': (num_tickets == 1),
-                'is_first': (index == 0),
-                'is_last': (index == num_tickets - 1),
-            })
-            sl_counter += 1
-
-    context = {
-        'trip': trip,
-        'pdf_rows': pdf_rows,
-        'total_tickets': tickets.count(),
-        'total_paid': total_paid,
-        'total_due': total_due,
-        'current_user': request.user,
+        'request': request, 
     }
 
-    # IMPORTANT: Ensure this path matches where your HTML file actually lives
     template = get_template('admin_panel/book/manifest_pdf.html') 
     html = template.render(context)
     
@@ -4992,8 +5419,9 @@ def add_vessel_showcase(request):
             video_tour_url = request.POST.get('video_tour_url')
             display_capacity = request.POST.get('display_capacity')
             hero_image = request.FILES.get('hero_image')
+            banner_image = request.FILES.get('banner_image')
 
-            # Basic Validation
+            # Basic Validation (Banner removed from required check)
             if not name or not hero_image:
                 return JsonResponse({"status": "error", "message": "Name and Hero Image are required."})
 
@@ -5005,7 +5433,7 @@ def add_vessel_showcase(request):
             # 2. Dimensions & Format Validation
             try:
                 img = Image.open(hero_image)
-                img.verify() # Verifies it is a valid image file (handles jpg, png, webp, etc.)
+                img.verify()  # Verifies it is a valid image file (handles jpg, png, webp, etc.)
 
                 # Re-open the file for size/dimension reading (verify() leaves it in a closed state)
                 hero_image.seek(0)
@@ -5014,12 +5442,34 @@ def add_vessel_showcase(request):
 
                 if width != height:
                     return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
-                
+
                 if width > 800 or height > 800:
                     return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
 
             except Exception:
                 return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+            # --------------------------------
+
+            # --- Backend Banner Image Validation ---
+            # Wrapped in an if statement so it only runs if a banner was actually uploaded
+            if banner_image:
+                if banner_image.size > 2 * 1024 * 1024:
+                    return JsonResponse({"status": "error", "message": "Banner image size must not exceed 2MB."})
+
+                try:
+                    b_img = Image.open(banner_image)
+                    b_img.verify()
+
+                    banner_image.seek(0)
+                    b_img = Image.open(banner_image)
+                    b_width, b_height = b_img.size
+
+                    # Validate 4:1 aspect ratio with a 0.05 tolerance margin
+                    if abs((b_width / b_height) - 4.0) > 0.05:
+                        return JsonResponse({"status": "error", "message": "Banner image must have exactly a 4:1 aspect ratio (e.g., 1920x480)."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid banner image file uploaded."})
             # --------------------------------
 
             # Check if Ship is selected and valid
@@ -5038,7 +5488,8 @@ def add_vessel_showcase(request):
                 full_description=full_description,
                 video_tour_url=video_tour_url,
                 display_capacity=display_capacity,
-                hero_image=hero_image
+                hero_image=hero_image,
+                banner_image=banner_image
             )
 
             return JsonResponse({"status": "success", "message": "Vessel showcase created successfully!"})
@@ -5048,7 +5499,7 @@ def add_vessel_showcase(request):
 
     # GET Request: Fetch ships that don't already have a showcase linked
     available_ships = Ship.objects.filter(showcase__isnull=True)
-    
+
     context = {
         'available_ships': available_ships
     }
@@ -5068,35 +5519,63 @@ def edit_vessel_showcase(request, id):
             video_tour_url = request.POST.get('video_tour_url')
             display_capacity = request.POST.get('display_capacity')
             new_hero_image = request.FILES.get('hero_image')
+            new_banner_image = request.FILES.get('banner_image') # Get banner
 
             # Basic Validation
             if not name:
                 return JsonResponse({"status": "error", "message": "Name is required."})
 
-            # --- Backend Image Validation (Only if a new image is provided) ---
+            # --- Backend Hero Image Validation (Only if a new image is provided) ---
             if new_hero_image:
                 if new_hero_image.size > 500 * 1024:
-                    return JsonResponse({"status": "error", "message": "Image size must not exceed 500KB."})
+                    return JsonResponse({"status": "error", "message": "Hero Image size must not exceed 500KB."})
 
                 try:
                     img = Image.open(new_hero_image)
-                    img.verify()
+                    img.verify() # Verifies it is a valid image file
 
+                    # Re-open the file for dimension reading
                     new_hero_image.seek(0)
                     img = Image.open(new_hero_image)
                     width, height = img.size
 
                     if width != height:
-                        return JsonResponse({"status": "error", "message": "Image must be a square (1:1 aspect ratio)."})
+                        return JsonResponse({"status": "error", "message": "Hero Image must be a square (1:1 aspect ratio)."})
                     
                     if width > 800 or height > 800:
-                        return JsonResponse({"status": "error", "message": "Image dimensions must not exceed 800x800 pixels."})
+                        return JsonResponse({"status": "error", "message": "Hero Image dimensions must not exceed 800x800 pixels."})
 
                 except Exception:
-                    return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+                    return JsonResponse({"status": "error", "message": "Invalid hero image file uploaded."})
                 
                 # If valid, assign the new image
                 showcase.hero_image = new_hero_image
+            # ----------------------------------------------------------------
+
+            # --- Backend Banner Image Validation (New, optional) ---
+            if new_banner_image:
+                # Banner size limit 2MB
+                if new_banner_image.size > 2 * 1024 * 1024:
+                    return JsonResponse({"status": "error", "message": "Banner Image size must not exceed 2MB."})
+
+                try:
+                    b_img = Image.open(new_banner_image)
+                    b_img.verify()
+
+                    # Re-open the file for dimension reading
+                    new_banner_image.seek(0)
+                    b_img = Image.open(new_banner_image)
+                    b_width, b_height = b_img.size
+
+                    # Validate 4:1 aspect ratio with a tolerance margin
+                    if abs((b_width / b_height) - 4.0) > 0.05:
+                        return JsonResponse({"status": "error", "message": "Banner Image must have exactly a 4:1 aspect ratio (e.g., 1920x480)."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid banner image file uploaded."})
+                
+                # If valid, assign the new image
+                showcase.banner_image = new_banner_image
             # ----------------------------------------------------------------
 
             # Check if Ship is selected and valid
@@ -5174,6 +5653,7 @@ def add_cabin_showcase(request):
             short_description = request.POST.get('short_description')
             full_description = request.POST.get('full_description')
             cover_image = request.FILES.get('cover_image')
+            banner_image = request.FILES.get('banner_image')
             
             # --- Extract M2M Fields ---
             operational_categories = request.POST.getlist('operational_categories')
@@ -5206,6 +5686,25 @@ def add_cabin_showcase(request):
 
             except Exception:
                 return JsonResponse({"status": "error", "message": "Invalid image file uploaded."})
+
+            # Cabin showcase update: optional banner image validation, same as vessel showcase
+            if banner_image:
+                if banner_image.size > 2 * 1024 * 1024:
+                    return JsonResponse({"status": "error", "message": "Banner image size must not exceed 2MB."})
+
+                try:
+                    b_img = Image.open(banner_image)
+                    b_img.verify()
+
+                    banner_image.seek(0)
+                    b_img = Image.open(banner_image)
+                    b_width, b_height = b_img.size
+
+                    if b_height == 0 or abs((b_width / b_height) - 4) > 0.2:
+                        return JsonResponse({"status": "error", "message": "Banner image must be approximately 4:1 ratio."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid banner image file uploaded."})
             # --------------------------------
 
             # Handle Foreign Key
@@ -5224,7 +5723,8 @@ def add_cabin_showcase(request):
                 bed_type=bed_type,
                 short_description=short_description,
                 full_description=full_description,
-                cover_image=cover_image
+                cover_image=cover_image,
+                banner_image=banner_image
             )
 
             # Set Many-to-Many Relationships
@@ -5264,6 +5764,7 @@ def edit_cabin_showcase(request, pk):
             short_description = request.POST.get('short_description')
             full_description = request.POST.get('full_description')
             cover_image = request.FILES.get('cover_image')
+            banner_image = request.FILES.get('banner_image')
             
             # --- Extract M2M Fields ---
             operational_categories = request.POST.getlist('operational_categories')
@@ -5299,6 +5800,27 @@ def edit_cabin_showcase(request, pk):
                 
                 # Assign new image if it passes validation
                 cabin.cover_image = cover_image
+
+            # Cabin showcase update: optional banner image validation for edit
+            if banner_image:
+                if banner_image.size > 2 * 1024 * 1024:
+                    return JsonResponse({"status": "error", "message": "Banner image size must not exceed 2MB."})
+
+                try:
+                    b_img = Image.open(banner_image)
+                    b_img.verify()
+
+                    banner_image.seek(0)
+                    b_img = Image.open(banner_image)
+                    b_width, b_height = b_img.size
+
+                    if b_height == 0 or abs((b_width / b_height) - 4) > 0.2:
+                        return JsonResponse({"status": "error", "message": "Banner image must be approximately 4:1 ratio."})
+
+                except Exception:
+                    return JsonResponse({"status": "error", "message": "Invalid banner image file uploaded."})
+
+                cabin.banner_image = banner_image
 
             # --- Update Fields ---
             cabin.title = title
@@ -5547,6 +6069,252 @@ def edit_featured_article(request, article_id):
 
     context = {'article': article}
     return render(request, 'admin_panel/content/featured_articles/edit_featured_article.html', context)
+
+
+# --- 1. Main List & Delete View ---
+@login_required
+def footer_management(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+
+            # --- Handle Column AJAX Actions ---
+            if action == 'add_column':
+                FooterColumn.objects.create(
+                    name=data.get('name'),
+                    order=data.get('order', 0)
+                )
+                return JsonResponse({'status': 'success', 'message': 'Column added successfully!'})
+
+            elif action == 'edit_column':
+                column = FooterColumn.objects.get(id=data.get('id'))
+                column.name = data.get('name')
+                column.order = data.get('order', 0)
+                column.save()
+                return JsonResponse({'status': 'success', 'message': 'Column updated successfully!'})
+
+            elif action == 'delete_column':
+                FooterColumn.objects.get(id=data.get('id')).delete()
+                return JsonResponse({'status': 'success', 'message': 'Column deleted successfully!'})
+
+            # --- Handle Content AJAX Actions ---
+            elif action == 'delete_content':
+                FooterContent.objects.get(id=data.get('id')).delete()
+                return JsonResponse({'status': 'success', 'message': 'Content deleted successfully!'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+    # GET Request: Show tables
+    columns = FooterColumn.objects.all().order_by('order', 'name')
+    contents = FooterContent.objects.select_related('column').all().order_by('column__order', 'order')
+
+    return render(request, 'admin_panel/footer/footer_management.html', {
+        'columns': columns, 
+        'contents': contents,
+    })
+
+
+@login_required
+def footer_social_links_view(request):
+    social_settings, _ = FooterSocialSettings.objects.get_or_create(id=1)
+
+    if request.method == 'POST':
+        social_settings.facebook_url = (request.POST.get('facebook_url') or '').strip()
+        social_settings.instagram_url = (request.POST.get('instagram_url') or '').strip()
+        social_settings.youtube_url = (request.POST.get('youtube_url') or '').strip()
+        social_settings.linkedin_url = (request.POST.get('linkedin_url') or '').strip()
+        social_settings.save()
+        messages.success(request, "Footer social links updated successfully.")
+        return redirect('footer_social_links')
+
+    return render(request, 'admin_panel/footer/footer_social_links.html', {
+        'social_settings': social_settings,
+    })
+
+# --- Content Add/Edit Views remain unchanged below ---
+def process_and_validate_images(image_file, banner_file):
+    """
+    Helper function to validate and process uploaded images.
+    Returns a tuple: (error_message, processed_image_file, processed_banner_file)
+    """
+    processed_image = image_file
+    processed_banner = banner_file
+
+    # --- 1. Content Image Validation & Processing ---
+    if image_file:
+        try:
+            img = Image.open(image_file)
+            width, height = img.size
+            
+            # Validation: Must be a square
+            if width != height:
+                return "Content image must be a perfect square (1:1 aspect ratio).", None, None
+
+            # Processing: If greater than 500KB, resize and compress
+            if image_file.size > 500 * 1024:
+                # Resize keeping aspect ratio (which is already 1:1)
+                img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+                
+                # Convert to RGB to avoid issues with saving PNG/RGBA as JPEG
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                    
+                output = BytesIO()
+                # Compress quality to bring file size down (aiming for < 50KB)
+                img.save(output, format='JPEG', quality=60, optimize=True)
+                output.seek(0)
+                
+                # Overwrite processed_image with the new InMemoryUploadedFile
+                filename = f"{image_file.name.rsplit('.', 1)[0]}.jpg"
+                processed_image = InMemoryUploadedFile(
+                    output, 'ImageField', filename, 
+                    'image/jpeg', sys.getsizeof(output), None
+                )
+        except Exception as e:
+            return f"Invalid content image format. ({str(e)})", None, None
+
+    # --- 2. Banner Image Validation ---
+    if banner_file:
+        # Validation: Must be under 2MB
+        if banner_file.size > 2 * 1024 * 1024:
+            return "Banner image must be less than 2MB.", None, None
+            
+        try:
+            b_img = Image.open(banner_file)
+            b_width, b_height = b_img.size
+            
+            # Validation: Aspect ratio must be 4:1
+            ratio = round(b_width / b_height, 2)
+            if ratio != 4.00:
+                return f"Banner image aspect ratio must be exactly 4:1. Current ratio is {ratio}:1.", None, None
+        except Exception as e:
+            return f"Invalid banner image format. ({str(e)})", None, None
+
+    return None, processed_image, processed_banner
+
+
+def is_valid_footer_url(url):
+    if not url:
+        return False
+    return url.startswith('/') or url.startswith('http://') or url.startswith('https://')
+
+
+@login_required
+def add_content(request):
+    columns = FooterColumn.objects.all().order_by('order')
+    
+    if request.method == 'POST':
+        column_id = request.POST.get('column_id')
+        title = request.POST.get('title')
+        url = request.POST.get('url')
+        description = request.POST.get('description', '')
+        order = request.POST.get('order', 0)
+        
+        raw_image = request.FILES.get('image')
+        raw_banner_image = request.FILES.get('banner_image')
+
+        # --- Backend Field Validation ---
+        if not column_id or not title or not url:
+            return JsonResponse({'status': 'error', 'message': 'Column, Title, and URL are strictly required fields.'})
+        
+        if not is_valid_footer_url(url):
+            return JsonResponse({'status': 'error', 'message': 'URL must start with / or use a full http/https link.'})
+        
+        # --- Image Validation & Processing ---
+        img_error, image, banner_image = process_and_validate_images(raw_image, raw_banner_image)
+        if img_error:
+            return JsonResponse({'status': 'error', 'message': img_error})
+        
+        try:
+            order = int(order) if order else 0
+            column = FooterColumn.objects.get(id=column_id)
+
+            FooterContent.objects.create(
+                column=column,
+                title=title,
+                url=url,
+                description=description,
+                order=order,
+                image=image,
+                banner_image=banner_image
+            )
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Content added successfully!',
+                'redirect_url': reverse('footer_management')
+            })
+            
+        except FooterColumn.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid Column selected.'})
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Order must be a valid number.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'})
+
+    return render(request, 'admin_panel/footer/footer_content_form.html', {'action': 'Add', 'columns': columns})
+
+
+@login_required
+def edit_content(request, id):
+    content = get_object_or_404(FooterContent, id=id)
+    columns = FooterColumn.objects.all().order_by('order')
+    
+    if request.method == 'POST':
+        column_id = request.POST.get('column_id')
+        title = request.POST.get('title')
+        url = request.POST.get('url')
+        description = request.POST.get('description', '')
+        order = request.POST.get('order', 0)
+        
+        raw_image = request.FILES.get('image')
+        raw_banner_image = request.FILES.get('banner_image')
+        
+        # --- Backend Field Validation ---
+        if not column_id or not title or not url:
+            return JsonResponse({'status': 'error', 'message': 'Column, Title, and URL are strictly required fields.'})
+        
+        if not is_valid_footer_url(url):
+            return JsonResponse({'status': 'error', 'message': 'URL must start with / or use a full http/https link.'})
+
+        # --- Image Validation & Processing ---
+        img_error, image, banner_image = process_and_validate_images(raw_image, raw_banner_image)
+        if img_error:
+            return JsonResponse({'status': 'error', 'message': img_error})
+        
+        try:
+            content.order = int(order) if order else 0
+            column = FooterColumn.objects.get(id=column_id)
+            content.column = column
+            content.title = title
+            content.url = url
+            content.description = description
+            
+            if image:
+                content.image = image
+            if banner_image:
+                content.banner_image = banner_image
+                
+            content.save()
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Content updated successfully!',
+                'redirect_url': reverse('footer_management')
+            })
+            
+        except FooterColumn.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid Column selected.'})
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Order must be a valid number.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'})
+
+    return render(request, 'admin_panel/footer/footer_content_form.html', {'action': 'Edit', 'content': content, 'columns': columns})
+
+
 
 #----------------------------------End---------------------------------------
 #--------------------------#################---------------------------------

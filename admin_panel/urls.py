@@ -45,7 +45,7 @@ urlpatterns = [
     path('banner/', views.banner, name='banner'),
     path('overview/', views.overview, name='overview'),
     
-    #for search bar
+    # for search bar
     path('api/get-search-locations/', views.get_search_locations, name='get_search_locations'),
 
     
@@ -134,4 +134,13 @@ urlpatterns = [
     path('featured-articles/', views.featured_articles, name='featured_articles'),
     path('featured-articles/add/', views.add_featured_article, name='add_featured_article'),
     path('featured-articles/edit/<int:article_id>/', views.edit_featured_article, name='edit_featured_article'),
+    
+    # Footer Management
+    # Main List & Column AJAX operations (Add/Edit/Delete)
+    path('footer-management/', views.footer_management, name='footer_management'),
+    path('footer-social-links/', views.footer_social_links_view, name='footer_social_links'),
+    
+    # Content Add/Edit (Separate Pages)
+    path('footer-management/content/add/', views.add_content, name='add_content'),
+    path('footer-management/content/edit/<int:id>/', views.edit_content, name='edit_content'),
 ]

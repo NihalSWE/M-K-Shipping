@@ -2,14 +2,246 @@
 {% load static %}
 
 {% block content %}
-    <div class="sign-in-area">
-        <div class="image radius-10 overflow-hidden">
-            <img src="{% static 'portal/assets/images/contact/02.webp'%}" width="1245" alt="">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --brand-primary: #2563EB;
+        --brand-hover: #1D4ED8;
+        --bg-body: #F8FAFC;
+        --card-bg: #FFFFFF;
+        --text-dark: #0F172A;
+        --border-light: #CBD5E1;
+        --input-bg: #F1F5F9;
+        --danger-bg: #FEF2F2;
+        --danger-text: #DC2626;
+        --success-bg: #F0FDF4;
+        --success-text: #16A34A;
+    }
+
+    /* Wrapper with requested 140px margin */
+    .modern-auth-wrapper {
+        margin-top: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bg-body);
+        padding: 3rem 1.5rem;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Floating Card */
+    .modern-auth-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--card-bg);
+        max-width: 1400px;
+        width: 100%;
+        border-radius: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    /* Left Panel - Image Full Cover */
+    .modern-auth-image-panel {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background-color: #E2E8F0;
+    }
+
+    .modern-auth-image-panel img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Right Panel */
+    .modern-auth-form-panel {
+        padding: 5rem 4rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .logo-area {
+        margin-bottom: 2rem;
+    }
+
+    .logo-area img {
+        height: 48px;
+    }
+
+    /* Massive Heading */
+    h4.title {
+        font-size: 3rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin: 0 0 2rem 0;
+        letter-spacing: 1px;
+        line-height: 1.2;
+    }
+
+    /* Django Messages */
+    .alert {
+        padding: 1.25rem;
+        border-radius: 14px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+    }
+    .alert-error, .alert-danger {
+        background-color: var(--danger-bg);
+        color: var(--danger-text);
+        border: 2px solid #FECACA;
+    }
+    .alert-success {
+        background-color: var(--success-bg);
+        color: var(--success-text);
+        border: 2px solid #BBF7D0;
+    }
+
+    /* Stacking the form fields */
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Your Original Field Wrapper Styled */
+    .single-input-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .single-input-wrapper label {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        letter-spacing: 0.5px;
+    }
+
+    .single-input-wrapper input {
+        width: 100%;
+        height: 64px;
+        padding: 0 1.5rem;
+        border: 2px solid var(--border-light);
+        border-radius: 16px;
+        background-color: var(--input-bg);
+        color: var(--text-dark);
+        font-size: 1.15rem;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .single-input-wrapper input:focus {
+        outline: none;
+        background-color: #FFFFFF;
+        border-color: var(--brand-primary);
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Your Original Button Class Styled */
+    .rts-btn {
+        margin-top: 1rem;
+        height: 70px;
+        width: 100%;
+        background-color: var(--brand-primary);
+        color: #FFFFFF;
+        border: none;
+        border-radius: 16px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .rts-btn:hover {
+        background-color: var(--brand-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Your Original Footer Text Styled */
+    p.mt-3.text-center {
+        margin-top: 2.5rem !important;
+        font-size: 1.15rem;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    p.mt-3.text-center a {
+        color: var(--brand-primary);
+        font-weight: 700;
+        text-decoration: none;
+        margin-left: 0.5rem;
+    }
+
+    p.mt-3.text-center a:hover {
+        color: var(--brand-hover);
+        text-decoration: underline;
+    }
+
+    .input-row {
+        display: flex;
+        gap: 1.5rem;
+        width: 100%;
+    }
+    
+    .input-row .single-input-wrapper {
+        flex: 1; /* Makes both fields take up exactly 50% of the row */
+        width: 100%;
+    }
+
+    /* Stacks the fields on mobile so they don't look terrible */
+    @media (max-width: 768px) {
+        .input-row {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+    }
+
+    /* Mobile */
+    @media (max-width: 1024px) {
+        .modern-auth-card {
+            grid-template-columns: 1fr;
+        }
+        .modern-auth-image-panel {
+            min-height: 300px;
+        }
+        .modern-auth-form-panel {
+            padding: 3rem 2rem;
+        }
+        h4.title {
+            font-size: 2.25rem;
+        }
+    }
+</style>
+
+<div class="modern-auth-wrapper">
+    <div class="modern-auth-card">
+        
+        <div class="modern-auth-image-panel">
+            <img src="{% static 'portal/assets/images/auth/ship_image.jpg' %}" alt="">
         </div>
-        <div class="sign-in-form radius-10 overflow-hidden body-bg-one">
+
+        <div class="modern-auth-form-panel">
             <div class="logo-area">
-                <a href="{% url 'home' %}"><img src="{% static 'portal/assets/images/logo/02.svg'%}" alt=""></a>
+                <a href="{% url 'home' %}"><img src="{{ site_identity.logo.url }}" alt="logo" style="height: 100px;"></a>
             </div>
+            
             <h4 class="title">Sign Up</h4>
 
             {% if messages %}
@@ -23,29 +255,40 @@
             <form action="{% url 'signup' %}" method="POST">
                 {% csrf_token %}
                 
-                <div class="single-input-wrapper">
-                    <label for="fname">First Name*</label>
-                    <input type="text" name="first_name" id="fname" placeholder="Your first name" required>
-                </div>
-                
-                <div class="single-input-wrapper">
-                    <label for="lname">Last Name*</label>
-                    <input type="text" name="last_name" id="lname" placeholder="Your last name" required>
-                </div>
-                
-                <div class="single-input-wrapper">
-                    <label for="fmail">Email*</label>
-                    <input type="email" name="email" id="fmail" placeholder="Your email address" required>
-                </div>
-                
-                <div class="single-input-wrapper">
-                    <label for="fpass">Password</label>
-                    <input type="password" name="password" id="fpass" placeholder="Enter your password" required>
+                <div class="input-row">
+                    <div class="single-input-wrapper">
+                        <label for="fname">First Name*</label>
+                        <input type="text" name="first_name" id="fname" placeholder="Your first name" required>
+                    </div>
+                    
+                    <div class="single-input-wrapper">
+                        <label for="lname">Last Name*</label>
+                        <input type="text" name="last_name" id="lname" placeholder="Your last name" required>
+                    </div>
                 </div>
 
-                <div class="single-input-wrapper">
-                    <label for="fcpass">Confirm Password*</label>
-                    <input type="password" name="confirm_password" id="fcpass" placeholder="Confirm your password" required>
+                <div class="input-row">
+                    <div class="single-input-wrapper">
+                        <label for="phone">Phone Number*</label>
+                        <input type="text" name="phone_number" id="phone" placeholder="Your phone number" required>
+                    </div>
+                    
+                    <div class="single-input-wrapper">
+                        <label for="fmail">Email*</label>
+                        <input type="email" name="email" id="fmail" placeholder="Your email address" required>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="single-input-wrapper">
+                        <label for="fpass">Password*</label>
+                        <input type="password" name="password" id="fpass" placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="single-input-wrapper">
+                        <label for="fcpass">Confirm Password*</label>
+                        <input type="password" name="confirm_password" id="fcpass" placeholder="Confirm your password" required>
+                    </div>
                 </div>
                 
                 <button type="submit" class="rts-btn btn-primary m-w-100 text-center justify-content-center with-arrow">
@@ -54,6 +297,7 @@
 
                 <p class="mt-3 text-center">Already have an account? <a href="{% url 'signin' %}">Sign In</a></p>
             </form>
-            </div>
+        </div>
     </div>
-    {% endblock content %}
+</div>
+{% endblock content %}

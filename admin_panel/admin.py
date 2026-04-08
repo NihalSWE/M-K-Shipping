@@ -273,3 +273,21 @@ class PassengerAdmin(admin.ModelAdmin):
     def gender_display(self, obj):
         return obj.get_gender_display()
     gender_display.short_description = 'Gender'
+    
+    
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    # Columns to display in the list view
+    list_display = ('email', 'created_at', 'updated_at')
+    
+    # Add a search bar for emails
+    search_fields = ('email',)
+    
+    # Add a sidebar filter for dates
+    list_filter = ('created_at',)
+    
+    # Make the list view read-only for timestamps
+    readonly_fields = ('created_at', 'updated_at')
+    
+    # Order by newest subscribers first
+    ordering = ('-created_at',)

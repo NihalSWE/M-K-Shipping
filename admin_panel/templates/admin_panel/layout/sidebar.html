@@ -125,7 +125,7 @@
                     <!-- Users -->
 
                     <!-- Tickets Booking -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
+                    {% if request.user.user_type == 0 or perms.admin_panel.add_booking or perms.admin_panel.view_booking or perms.admin_panel.change_booking or perms.admin_panel.delete_booking %}
                         <li class="sidebar-list">
                             <a class="sidebar-link sidebar-title" href="#">
                                 <span class="iconify" data-icon="mdi:ticket-confirmation-outline"></span>
@@ -135,13 +135,22 @@
                                 {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
                                 <li><a href="{% url 'tcktbook' %}">Booking</a></li>
                                 {% endif %}
-                                
+                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
+                                <li><a href="{% url 'booking_pending_list' %}">Booked Ticket</a></li>
+                                {% endif %}
+                                {% if request.user.user_type == 0 or perms.admin_panel.change_booking %}
+                                <li><a href="{% url 'booking_issue_list' %}">Issued Ticket</a></li>
+                                {% endif %}
+                                {% if request.user.user_type == 0 or perms.admin_panel.delete_booking %}
+                                <li><a href="{% url 'booking_cancel_list' %}">Cancelled Ticket</a></li>
+                                {% endif %}
+                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
+                                <li><a href="{% url 'trip_report_list' %}">Trip Sheet</a></li>
+                                {% endif %}
+                                {% if request.user.user_type == 0 %}
                                 <li><a href="{% url 'passenger_list' %}">Passenger List</a></li>
-                                <li><a href="{% url 'booking_issue_list' %}">Issue List</a></li>
-                                <li><a href="{% url 'booking_pending_list' %}">Pending List</a></li>
-                                <li><a href="{% url 'booking_cancel_list' %}">Cancellation List</a></li>
-                                <li><a href="{% url 'booking_expired_list' %}">Expired List</a></li>
-                                <li><a href="{% url 'trip_report_list' %}">Trip List</a></li>
+                                <li><a href="{% url 'booking_expired_list' %}">Expired Ticket</a></li>
+                                {% endif %}
                             </ul>
                         </li>
                     {% endif %}
@@ -162,29 +171,39 @@
                     <!-- POS (TB) -->
 
                     <!-- WEBSITE SECTION -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory or perms.admin_panel.view_cabinshowcase or perms.admin_panel.view_featuredarticle or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
                     <li class="sidebar-main-title">
                         <div>
                             <h6 >WEBSITE</h6>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- Home Menu -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:home-outline"></span>
                             <span>Home</span>
                         </a>
                         <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_homebanner %}
+                            {# Show Home only when at least one child page is permitted. #}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity %}
                             <li><a href="{% url 'site_identity' %}">Add Logo</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_homebanner %}
                             <li><a href="{% url 'banner' %}">Add Banner</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_companyoverview %}
                             <li><a href="{% url 'overview' %}">Overview</a></li>
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Home Menu -->
 
                     <!-- About Menu -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:information-outline"></span>
@@ -201,9 +220,11 @@
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- About Menu -->
 
                     <!-- Vessels Display -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:information-outline"></span>
@@ -215,9 +236,11 @@
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Vessels Display -->
 
                     <!-- Cabin Showcase -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:information-outline"></span>
@@ -229,71 +252,97 @@
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Cabin Showcase -->
 
                     <!-- Cabin Showcase -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_featuredarticle %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:information-outline"></span>
                             <span>Featured Articles</span>
                         </a>
                         <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.featuredarticle %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_featuredarticle %}
                                 <li><a href="{% url 'featured_articles' %}">Featured Articles</a></li>
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Cabin Showcase -->
 
                     <!-- Services Menu -->
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:briefcase-outline"></span>
-                            <span>Services</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            <!-- Add service menu items here if needed -->
-                        </ul>
-                    </li>
+                    {# Hidden until at least one permission-based child item is added for this section. #}
                     <!-- Services Menu -->
 
+                    <!-- Footer Menu -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings %}
+                    <li class="sidebar-list">
+                        <a class="sidebar-link sidebar-title" href="#">
+                            <span class="iconify" data-icon="mdi:page-layout-footer"></span>
+                            <span>Footer</span>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent %}
+                            <li><a href="{% url 'footer_management' %}">Footer Management</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_footersocialsettings %}
+                            <li><a href="{% url 'footer_social_links' %}">Social Links</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <!-- Footer Menu -->
+
                     <!-- Pages Menu -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:file-multiple-outline"></span>
                             <span>Pages</span>
                         </a>
                         <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_gallery %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage %}
                             <li><a href="{% url 'gallery_main' %}">Main Gallery</a></li>
                             <li><a href="{% url 'gallery_seasonal' %}">Gallery with Title</a></li>
                             {% endif %}
                             
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_blogpost %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
                             <li><a href="{% url 'admin_blog_banner' %}">Add Banner</a></li>
                             <li><a href="{% url 'admin_blog_list' %}">Blog List</a></li>
                             <li><a href="{% url 'admin_comment_list' %}">Blog Comments</a></li>
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Pages Menu -->
 
                     <!-- Contact Menu -->
+                    {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
                     <li class="sidebar-list">
                         <a class="sidebar-link sidebar-title" href="#">
                             <span class="iconify" data-icon="mdi:email-outline"></span>
                             <span>Contact</span>
                         </a>
                         <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactmessage %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner %}
                             <li><a href="{% url 'contact_banner' %}">Add Banner</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactmessage %}
                             <li><a href="{% url 'contact_messages' %}">Messages</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactinfocard %}
                             <li><a href="{% url 'contact_info_cards' %}">Info. Cards</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactmap %}
                             <li><a href="{% url 'contact_map' %}">Map</a></li>
+                            {% endif %}
+                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
                             <li><a href="{% url 'contact_faq' %}">The Faqs</a></li>
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     <!-- Contact Menu -->
 
                 </ul>

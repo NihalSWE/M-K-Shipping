@@ -4,6 +4,8 @@ from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.conf import settings
 import uuid
 
@@ -954,6 +956,7 @@ class VesselShowcase(models.Model):
     
     # --- Media ---
     hero_image = models.ImageField(upload_to='vessel_showcase/heroes/')
+    banner_image = models.ImageField(upload_to='vessel_showcase/banners/', blank=True, null=True, help_text="Banner image (4:1 ratio)")
     video_tour_url = models.URLField(blank=True, help_text="YouTube or Vimeo link for a virtual tour")
     
     # --- Technical Specifications (For Display) ---
@@ -1041,6 +1044,8 @@ class CabinShowcase(models.Model):
     
     # --- Media ---
     cover_image = models.ImageField(upload_to='cabin_showcase/covers/')
+    # Cabin showcase update: optional wide banner image, same pattern as vessel showcase
+    banner_image = models.ImageField(upload_to='cabin_showcase/banners/', blank=True, null=True, help_text="Banner image (4:1 ratio)")
     video_tour_url = models.URLField(blank=True, help_text="YouTube or Vimeo link")
     
     # --- Cabin Specifications ---
@@ -1151,3 +1156,94 @@ class FeaturedArticle(models.Model):
             base_string = f"{self.organization_name}-{self.name}"
             self.article_identifier = slugify(base_string)[:250] 
         super().save(*args, **kwargs)
+        
+        
+class NewsletterSubscriber(models.Model):
+    email = models.EmailField(unique=True, max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.email
+    
+    
+# Custom validator to ensure the title has a maximum of two words
+def validate_max_two_words(value):
+    if value:
+        words = value.strip().split()
+        if len(words) > 2:
+            raise ValidationError("The title cannot exceed two words.")
+
+class FooterColumn(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="e.g., GET CONNECTED, PRICING, COMPANY")
+    order = models.PositiveIntegerField(default=0, help_text="Controls the left-to-right display order.")
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = "Footer Column"
+        verbose_name_plural = "Footer Columns"
+
+    def __str__(self):
+        return self.name
+
+
+class FooterContent(models.Model):
+    # The dropdown selecting the column
+    column = models.ForeignKey(
+        FooterColumn, 
+        on_delete=models.CASCADE, 
+        related_name='contents'
+    )
+    
+    # Optional fields
+    title = models.CharField(
+        max_length=50, 
+        validators=[validate_max_two_words], 
+        null=True, 
+        blank=True,
+        help_text="Submenu link text. Maximum 2 words."
+    )
+    
+    # Mandatory field for URL validation
+    url = models.CharField(
+        max_length=255,
+        validators=[
+            RegexValidator(
+                regex=r'^/',
+                message="URL must start with a forward slash (e.g., /about-us)"
+            )
+        ],
+        help_text="The relative URL path starting with '/'."
+    )
+    
+    image = models.ImageField(upload_to='footer/images/', null=True, blank=True)
+    banner_image = models.ImageField(upload_to='footer/banners/', null=True, blank=True)
+    
+    # Mandatory field
+    description = models.TextField()
+
+    # Optional ordering for the submenu items
+    order = models.PositiveIntegerField(default=0, help_text="Controls the top-to-bottom display order.")
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Footer Content"
+        verbose_name_plural = "Footer Contents"
+
+    def __str__(self):
+        return self.title if self.title else f"Content item {self.id} under {self.column.name}"
+
+
+class FooterSocialSettings(models.Model):
+    facebook_url = models.URLField(max_length=255, blank=True)
+    instagram_url = models.URLField(max_length=255, blank=True)
+    youtube_url = models.URLField(max_length=255, blank=True)
+    linkedin_url = models.URLField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Footer Social Settings"
+        verbose_name_plural = "Footer Social Settings"
+
+    def __str__(self):
+        return "Footer Social Links"

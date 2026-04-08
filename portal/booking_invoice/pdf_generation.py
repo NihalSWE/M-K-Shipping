@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from weasyprint import HTML, CSS
-
 
 def render_booking_pdf_from_html(html: str, base_url: str) -> bytes:
     """
     Render HTML -> PDF using WeasyPrint.
     base_url must be an absolute URL or filesystem path so relative assets resolve.
     """
+    # Load WeasyPrint only when PDF generation is requested so Django startup/migrate
+    # does not fail on environments missing the native GTK/Pango runtime.
+    from weasyprint import HTML, CSS
+
     # Extra compact overrides for A4 (does NOT affect your web template)
     compact_css = CSS(string="""
         @page { size: A4; margin: 10mm; }

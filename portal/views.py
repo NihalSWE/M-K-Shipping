@@ -2,6 +2,8 @@ from django.shortcuts import render,get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from urllib3 import request
 from admin_panel.models import *
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse, HttpResponse, Http404
 import io
 import qrcode
@@ -93,26 +95,20 @@ def home(request):
         is_published=True
     ).select_related('route')
     
-    # 2. Get unique route IDs
-    active_route_ids = active_trips.values_list('route_id', flat=True).distinct()
+    # --- NEW ROUTING LOGIC ---
+    now = timezone.now()
     
-    # 3. Fetch segments for active routes
-    active_segments = RouteSegmentPricing.objects.filter(
-        route_id__in=active_route_ids
-    ).select_related(
-        'from_stop__location',
-        'to_stop__location'
-    )
+    # 1. Get active trips (ONLY future trips, no looking back into the past)
+    active_routes_qs = Trip.objects.filter(
+        departure_datetime__gte=now,
+        is_published=True
+    ).values_list(
+        'route__source__name', 
+        'route__destination__name'
+    ).distinct()
     
-    # 4. Use a set to grab purely unique source -> destination pairs
-    unique_routes_set = set()
-    for segment in active_segments:
-        src = segment.from_stop.location.name
-        dest = segment.to_stop.location.name
-        unique_routes_set.add((src, dest))
-        
-    # Convert to a list and sort it alphabetically
-    available_routes = sorted(list(unique_routes_set))
+    # 2. Convert to a list and sort it alphabetically
+    available_routes = sorted(list(active_routes_qs))
     # -------------------------
     
     # --- FEATURED ARTICLES LOGIC ---
@@ -310,28 +306,72 @@ def signup(request):
     return render (request,'portal/auth/signup.html')
 
 
+# def get_available_destinations(request):
+#     from_id = request.GET.get('from_id')
+
+#     if not from_id:
+#         return JsonResponse({'results': []})
+
+#     locations = Location.objects.exclude(id=from_id).order_by('name')
+
+#     results = [
+#         {'id': str(loc.id), 'text': loc.name}
+#         for loc in locations
+#     ]
+
+#     return JsonResponse({'results': results})
+
 def get_available_destinations(request):
     from_id = request.GET.get('from_id')
 
     if not from_id:
         return JsonResponse({'results': []})
 
-    locations = Location.objects.exclude(id=from_id).order_by('name')
+    now = timezone.now()
+    valid_destination_ids = set()
+
+    # 1. Find all upcoming, published trips
+    # We prefetch the route stops to prevent massive database queries (N+1 problem)
+    upcoming_trips = Trip.objects.filter(
+        departure_datetime__gte=now,
+        is_published=True
+    ).select_related('route').prefetch_related('route__stops')
+
+    # 2. Loop through the trips to map out valid destinations
+    for trip in upcoming_trips:
+        stops = list(trip.route.stops.all())
+        
+        # Identify if the selected 'from' location is on this trip's route
+        from_stop = next((s for s in stops if str(s.location_id) == str(from_id)), None)
+        
+        # If the origin exists on this route, find all stops that come AFTER it
+        if from_stop:
+            for stop in stops:
+                if stop.stop_order > from_stop.stop_order:
+                    # Add to our set (Sets automatically handle duplicates so we don't get repeated locations)
+                    valid_destination_ids.add(stop.location_id)
+
+    # 3. Fetch the actual Location objects alphabetically, filtering by our valid IDs
+    locations = Location.objects.filter(id__in=valid_destination_ids).order_by('name')
 
     results = [
         {'id': str(loc.id), 'text': loc.name}
         for loc in locations
     ]
+    
+    print(f"DEBUG: For from_id={from_id}, found valid destination IDs: {valid_destination_ids}")
 
     return JsonResponse({'results': results})
 
 
 def all_cabins_view(request):
-    # Fetch all cabins, order by newest first
+    # Cabin showcase update: pass the latest available cabin banner to the public page header
     cabins = CabinShowcase.objects.all().order_by('-id')
+    page_banner = cabins.exclude(banner_image='').exclude(banner_image__isnull=True).first()
     
     context = {
         'cabins': cabins,
+        'page_banner': page_banner,
     }
     return render(request, 'portal/cabin_showcase/all_cabins.html', context)
 
@@ -639,9 +679,27 @@ def save_booking_view(request):
         if not all([trip_id, from_stop_id, to_stop_id]) or not passengers_data:
             return JsonResponse({'success': False, 'error': 'Missing required booking data.'}, status=400)
         
-        first_phone = (passengers_data[0].get("phone") or "").strip()
-        if not first_phone:
-            return JsonResponse({'success': False, 'error': 'First passenger phone is required.'}, status=400)
+        # --- STRICT VALIDATION START ---
+        # 1. Validate First Passenger (Mandatory: Name, Phone, Email, Address)
+        first_p = passengers_data[0]
+        first_phone = (first_p.get("phone") or "").strip()
+        first_name = (first_p.get("name") or "").strip()
+        first_email = (first_p.get("email") or "").strip()
+        first_address = (first_p.get("address") or "").strip()
+
+        if not first_phone or not first_name:
+            return JsonResponse({'success': False, 'error': 'First passenger Name and Phone are required.'}, status=400)
+        
+        if not first_email or not first_address:
+            return JsonResponse({'success': False, 'error': 'First passenger Email and Address are required.'}, status=400)
+
+        # 2. Validate All Other Passengers (Mandatory: Name, Phone)
+        for i, p in enumerate(passengers_data):
+            p_phone = (p.get("phone") or "").strip()
+            p_name = (p.get("name") or "").strip()
+            if not p_phone or not p_name:
+                return JsonResponse({'success': False, 'error': f'Name and Phone are required for passenger {i+1}.'}, status=400)
+        # --- STRICT VALIDATION END ---
 
         # (Recommended) prevent duplicate seats in same request
         seat_ids = [p.get('seat_id') for p in passengers_data]
@@ -845,7 +903,8 @@ def save_booking_view(request):
                 })
 
             booking.total_amount = total_amount
-            booking.save(update_fields=['total_amount'])
+            booking.payment_status = 'PAID'
+            booking.save(update_fields=['total_amount', 'payment_status'])
             
             # [NEW:SHARE_TOKEN]
             # later put in the ssl commerz callback
@@ -1812,3 +1871,57 @@ def booking_ticket_pdf(request, booking_ref):
     resp = HttpResponse(pdf_bytes, content_type="application/pdf")
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
     return resp
+
+
+def subscribe_newsletter(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email field cannot be empty.'})
+        
+        # Backend format validation
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid email format. Please enter a valid address.'})
+        
+        # Check for duplicates
+        if NewsletterSubscriber.objects.filter(email=email).exists():
+            return JsonResponse({'status': 'error', 'message': 'You are already subscribed!'})
+        
+        # Save to database
+        NewsletterSubscriber.objects.create(email=email)
+        return JsonResponse({'status': 'success', 'message': 'Successfully subscribed! Welcome aboard.'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+
+def footer_page_view(request, page_path):
+    # 1. Clean the incoming path completely
+    clean_path = page_path.strip('/')
+    
+    # 2. Reconstruct exactly how it should look in the DB
+    db_search_url = f"/{clean_path}"
+    
+    # DEBUG: This will print in your terminal. If you don't see this print, 
+    # the request isn't even hitting this view (which points back to Suspect 1).
+    print(f"\n--- DEBUG DYNAMIC PAGE ---")
+    print(f"Browser requested path: {page_path}")
+    print(f"Searching database for: {db_search_url}")
+    print(f"--------------------------\n")
+    
+    # 3. Try to find it. If it fails, try adding a trailing slash just in case 
+    # it was saved that way in the admin panel.
+    try:
+        page_data = FooterContent.objects.get(url=db_search_url)
+    except FooterContent.DoesNotExist:
+        try:
+            page_data = FooterContent.objects.get(url=f"{db_search_url}/")
+        except FooterContent.DoesNotExist:
+            raise Http404("Dynamic page not found in FooterContent database.")
+    
+    # Pass it to your updated template path
+    return render(request, 'portal/dynamic_pages/dynamic_footer_pages.html', {'page': page_data})
+
+

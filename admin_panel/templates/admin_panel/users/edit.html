@@ -191,7 +191,7 @@
                                                                                {% if perm.id in perm_form.current_permissions %}checked{% endif %}>
                                                                         
                                                                         <label class="form-check-label small text-secondary" for="perm_{{ perm.id }}" style="cursor: pointer;">
-                                                                            {{ perm.name|cut:"Can " }}
+                                                                            {{ perm.display_label }}
                                                                         </label>
                                                                     </div>
                                                                 </div>

@@ -1,115 +1,270 @@
-{% load static %}
-
-<div class="rts-footer-area-one tour-marketplace pt--100 pb--30">
-    <div class="container">
-        <div class="footer-inner">
-            <div class="left">
-                <div class="single-footer-widget-one logo-area">
-                    <a href="{% url 'home' %}" class="logo">
-                        {% if site_identity.logo %}
-                            <img src="{{ site_identity.logo.url }}" alt="logo" style="
-                            height: 80px;
-                        ">
-                        {% else %}
-                            <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
-                        {% endif %}
-                    </a>
-                    <p class="desc">We take care of every detail you can travel with confidence ease.</p>
-                    <div class="call-us">
-                        <div class="icon"><img src="{% static 'portal/assets/images/others/01.svg'%}" alt=""></div>
-                        <div class="text">
-                            <p>Call Us 24/7</p>
-                            <h5><a href="call-to:25621452156">09678330055</a></h5>
-                        </div>
-                    </div>
-                    <ul class="social-area">
-                        <li>Follow Us -</li>
-                        <li><a href="https://www.facebook.com/official.mkshippinglines?mibextid=wwXIfr&rdid=FMVA3J3Vp6aKUJCR&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187UkpQEWi%2F%3Fmibextid%3DwwXIfr" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a></li>
-                        {% comment %} <li><a href="#"><i class="fa-brands fa-linkedin"></i></a></li>
-                        <li><a href="#"><i class="fa-brands fa-youtube"></i></a></li>
-                        <li><a href="#"><i class="fa-brands fa-twitter"></i></a></li> {% endcomment %}
-                    </ul>
-                </div>
-            </div>
-            <div class="mid d-flex justify-content-center">
-                <div class="single-footer-widget-one essential-links">
-                    <h6 class="title">Quick Links</h6>
-                    <ul>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
-                            </svg>
-                            <a href="{% url 'home' %}" target="_blank">Home</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
-                            </svg>
-                            <a href="{% url 'aboutUs' %}" target="_blank">About Us</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
-                        </svg>
-                        <a href="{% url 'team' %}" target="_blank">Leadership Profile</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
-                        </svg>
-                        <a href="{% url 'services' %}" target="_blank">Our Services</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#BA6827" />
-                            </svg>
-                            <a href="{% url 'technology_innovation' %}" target="_blank">Technology & Innovation</a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="single-footer-widget-one essential-links">
-                    <h6 class="title">Support</h6>
-                    <ul>
-                        
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
-                            </svg>
-                            <a href="{% url 'contact' %}">Contact Us</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
-                            </svg>
-                            <a href="#">Booking Guide</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
-                            </svg>
-                            <a href="#">Privacy Policy</a>
-                        </li>
-                        <li><svg width="7" height="10" viewBox="0 0 7 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.5 0L6.75 5L0.5 10V0Z" fill="#119CE6" />
-                            </svg>
-                            <a href="#">FAQs</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-           
+{% comment %} <footer class="nx-foot-wrapper">
+    <div class="nx-foot-container">
+        <div class="nx-foot-newsletter">
+            <h3 class="nx-foot-news-title mb-0" style="margin-bottom: 0 !important;">Subscribe to our newsletter</h3>
+            <form class="nx-foot-form" action="#" method="POST">
+                {% csrf_token %}
+                <input type="email" placeholder="Enter your email" class="nx-foot-input" required>
+                <button type="submit" class="nx-foot-btn">Subscribe</button>
+            </form>
         </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <!-- copyright area start -->
-                <div class="copyright-area-start">
-                    <p>Copyright © <script>
-                            document.write(
-                                new Date().getFullYear()
-                            )
-                        </script> All Rights Reserved, Design by <span><a href="{% url 'home' %}">IGL Web Ltd.</a></span></p>
-                    <ul>
-                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-01.svg'%}" alt=""></a></li>
-                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-02.svg'%}" alt=""></a></li>
-                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-03.svg'%}" alt=""></a></li>
-                        <li><a href="#"><img src="{% static 'portal/assets/images/others/payment-04.svg'%}" alt=""></a></li>
-                    </ul>
+
+        <div class="nx-foot-grid">
+            <div class="nx-foot-col">
+                <h4 class="nx-foot-title">GET CONNECTED</h4>
+                <ul class="nx-foot-list">
+                    <li><a href="#">Connectivity</a></li>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Support</a></li>
+                </ul>
+            </div>
+
+            <div class="nx-foot-col">
+                <h4 class="nx-foot-title">PRICING</h4>
+                <ul class="nx-foot-list">
+                    <li><a href="#">Overview</a></li>
+                    <li><a href="#">Premium Plan</a></li>
+                    <li><a href="#">Promotions</a></li>
+                </ul>
+            </div>
+
+            <div class="nx-foot-col">
+                <h4 class="nx-foot-title">COMPANY</h4>
+                <ul class="nx-foot-list">
+                    <li><a href="{% url 'aboutUs' %}">About Us</a></li>
+                    <li><a href="#">Care</a></li>
+                    <li><a href="#">Press</a></li>
+                </ul>
+            </div>
+
+            <div class="nx-foot-col">
+                <h4 class="nx-foot-title">RESOURCE</h4>
+                <ul class="nx-foot-list">
+                    <li><a href="#">Applications</a></li>
+                    <li><a href="#">Documents</a></li>
+                    <li><a href="#">Systems</a></li>
+                </ul>
+                
+                <div class="nx-foot-social-wrap">
+                    <p>Follow Along</p>
+                    <div class="nx-foot-social-row">
+                        <a href="#" target="_blank" class="nx-foot-social-icon fb"><iconify-icon icon="fa6-brands:facebook-f"></iconify-icon></a>
+                        <a href="#" target="_blank" class="nx-foot-social-icon ig"><iconify-icon icon="fa6-brands:instagram"></iconify-icon></a>
+                        <a href="#" target="_blank" class="nx-foot-social-icon tw"><iconify-icon icon="fa6-brands:twitter"></iconify-icon></a>
+                        <a href="#" target="_blank" class="nx-foot-social-icon in"><iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon></a>
+                    </div>
                 </div>
-                <!-- copyright area end -->
             </div>
         </div>
     </div>
-</div>
+
+    <div class="nx-foot-bottom">
+        <p><iconify-icon icon="fa6-regular:copyright" style="vertical-align: middle; margin-right: 5px;"></iconify-icon> Copyright © 2026 All Rights Reserved, Design by IGL Web Ltd.</p>
+    </div>
+</footer> {% endcomment %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="nx-foot-wrapper">
+    <div class="nx-foot-container">
+        <div class="nx-foot-newsletter">
+            <h3 class="nx-foot-news-title mb-0" style="margin-bottom: 0 !important;">Subscribe to our newsletter</h3>
+            <form class="nx-foot-form" action="#" method="POST">
+                {% csrf_token %}
+                <input type="email" placeholder="Enter your email" class="nx-foot-input" required>
+                <button type="submit" class="nx-foot-btn">Subscribe</button>
+            </form>
+        </div>
+
+        <div class="nx-foot-grid">
+            {% if footer_columns %}
+                
+                {% for footer_col in footer_columns %}
+                    <div class="nx-foot-col">
+                        <h4 class="nx-foot-title">{{ footer_col.name }}</h4>
+                        
+                        <ul class="nx-foot-list">
+                            {% for footer_item in footer_col.contents.all %}
+                                <li>
+                                    <a href="{% if footer_item.url|slice:':4' == 'http' %}{{ footer_item.url }}{% else %}/menu/pages{{ footer_item.url }}{% endif %}">
+                                        {{ footer_item.title }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        {% if forloop.counter == 4 %}
+                            <div class="nx-foot-social-wrap">
+                                <p>Follow Along</p>
+                                <div class="nx-foot-social-row">
+                                    {% for social in footer_social_links %}
+                                        <a href="{{ social.url }}" target="_blank" rel="noopener" class="nx-foot-social-icon {% if social.platform == 'facebook' %}fb{% elif social.platform == 'instagram' %}ig{% elif social.platform == 'youtube' %}yt{% elif social.platform == 'linkedin' %}in{% endif %}">
+                                            {% if social.platform == 'facebook' %}
+                                                <iconify-icon icon="fa6-brands:facebook-f"></iconify-icon>
+                                            {% elif social.platform == 'instagram' %}
+                                                <iconify-icon icon="fa6-brands:instagram"></iconify-icon>
+                                            {% elif social.platform == 'youtube' %}
+                                                <iconify-icon icon="fa6-brands:youtube"></iconify-icon>
+                                            {% elif social.platform == 'linkedin' %}
+                                                <iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon>
+                                            {% endif %}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {% if footer_columns|length == 1 %}
+                    <div class="nx-foot-col"></div>
+                    <div class="nx-foot-col"></div>
+                    <div class="nx-foot-col">
+                        <div class="nx-foot-social-wrap">
+                            <p>Follow Along</p>
+                            <div class="nx-foot-social-row">
+                                {% for social in footer_social_links %}
+                                    <a href="{{ social.url }}" target="_blank" rel="noopener" class="nx-foot-social-icon {% if social.platform == 'facebook' %}fb{% elif social.platform == 'instagram' %}ig{% elif social.platform == 'youtube' %}yt{% elif social.platform == 'linkedin' %}in{% endif %}">
+                                        {% if social.platform == 'facebook' %}
+                                            <iconify-icon icon="fa6-brands:facebook-f"></iconify-icon>
+                                        {% elif social.platform == 'instagram' %}
+                                            <iconify-icon icon="fa6-brands:instagram"></iconify-icon>
+                                        {% elif social.platform == 'youtube' %}
+                                            <iconify-icon icon="fa6-brands:youtube"></iconify-icon>
+                                        {% elif social.platform == 'linkedin' %}
+                                            <iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% elif footer_columns|length == 2 %}
+                    <div class="nx-foot-col"></div>
+                    <div class="nx-foot-col">
+                        <div class="nx-foot-social-wrap">
+                            <p>Follow Along</p>
+                            <div class="nx-foot-social-row">
+                                {% for social in footer_social_links %}
+                                    <a href="{{ social.url }}" target="_blank" rel="noopener" class="nx-foot-social-icon {% if social.platform == 'facebook' %}fb{% elif social.platform == 'instagram' %}ig{% elif social.platform == 'youtube' %}yt{% elif social.platform == 'linkedin' %}in{% endif %}">
+                                        {% if social.platform == 'facebook' %}
+                                            <iconify-icon icon="fa6-brands:facebook-f"></iconify-icon>
+                                        {% elif social.platform == 'instagram' %}
+                                            <iconify-icon icon="fa6-brands:instagram"></iconify-icon>
+                                        {% elif social.platform == 'youtube' %}
+                                            <iconify-icon icon="fa6-brands:youtube"></iconify-icon>
+                                        {% elif social.platform == 'linkedin' %}
+                                            <iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% elif footer_columns|length == 3 %}
+                    <div class="nx-foot-col">
+                        <div class="nx-foot-social-wrap">
+                            <p>Follow Along</p>
+                            <div class="nx-foot-social-row">
+                                {% for social in footer_social_links %}
+                                    <a href="{{ social.url }}" target="_blank" rel="noopener" class="nx-foot-social-icon {% if social.platform == 'facebook' %}fb{% elif social.platform == 'instagram' %}ig{% elif social.platform == 'youtube' %}yt{% elif social.platform == 'linkedin' %}in{% endif %}">
+                                        {% if social.platform == 'facebook' %}
+                                            <iconify-icon icon="fa6-brands:facebook-f"></iconify-icon>
+                                        {% elif social.platform == 'instagram' %}
+                                            <iconify-icon icon="fa6-brands:instagram"></iconify-icon>
+                                        {% elif social.platform == 'youtube' %}
+                                            <iconify-icon icon="fa6-brands:youtube"></iconify-icon>
+                                        {% elif social.platform == 'linkedin' %}
+                                            <iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+            {% else %}
+                <div class="nx-foot-col">
+                    <h4 class="nx-foot-title">GET CONNECTED</h4>
+                    <ul class="nx-foot-list">
+                        <li><a href="#">Connectivity</a></li>
+                        <li><a href="#">Dashboard</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+                <div class="nx-foot-col">
+                    <h4 class="nx-foot-title">PRICING</h4>
+                    <ul class="nx-foot-list">
+                        <li><a href="#">Overview</a></li>
+                        <li><a href="#">Premium Plan</a></li>
+                        <li><a href="#">Promotions</a></li>
+                    </ul>
+                </div>
+                <div class="nx-foot-col">
+                    <h4 class="nx-foot-title">COMPANY</h4>
+                    <ul class="nx-foot-list">
+                        <li><a href="{% url 'aboutUs' %}">About Us</a></li>
+                        <li><a href="#">Care</a></li>
+                        <li><a href="#">Press</a></li>
+                    </ul>
+                </div>
+                <div class="nx-foot-col">
+                    <h4 class="nx-foot-title">RESOURCE</h4>
+                    <ul class="nx-foot-list">
+                        <li><a href="#">Applications</a></li>
+                        <li><a href="#">Documents</a></li>
+                        <li><a href="#">Systems</a></li>
+                    </ul>
+                    
+                    <div class="nx-foot-social-wrap">
+                        <p>Follow Along</p>
+                        <div class="nx-foot-social-row">
+                            {% for social in footer_social_links %}
+                                <a href="{{ social.url }}" target="_blank" rel="noopener" class="nx-foot-social-icon {% if social.platform == 'facebook' %}fb{% elif social.platform == 'instagram' %}ig{% elif social.platform == 'youtube' %}yt{% elif social.platform == 'linkedin' %}in{% endif %}">
+                                    {% if social.platform == 'facebook' %}
+                                        <iconify-icon icon="fa6-brands:facebook-f"></iconify-icon>
+                                    {% elif social.platform == 'instagram' %}
+                                        <iconify-icon icon="fa6-brands:instagram"></iconify-icon>
+                                    {% elif social.platform == 'youtube' %}
+                                        <iconify-icon icon="fa6-brands:youtube"></iconify-icon>
+                                    {% elif social.platform == 'linkedin' %}
+                                        <iconify-icon icon="fa6-brands:linkedin-in"></iconify-icon>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="nx-foot-bottom">
+        <p>
+            Copyright &copy; 2026 All Rights Reserved, Design by 
+            <span style="font-family: 'Arial Black', sans-serif;">IGL Web Ltd.</span>
+        </p>
+    </div>
+</footer>

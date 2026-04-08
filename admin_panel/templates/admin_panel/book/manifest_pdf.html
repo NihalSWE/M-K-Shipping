@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% comment %} <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -186,5 +186,234 @@
         </tbody>
     </table>
 
+</body>
+</html> {% endcomment %}
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Trip Sheet</title>
+    <style>
+        /* PDF specific page sizing - Forces Landscape */
+        @page {
+            size: a4 landscape;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10px; /* Smaller font to fit all 15 columns */
+            color: #000;
+        }
+
+        .sheet-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .header-table {
+            margin-bottom: 15px;
+            table-layout: fixed; /* Forces the PDF engine to respect column widths */
+        }
+        .header-table th {
+            background-color: #f8f9fa;
+            text-align: left;
+            font-weight: bold;
+        }
+        .header-table td {
+            text-align: left;
+        }
+
+        .data-table {
+            width: 100%;
+            table-layout: fixed; /* Forces the PDF engine to respect column widths */
+            word-wrap: break-word; /* Prevents long text from blowing out columns */
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            /* REMOVED white-space: nowrap; to prevent overlapping text */
+        }
+
+        .text-left { text-align: left !important; }
+        .text-end { text-align: right !important; }
+        .fw-bold { font-weight: bold; }
+        .small-note { font-size: 8px; line-height: 1.2; }
+        
+        /* Colors */
+        .text-success { color: green; }
+        .text-danger { color: red; }
+        .text-warning { color: #fd7e14; }
+        .pending-bg { background-color: #fff3cd; }
+        
+        .footer-cell {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        /* Fallback for badge in PDF */
+        .badge-timer {
+            color: #6f42c1;
+            font-size: 7px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sheet-title">Trip Sheet</div>
+
+    <table class="header-table">
+        <thead>
+            <tr>
+                <th>Launch</th>
+                <th>Route</th>
+                <th>Starting Place</th>
+                <th>Journey Date Time</th>
+                <th>Ticket Sold</th>
+                <th>Seats Sold</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ trip.ship.name }}</td>
+                <td>{{ trip.route.name }}</td>
+                <td>{{ trip.route.source.name }}</td>
+                <td>{{ trip.departure_datetime|date:"Y-m-d H:i" }}</td>
+                <td>{{ total_tickets }}</td>
+                <td>{{ total_tickets }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 30px;">SL</th>
+                <th style="width: 6%;">Ticket No</th>
+                <th style="width: 8%;">Booking Ref</th>
+                <th style="width: 7%;">Cabin</th>
+                <th style="width: 12%;">Pass. Name</th>
+                <th style="width: 8%;">Phone No</th>
+                <th style="width: 6%;">Paid</th>
+                <th style="width: 7%;">Discount</th>
+                <th style="width: 6%;">Due</th>
+                <th style="width: 7%;">From Station</th>
+                <th style="width: 7%;">To Station</th>
+                <th style="width: 7%;">Ticket Status</th>
+                <th style="width: 6%;">Booked By</th>
+                <th style="width: 6%;">Issued By</th>
+                <th style="width: 4%;">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+                <tr class="{% if ticket.booking.status == 'PENDING' %}pending-bg{% endif %}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ ticket.id }}</td>
+                    <td class="fw-bold">{{ ticket.booking.booking_ref }}</td>
+
+                    <td>
+                        {{ ticket.display_label }}
+                        {% if ticket.booking.status == 'PENDING' and ticket.booking.time_stopped %}
+                            <br><span class="badge-timer">[Paused]</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-left">
+                        {{ ticket.passenger_name|default:"-" }}
+                    </td>
+
+                    <td>{{ ticket.passenger.phone|default:ticket.booking.user.phone_number|default:"0" }}</td>
+
+                    <td class="fw-bold text-success">
+                        {{ ticket.booking_data.paid_amount|floatformat:0 }}
+                    </td>
+
+                    <td>0</td>
+
+                    <td class="fw-bold {% if ticket.booking_data.due_amount > 0 %}text-danger{% endif %}">
+                        {{ ticket.booking_data.due_amount|floatformat:0 }}
+                    </td>
+
+                    <td>{{ ticket.from_stop.location.name }}</td>
+                    <td>{{ ticket.to_stop.location.name }}</td>
+
+                    <td>
+                        {% if ticket.booking.status == 'CONFIRMED' %}
+                            <span class="text-success">Confirmed</span><br>
+                            <span class="text-success" style="font-size: 8px;">Paid</span>
+                        {% elif ticket.booking.status == 'PENDING' %}
+                            <span style="color: orange;">Pending</span><br>
+                            <span class="text-warning small-note">{{ ticket.booking_data.payment_label }}</span>
+                        {% else %}
+                            <span>{{ ticket.booking.status }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ request.user.get_display_name|default:request.user.phone_number|default:"Admin" }}</td>
+                    <td>{{ request.user.get_display_name|default:request.user.phone_number|default:"Admin" }}</td>
+
+                    <td>
+                        {% if ticket.booking.status == 'PENDING' and ticket.booking.time_stopped %}
+                            Timer Stopped
+                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount > 0 and ticket.booking_data.due_amount > 0 %}
+                            Partial Payment
+                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount == 0 %}
+                            Unpaid
+                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.due_amount == 0 %}
+                            Paid*
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="15" style="padding: 15px;">No tickets found for this trip</td>
+                </tr>
+            {% endfor %}
+
+            {% if tickets %}
+                <tr class="footer-cell">
+                    <td colspan="6" class="text-end" style="padding-right: 10px;">Grand Total (By Booking):</td>
+                    
+                    <td class="fw-bold text-success">
+                        {{ total_paid|floatformat:0 }}
+                    </td>
+                    
+                    <td></td>
+                    
+                    <td class="fw-bold {% if total_due > 0 %}text-danger{% endif %}">
+                        {{ total_due|floatformat:0 }}
+                    </td>
+                    
+                    <td colspan="6"></td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
 </body>
 </html>

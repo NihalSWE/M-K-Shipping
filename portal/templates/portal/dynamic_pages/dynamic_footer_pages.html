@@ -1,0 +1,155 @@
+{% extends 'portal/base.html' %} 
+{% load static %}
+
+{% block custom_css %}
+<style>
+    /* Namespaced to prevent global theme CSS from bleeding in */
+    .uxc-namespace {
+        --uxc-blue-900: #0A2540; 
+        --uxc-blue-600: #0077B6; 
+        --uxc-gray-100: #f3f4f6;
+        font-family: 'Manrope', sans-serif !important;
+        background-color: #fafbfc;
+    }
+
+    .uxc-namespace h1, .uxc-namespace h2, .uxc-namespace h3, 
+    .uxc-namespace p, .uxc-namespace span {
+        font-family: 'Manrope', sans-serif !important;
+        letter-spacing: 0.01em !important; 
+        margin: 0;
+        padding: 0;
+    }
+
+    .uxc-page-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 80px 20px;
+    }
+
+    .uxc-page-container::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .uxc-page-left {
+        float: left;
+        width: 500px; 
+        margin-right: 40px;
+        margin-bottom: 24px;
+    }
+
+    .uxc-page-img {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        border-radius: 16px;
+        background-color: var(--uxc-gray-100);
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    .uxc-m-title {
+        font-size: 2.4rem !important;
+        font-weight: 800 !important;
+        color: var(--uxc-blue-900) !important;
+        line-height: 1.2 !important;
+        padding-top: 8px;
+        margin-bottom: 20px !important;
+        display: block;
+    }
+
+    .uxc-desc-text {
+        font-size: 1.05rem !important;
+        color: #4b5563 !important;
+        line-height: 1.8 !important; 
+        font-weight: 500 !important;
+        display: block;
+    }
+
+    .uxc-desc-text p { margin-bottom: 16px !important; }
+    .uxc-desc-text p:last-child { margin-bottom: 0 !important; }
+
+    /* Modern List Styling */
+    .uxc-desc-text ul, .uxc-desc-text ol { 
+        margin: 16px 0 !important; 
+        padding: 0 !important; 
+        list-style-type: none !important; 
+        display: flow-root !important; /* <--- THIS IS THE FIX */
+    }
+
+    .uxc-desc-text li { 
+        margin-bottom: 14px !important; 
+        padding-left: 32px !important; 
+        position: relative !important; 
+    }
+
+    .uxc-desc-text li::before {
+        content: '✓' !important; 
+        position: absolute !important;
+        left: 0 !important;
+        top: 4px !important; 
+        color: #ffffff !important;
+        background-color: var(--uxc-blue-600) !important;
+        border-radius: 50% !important; 
+        width: 20px !important;
+        height: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 2px 5px rgba(0, 119, 182, 0.25) !important; 
+    }
+
+    /* Media Queries */
+    @media (max-width: 992px) {
+        .uxc-page-left {
+            float: none; 
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 24px;
+        }
+        .uxc-page-img { max-width: 100%; height: auto; max-height: 450px; }
+    }
+
+    @media (max-width: 576px) {
+        .uxc-m-title { font-size: 1.9rem !important; }
+        .uxc-page-container { padding: 50px 15px; }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="rts-breadcrumb-area one" 
+     data-bg-src="{% if page.banner_image %}{{ page.banner_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/07.webp'%}{% endif %}">
+    <div class="container h-100">
+        <div class="breadcrumb-area-wrapper">
+            <div class="nav-bread-crumb">
+                <a href="{% url 'home' %}">Home</a>
+                <span><i class="fa-regular fa-chevron-right"></i></span>
+                <a href="#" class="current">{{ page.title }}</a>
+            </div>
+            <h1 class="title">{{ page.title }}</h1>
+        </div>
+    </div>
+</div>
+
+<div class="uxc-namespace">
+    <div class="uxc-page-container">
+        
+        {% if page.image %}
+        <div class="uxc-page-left">
+            <img src="{{ page.image.url }}" alt="{{ page.title }}" class="uxc-page-img">
+        </div>
+        {% endif %}
+        
+        <h2 class="uxc-m-title">{{ page.title }}</h2>
+        
+        <div class="uxc-desc-text">
+            {{ page.description|safe }}
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

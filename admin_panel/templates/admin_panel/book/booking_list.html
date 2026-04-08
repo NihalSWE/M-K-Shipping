@@ -184,6 +184,7 @@
                                     <td>#{{ booking.id }}</td>
                                     <td>
                                         <div class="fw-bold">{{ booking.passenger_name }}</div>
+                                        <small class="text-muted">Ref: {{ booking.booking_ref }}</small>
                                     </td>
                                     <td>
                                         {% if booking.user.phone_number %}
@@ -381,11 +382,17 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to mark this booking as <strong>PAID</strong> and <strong>CONFIRMED</strong>?</p>
+                <!-- NEW: quick confirm option for Paid or Unpaid while keeping booking confirmed -->
+                <p class="mb-3">Choose how you want to confirm this booking.</p>
+                <label for="confirmPaymentStatus" class="form-label">Payment Option</label>
+                <select id="confirmPaymentStatus" class="form-select">
+                    <option value="PAID" selected>Paid and Confirmed</option>
+                    <option value="UNPAID">Unpaid but Confirmed</option>
+                </select>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="#" id="btnConfirmStatus" class="btn btn-success">Yes, Confirm it</a>
+                <a href="#" id="btnConfirmStatus" class="btn btn-success">Confirm</a>
             </div>
         </div>
     </div>
@@ -485,14 +492,23 @@
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
 
 <script>
-    // Confirm Status Modal (YOUR EXISTING CODE - UNCHANGED)
+    // UPDATED: pass selected payment option with the existing confirm action
     var confirmStatusModal = document.getElementById('confirmStatusModal');
     if(confirmStatusModal){
         confirmStatusModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
-            var url = button.getAttribute('data-href');
+            var baseUrl = button.getAttribute('data-href');
             var confirmBtn = confirmStatusModal.querySelector('#btnConfirmStatus');
-            confirmBtn.setAttribute('href', url);
+            var paymentSelect = confirmStatusModal.querySelector('#confirmPaymentStatus');
+
+            function updateConfirmUrl() {
+                var paymentStatus = paymentSelect.value || 'PAID';
+                confirmBtn.setAttribute('href', baseUrl + '?payment_status=' + encodeURIComponent(paymentStatus));
+            }
+
+            paymentSelect.value = 'PAID';
+            updateConfirmUrl();
+            paymentSelect.onchange = updateConfirmUrl;
         });
     }
 </script>

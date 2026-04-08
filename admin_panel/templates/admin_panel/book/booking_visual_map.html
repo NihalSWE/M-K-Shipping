@@ -25,7 +25,6 @@
     .deck-title {
         font-weight: bold;
         font-size: 1.4rem;
-        margin-bottom: 20px;
         color: #2c3e50;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -33,7 +32,6 @@
 
     /* --- THE STRICT GRID --- */
     .ship-grid {
-        margin-top:-100px;
         display: grid;
         grid-auto-rows: 50px; 
         gap: 8px;
@@ -251,7 +249,16 @@
                 {% endif %}
             </div>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="text"
+                       name="booking_ref"
+                       class="form-control form-control-sm"
+                       placeholder="Search booking ref"
+                       value="{{ request.GET.booking_ref }}"
+                       style="min-width: 260px;">
+                <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            </form>
             <a href="{% url 'ticket_detail' booking.id %}" class="btn btn-sm btn-info shadow-sm" target="_blank">
                 <i class="fas fa-print fa-sm text-white-50"></i> Printable Ticket
             </a>

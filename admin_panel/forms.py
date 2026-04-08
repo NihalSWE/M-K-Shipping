@@ -75,13 +75,35 @@ class AdminUserAddForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            raise forms.ValidationError("Email address is required.")
+
+        # Keep email unique with a friendly form error before hitting the database.
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("This email already exists. Please use a different email.")
+
+        return email
+
+    def clean_phone_number(self):
+        phone_number = (self.cleaned_data.get('phone_number') or '').strip()
+        if not phone_number:
+            raise forms.ValidationError("Phone number is required.")
+
+        # Keep phone number unique with a friendly form error before hitting the database.
+        if User.objects.filter(phone_number=phone_number).exists():
+            raise forms.ValidationError("This phone number already exists. Please use a different phone number.")
+
+        return phone_number
+
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
 
         if password != confirm_password:
-            raise forms.ValidationError("Passwords do not match")
+            raise forms.ValidationError("Passwords do not match. Please enter the same password in both fields.")
         return cleaned_data
 
     def save(self, commit=True):
@@ -183,6 +205,13 @@ class AdminUserPermissionsForm(forms.ModelForm):
         model = User
         fields = []  # We don't need standard fields, we are handling permissions manually
 
+    PERMISSION_LABELS = {
+        'add_booking': 'add booking (gives: Booking)',
+        'view_booking': 'view booking (gives: Booked Ticket, Trip Sheet)',
+        'change_booking': 'change booking (gives: Issued Ticket)',
+        'delete_booking': 'delete booking (gives: Cancelled Ticket)',
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # 1. Get permissions for YOUR specific app only (replace 'your_app_name' with your actual app name)
@@ -208,6 +237,10 @@ class AdminUserPermissionsForm(forms.ModelForm):
             self.current_permissions = set(self.instance.user_permissions.values_list('id', flat=True))
         else:
             self.current_permissions = set()
+
+        for perms in self.permissions_grouped.values():
+            for perm in perms:
+                perm.display_label = self.PERMISSION_LABELS.get(perm.codename, perm.name.replace('Can ', ''))
 
     def save(self, commit=True):
         # We handle saving manually in the view for maximum control, 

@@ -910,7 +910,8 @@
                     let passengers = [];
                     let allValid = true;
 
-                    $('.passenger-row').each(function() {
+                    // Added 'index' to track the passenger row number
+                    $('.passenger-row').each(function(index) {
                         const name = $(this).find('.p-name').val().trim();
                         const phone = $(this).find('.p-phone').val().trim();
                         const email = $(this).find('.p-email').val().trim();
@@ -918,30 +919,35 @@
                         const gender = (genderRaw === '' || genderRaw === null) ? null : parseInt(genderRaw, 10);
                         const address = $(this).find('.p-address').val().trim();
 
-                        if (!name || !phone) {
-                            allValid = false;
-                            $(this).find('.modern-input').each(function() {
-                                if (!$(this).val().trim() && $(this).is('.p-name, .p-phone')) {
-                                    $(this).css('border-color', 'red');
-                                } else {
-                                    $(this).css('border-color', '#e2e8f0');
-                                }
-                            });
+                        // Fail validation if Name/Phone is empty, OR if it's the 1st row and Email/Address is empty
+                        if (!name || !phone || (index === 0 && (!email || !address))) {
+                        allValid = false;
+                        $(this).find('.modern-input').each(function() {
+                            // Highlight the correct missing fields with a red border
+                            const isBasicRequired = $(this).is('.p-name, .p-phone');
+                            const isFirstRowExtraRequired = index === 0 && $(this).is('.p-email, .p-address');
+
+                            if (!$(this).val().trim() && (isBasicRequired || isFirstRowExtraRequired)) {
+                            $(this).css('border-color', 'red');
+                            } else {
+                            $(this).css('border-color', '#e2e8f0');
+                            }
+                        });
                         }
 
                         passengers.push({
-                            seat_id: $(this).data('seat-id'),
-                            name: name,
-                            gender: gender,
-                            phone: phone,
-                            email: email,
-                            address: address
+                        seat_id: $(this).data('seat-id'),
+                        name: name,
+                        gender: gender,
+                        phone: phone,
+                        email: email,
+                        address: address
                         });
                     });
 
                     // 2. Strict Validation Check
                     if (!allValid) {
-                        alert('Please fill in the Full Name and Phone Number for ALL passengers.');
+                        alert('Please fill in the Full Name and Phone for ALL passengers, and the Email and Address for the FIRST passenger.');
                         return;
                     }
 
@@ -1965,6 +1971,10 @@
                     const isFirstLoggedInPassenger = IS_AUTH && index === 0;
                     const phoneDisabledAttr = isFirstLoggedInPassenger ? 'disabled' : '';
 
+                    // Dynamic attributes for Email and Address (Mandatory for first passenger)
+                    const extraFieldsLabel = index === 0 ? '<span class="req-star">*</span>' : '<span class="optional-text">(Optional)</span>';
+                    const extraFieldsRequired = index === 0 ? 'required' : '';
+
                     const rowHtml = `
                         <div class="passenger-row" data-seat-id="${seatId}">
                             <div class="d-flex align-items-center justify-content-between mb-2">
@@ -2006,19 +2016,21 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label">Email <span class="optional-text">(Optional)</span></label>
+                                    <label class="form-label">Email ${extraFieldsLabel}</label>
                                     <input type="email"
                                             class="modern-input p-email"
-                                            placeholder="Email"
-                                            value="${(saved.email || '').replace(/"/g, '&quot;')}">
+                                        placeholder="Email"
+                                        ${extraFieldsRequired}
+                                        value="${(saved.email || '').replace(/"/g, '&quot;')}">
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label">Address <span class="optional-text">(Optional)</span></label>
+                                    <label class="form-label">Address ${extraFieldsLabel}</label>
                                     <input type="text"
-                                            class="modern-input p-address"
-                                            placeholder="Address"
-                                            value="${(saved.address || '').replace(/"/g, '&quot;')}">
+                                        class="modern-input p-address"
+                                        placeholder="Address"
+                                        ${extraFieldsRequired}
+                                        value="${(saved.address || '').replace(/"/g, '&quot;')}">
                                 </div>
                             </div>
                         </div>
@@ -2661,52 +2673,79 @@
     <script>
         $(document).ready(function() {
             let waitingToSetValue = null;
-            
+
+            // 1. Initialize "FROM" Select2
+            $('#search-from').select2({
+                width: '100%',
+                placeholder: 'Select Origin'
+            });
+
+            // 2. Initialize "TO" Select2 with AJAX
+            $('#search-to').select2({
+                width: '100%',
+                placeholder: 'Select Destination',
+                ajax: {
+                    url: '{% url "get_available_destinations" %}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            from_id: $('#search-from').val(),
+                            q: params.term // Search query if user types
+                        };
+                    },
+                    processResults: function(data) {
+                        // data.results comes directly from your Django view
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                }
+            });
+
+            // 3. Handle FROM change (Clears TO and handles Swapping)
+            $('#search-from').on('change', function() {
+                const $toSelect = $('#search-to');
+                
+                // CRITICAL: Clear all current options so old data doesn't persist
+                $toSelect.empty().append('<option value="" selected disabled>Select Destination</option>');
+
+                if (waitingToSetValue !== null) {
+                    // We are in the middle of a swap. 
+                    // We need to manually add the 'new' TO option so Select2 can select it,
+                    // otherwise, the value won't stick because it's not in the list yet.
+                    const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
+                    const newOption = new Option(optionText, waitingToSetValue, true, true);
+                    
+                    $toSelect.append(newOption).trigger('change');
+                    
+                    // Reset the flag
+                    waitingToSetValue = null;
+                } else {
+                    // Normal change: just reset TO selection
+                    $toSelect.val(null).trigger('change');
+                }
+            });
+
+            // 4. Swap Button Logic
             $('#switch-location').on('click', function() {
                 const fromValue = $('#search-from').val();
                 const toValue = $('#search-to').val();
-                
-                // Only swap if both have values
+
                 if (fromValue && toValue) {
-                    // Store the value we want to set in TO
+                    // 1. Store the current FROM ID to be used as the new TO value
                     waitingToSetValue = fromValue;
-                    
-                    // Change FROM (this will trigger AJAX load for TO dropdown)
+
+                    // 2. Set FROM to the current TO value 
+                    // This triggers the 'change' event above, which handles the rest
                     $('#search-from').val(toValue).trigger('change');
                 }
             });
-            
-            // Listen for when Select2 finishes loading results
-            $('#search-to').on('select2:select select2:unselect', function() {
-                // Reset after manual selection
+
+            // Reset waiting value if user manually interacts with TO
+            $('#search-to').on('select2:opening', function() {
                 waitingToSetValue = null;
-            });
-            
-            // After FROM changes, wait for TO to load, then set the value
-            $('#search-from').on('change', function() {
-                if (waitingToSetValue !== null) {
-                    // Small delay to let AJAX complete
-                    setTimeout(function() {
-                        // Create a new option if it doesn't exist (for preloading)
-                        const $toSelect = $('#search-to');
-                        
-                        // Check if option already exists
-                        if ($toSelect.find('option[value="' + waitingToSetValue + '"]').length === 0) {
-                            // Fetch the text for this option from the original FROM dropdown
-                            const optionText = $('#search-from option[value="' + waitingToSetValue + '"]').text();
-                            
-                            // Create and append the option
-                            const newOption = new Option(optionText, waitingToSetValue, true, true);
-                            $toSelect.append(newOption);
-                        }
-                        
-                        // Set the value
-                        $toSelect.val(waitingToSetValue).trigger('change');
-                        
-                        // Reset
-                        waitingToSetValue = null;
-                    }, 800); // Increased delay for AJAX
-                }
             });
         });
     </script>

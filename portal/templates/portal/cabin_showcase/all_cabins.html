@@ -402,7 +402,7 @@
 {% endblock custom_css %}
 
 {% block content %}
-    <div class="rts-breadcrumb-area one" data-bg-src="{% static 'portal/assets/images/breadcrumb/07.webp'%}">
+    <div class="rts-breadcrumb-area one" data-bg-src="{% if page_banner and page_banner.banner_image %}{{ page_banner.banner_image.url }}{% else %}{% static 'portal/assets/images/breadcrumb/07.webp'%}{% endif %}">
         <div class="container h-100">
             <div class="breadcrumb-area-wrapper">
                 <div class="nav-bread-crumb">

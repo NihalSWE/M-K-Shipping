@@ -12,7 +12,13 @@
         <div class="image radius-10 overflow-hidden"><img src="{% static 'portal/assets/images/contact/01.webp'%}" width="1245" alt=""></div>
         <div class="sign-in-form radius-10 overflow-hidden body-bg-one">
             <div class="logo-area">
-                <a href="index.html"><img src="{% static 'portal/assets/images/logo/02.svg'%}" alt=""></a>
+                <a href="{% url 'home' %}" class="logo">
+                    {% if site_identity.logo %}
+                        <img src="{{ site_identity.logo.url }}" alt="logo" style="height: 80px;">
+                    {% else %}
+                        <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+                    {% endif %}
+                </a>
             </div>
             <h4 class="title">Sign In</h4>
             <form action="#">

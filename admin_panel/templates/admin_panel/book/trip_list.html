@@ -3,6 +3,8 @@
 
 {% block css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'assets/css/select2_custom_style.css' %}">
 <style>
     .search-card {
         background: #fff;
@@ -10,10 +12,7 @@
         border: 1px solid rgba(0,0,0,0.05);
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
-    .form-select, .form-control {
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
-    }
+    
     .pagination .page-link {
         border-radius: 8px;
         margin: 0 3px;
@@ -23,6 +22,33 @@
     .pagination .page-item.active .page-link {
         background-color: #0d6efd;
         color: #fff;
+    }
+
+    /* Target specifically visible text inputs so Flatpickr's hidden input doesn't stretch the layout */
+    .search-card input[type="text"].form-control,
+    .search-card .select2-container .select2-selection--single,
+    .search-card .btn {
+        height: 42px !important;
+        min-height: 42px !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+        padding: 0 1rem !important;
+    }
+
+    /* Ensure Select2 text and arrows are centered within the new height */
+    .search-card .select2-container--default .select2-selection--single {
+        display: flex !important;
+        align-items: center !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    .search-card .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        line-height: normal !important;
+    }
+
+    .search-card .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px !important;
     }
 </style>
 {% endblock css %}
@@ -35,13 +61,12 @@
             <h3 class="fw-bold text-dark mb-3">Upcoming Trip Reports</h3>
             
             <div class="search-card p-4">
-                <form method="GET" action="" class="row g-3 align-items-end">
-                    
+                <form method="GET" action="" id="filterForm" class="row g-3">
                     <input type="hidden" name="per_page" value="{{ per_page }}">
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">From</label>
-                        <select name="from_location" class="form-select">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted mb-1">From</label>
+                        <select name="from_location" class="form-select select2" style="width: 100%;">
                             <option value="">All Locations</option>
                             {% for loc in locations %}
                             <option value="{{ loc.id }}" {% if request.GET.from_location == loc.id|stringformat:"s" %}selected{% endif %}>
@@ -51,9 +76,9 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">To</label>
-                        <select name="to_location" class="form-select">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted mb-1">To</label>
+                        <select name="to_location" class="form-select select2" style="width: 100%;">
                             <option value="">All Locations</option>
                             {% for loc in locations %}
                             <option value="{{ loc.id }}" {% if request.GET.to_location == loc.id|stringformat:"s" %}selected{% endif %}>
@@ -63,16 +88,10 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Date</label>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted mb-1">Date</label>
                         <input type="text" id="journey_date" name="journey_date" class="form-control" 
-                               value="{{ request.GET.journey_date }}" placeholder="Select Date">
-                    </div>
-
-                    <div class="col-md-3 d-grid">
-                        <button type="submit" class="btn btn-dark fw-bold py-2">
-                            <i class="fa fa-filter me-2"></i> Filter
-                        </button>
+                            value="{{ request.GET.journey_date }}" placeholder="Select Date">
                     </div>
                 </form>
             </div>
@@ -149,7 +168,7 @@
                             <a href="{% url 'trip_passenger_manifest' trip.id %}" 
                                class="btn btn-primary w-100 py-2 fw-bold shadow-sm"
                                style="border-radius: 10px;">
-                                <i class="fa-solid fa-clipboard-list me-2"></i> View Manifest
+                                <i class="fa-solid fa-clipboard-list me-2"></i> View Trip Sheet
                             </a>
                             <div class="mt-2 small text-muted text-center">
                                 <i class="fa fa-circle text-success" style="font-size: 8px;"></i> Active
@@ -213,6 +232,7 @@
 
 {% block scriptcontent %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     flatpickr("#journey_date", {
         dateFormat: "Y-m-d",
@@ -220,6 +240,35 @@
         altFormat: "F j, Y",
         minDate: "today", 
         disableMobile: "true"
+    });
+</script>
+
+<script>
+    // Initialize Flatpickr with an auto-submit hook
+    flatpickr("#journey_date", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "F j, Y",
+        minDate: "today", 
+        disableMobile: "true",
+        onChange: function(selectedDates, dateStr, instance) {
+            // Auto-submit form when a date is selected
+            document.getElementById("filterForm").submit();
+        }
+    });
+
+    $(document).ready(function () {
+        // Initialize Select2
+        var $select2Fields = $('.select2').select2({
+            placeholder: "Search locations...",
+            width: '100%',
+            dropdownParent: $('.search-card') 
+        });
+
+        // Auto-submit form when a location is selected or cleared
+        $select2Fields.on('change', function() {
+            document.getElementById("filterForm").submit();
+        });
     });
 </script>
 {% endblock %}

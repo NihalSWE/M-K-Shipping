@@ -25,7 +25,18 @@
                         </nav>
 
                         <div class="button-area-start">
-                            <div class="shop-btn-area">
+                            <div class="shop-btn-area d-flex align-items-center">
+                                
+                                <div class="header-dual-phone-widget me-2 me-lg-3">
+                                    <div class="phone-icon-box">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </div>
+                                    <div class="phone-numbers-box">
+                                        <a href="tel:+1234567890" class="phone-link">+123 456 7890</a>
+                                        <a href="tel:+0987654321" class="phone-link">+098 765 4321</a>
+                                    </div>
+                                </div>
+
                                 <div id="headerAuthControls">
                                     {% if user.is_authenticated %}
                                         <div class="dropdown d-inline-block me-3">

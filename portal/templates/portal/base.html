@@ -116,6 +116,13 @@
     .preloader .loading-dots span:nth-child(3) {
         animation-delay: 0.4s;
     }
+
+    .logo-area {
+        background: white;
+        padding: 10px;
+        justify-content: center;
+        border-radius: 15px;
+    }
     
     @keyframes bounce {
         0%, 80%, 100% {
@@ -126,6 +133,10 @@
             transform: scale(1);
             opacity: 1;
         }
+    }
+
+    #headerAuthControls a.auth-btn:hover {
+        color: black !important;
     }
 
     /* header styles overrides */
@@ -152,7 +163,7 @@
         }
 
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .header-style-one-wrapper {
-            min-height: 108px;
+            min-height: 90px;
             gap: 24px;
         }
 
@@ -160,12 +171,8 @@
             flex: 0 0 auto;
         }
 
-        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo {
-            min-width: 190px;
-        }
-
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo img {
-            height: 78px !important;
+            height: 60px !important;
             width: auto;
             object-fit: contain;
         }
@@ -214,7 +221,7 @@
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .auth-btn,
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-dropdown-toggle {
             min-height: 50px;
-            padding: 10px 18px !important;
+            padding: 16px 18px !important;
             border-radius: 16px !important;
             border: 1px solid rgba(255, 255, 255, 0.34) !important;
             background: rgba(255, 255, 255, 0.18) !important;
@@ -235,6 +242,11 @@
             left: 0;
             right: 0;
             z-index: 9999;
+        }
+
+        .header-style-one-wrapper .logo-area .logo {
+            display: block;
+            min-width: 100px !important;
         }
     }
 
@@ -274,6 +286,11 @@
 
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo {
             min-width: 132px;
+        }
+
+        .header-style-one-wrapper .logo-area .logo {
+            display: block;
+            min-width: 100px !important;
         }
 
         .tour-marketplace .header-style-one.header-six.glassy-overlay-header .logo-area .logo img {
@@ -417,6 +434,91 @@
     .logout-link:hover, .logout-link:hover i {
         color: #dc2626 !important;
     }
+
+    /* =========================================================
+    NEW: Dual Phone Contact Widget (Header) starts
+    ========================================================= */
+    .header-dual-phone-widget {
+        display: flex;
+        align-items: stretch !important; /* FIX: Forces the container to stretch vertically so the line fills the height */
+        background: #ffffff !important;
+        padding: 10px 16px !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .header-dual-phone-widget .phone-icon-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-right: 16px !important;
+        margin-right: 16px !important;
+        border-right: 1px solid #e0e0e0 !important; /* FIX: Reduced to a standard 1px thickness and a neutral light grey color */
+    }
+
+    .header-dual-phone-widget .phone-icon-box i {
+        color: #00abea !important; 
+        font-size: 18px !important;
+    }
+
+    .header-dual-phone-widget .phone-numbers-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 8px !important; /* FIX: Increased vertical gap between the two phone numbers */
+    }
+
+    .header-dual-phone-widget .phone-link {
+        color: #000000 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important; 
+        letter-spacing: 0.8px !important; /* FIX: Added horizontal spacing so the digits are no longer squished */
+        text-decoration: none !important;
+        transition: color 0.3s ease;
+        white-space: nowrap !important;
+        display: block !important;
+    }
+
+    .header-dual-phone-widget .phone-link:hover {
+        color: #00abea !important;
+    }
+
+    .shop-btn-area {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Mobile Scaling */
+    @media (max-width: 991.98px) {
+        .header-dual-phone-widget {
+            padding: 8px 12px !important;
+            border-radius: 10px !important;
+        }
+        
+        .header-dual-phone-widget .phone-icon-box {
+            padding-right: 12px !important;
+            margin-right: 12px !important;
+        }
+        
+        .header-dual-phone-widget .phone-icon-box i {
+            font-size: 14px !important;
+        }
+        
+        .header-dual-phone-widget .phone-link {
+            font-size: 12px !important; 
+            letter-spacing: 0.5px !important;
+        }
+
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .auth-btn,
+        .tour-marketplace .header-style-one.header-six.glassy-overlay-header .user-dropdown-toggle {
+            padding: 6px 12px !important;
+            font-size: 13px !important;
+        }
+    }
+    /* =========================================================
+    NEW: Dual Phone Contact Widget (Header) ends
+    ========================================================= */
 
 
 
@@ -890,6 +992,380 @@ html.mbn2-open .site-wrapper {
 .rts-footer-area-one.tour-marketplace {
     background: #f0f9ff !important;
 }
+
+    /* =========================================================
+       NX FOOTER 2026 - THE NUCLEAR OVERRIDE starts
+       ========================================================= */
+    
+    /* 1. NUKE THE FONT FAMILY ON EVERYTHING */
+    .nx-foot-wrapper, 
+    .nx-foot-wrapper *,
+    .tour-marketplace .nx-foot-wrapper h3,
+    .tour-marketplace .nx-foot-wrapper h4 {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 2. FORCE HEADINGS APART */
+    .tour-marketplace .nx-foot-wrapper h3,
+    .tour-marketplace .nx-foot-wrapper h4,
+    .nx-foot-wrapper h3,
+    .nx-foot-wrapper h4 {
+        font-weight: 800 !important;
+        letter-spacing: 1.5px !important; /* Extreme horizontal spacing */
+        line-height: 1.8 !important; /* Extreme vertical line spacing */
+        margin-bottom: 30px !important; /* Massive gap below the heading */
+        display: block !important; /* Forces the browser to respect the margin */
+    }
+
+    .nx-foot-wrapper {
+        background: linear-gradient(180deg, #42d1ff 0%, #e6f9ff 100%) !important;
+        margin: 80px 0 0 0 !important; 
+        padding: 0 !important;
+        position: relative !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    .nx-foot-container {
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+        padding: 0 15px !important;
+        position: relative !important; 
+        width: 100% !important;
+    }
+
+    /* --- Newsletter Section --- */
+    .nx-foot-newsletter {
+        background: #11689b !important;
+        border-radius: 100px !important;
+        padding: 20px 40px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 30px !important; 
+        
+        position: absolute !important;
+        top: 0 !important;
+        left: 15px !important;
+        right: 15px !important;
+        transform: translateY(-50%) !important; 
+        z-index: 10 !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    }
+
+    .nx-foot-news-title {
+        color: #ffffff !important;
+        font-size: 24px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+    }
+
+    .nx-foot-form {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        flex: 1 1 0% !important; 
+        gap: 15px !important; 
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .nx-foot-input {
+        background: #7caacb !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 16px 25px !important;
+        color: #ffffff !important;
+        flex: 1 1 0% !important; 
+        width: 100% !important;
+        outline: none !important;
+        font-size: 16px !important;
+        line-height: normal !important;
+        margin: 0 !important;
+        letter-spacing: 1px !important; 
+    }
+
+    .nx-foot-input::placeholder {
+        color: #ffffff !important;
+        opacity: 0.9 !important;
+    }
+
+    .nx-foot-btn {
+        background: #ffb800 !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 16px 40px !important;
+        font-size: 16px !important;
+        font-weight: 800 !important;
+        cursor: pointer !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+        letter-spacing: 1px !important;
+        transition: background 0.3s ease !important;
+    }
+
+    .nx-foot-btn:hover {
+        background: #e6a600 !important;
+    }
+
+    /* --- Main Grid Area --- */
+    .nx-foot-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 30px !important;
+        padding-top: 100px !important; 
+        padding-bottom: 50px !important;
+    }
+
+    .nx-foot-col {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .nx-foot-title {
+        color: #000000 !important;
+        font-size: 20px !important;
+        text-transform: uppercase !important;
+    }
+
+    /* --- Footer Links (FORCE SEPARATION) --- */
+    .nx-foot-list {
+        list-style: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    .nx-foot-list li {
+        margin: 0 0 5px 0 !important; /* Massive gap between links */
+        padding: 0 !important;
+        display: block !important; /* Forces the browser to apply the margin */
+    }
+
+    .nx-foot-list li a {
+        color: #000000 !important;
+        text-decoration: none !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        line-height: 1.5 !important;
+        transition: transform 0.2s ease, color 0.2s ease !important;
+        display: inline-block !important;
+    }
+
+    .nx-foot-list li a:hover {
+        color: #11689b !important;
+        transform: translateX(5px) !important;
+    }
+
+    /* --- Social Icons --- */
+    .nx-foot-social-wrap {
+        margin-top: 25px !important;
+        display: block !important;
+    }
+
+    .nx-foot-social-wrap p {
+        color: #000000 !important;
+        font-size: 15px !important;
+        margin: 0 0 20px 0 !important; 
+        font-weight: 700 !important;
+        line-height: 1.5 !important;
+        letter-spacing: 1px !important;
+        display: block !important;
+    }
+
+    .nx-foot-social-row {
+        display: flex !important;
+        gap: 15px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .nx-foot-social-icon {
+        width: 45px !important;
+        height: 45px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-decoration: none !important;
+        color: #ffffff !important;
+        font-size: 20px !important;
+        border: 3px solid #ffffff !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    .nx-foot-social-icon:hover {
+        transform: translateY(-3px) scale(1.05) !important;
+    }
+
+    .nx-foot-social-icon.fb { background: #3b5998 !important; }
+    .nx-foot-social-icon.ig { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%) !important; }
+    .nx-foot-social-icon.yt { background: #ff0000 !important; }
+    .nx-foot-social-icon.in { background: #007bb6 !important; }
+
+    /* --- Bottom Bar --- */
+    .nx-foot-bottom {
+        background: #00a8ef !important;
+        padding: 20px 0 !important; 
+        text-align: center !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    .nx-foot-title {
+        margin-bottom: 15px !important;
+    }
+
+    .nx-foot-bottom p {
+        color: #ffffff !important;
+        margin: 0 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        line-height: 1.5 !important;
+        letter-spacing: 1px !important; 
+    }
+
+    /* --- Responsive Behavior --- */
+    @media (max-width: 991px) {
+        .nx-foot-grid {
+            grid-template-columns: repeat(2, 1fr) !important; 
+            padding-top: 130px !important; 
+        }
+        .nx-foot-newsletter {
+            flex-direction: column !important;
+            border-radius: 30px !important;
+            text-align: center !important;
+            padding: 30px 20px !important;
+        }
+        .nx-foot-news-title {
+            white-space: normal !important; 
+            width: 100% !important;
+            margin-bottom: 20px !important; /* Force space between title and form on mobile */
+        }
+        .nx-foot-form {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        .nx-foot-input, 
+        .nx-foot-btn {
+            width: 100% !important;
+            flex: none !important; 
+        }
+    }
+
+    @media (max-width: 575px) {
+        .nx-foot-grid {
+            grid-template-columns: 1fr !important;
+            text-align: center !important;
+            padding-top: 160px !important;
+        }
+        .nx-foot-social-row {
+            justify-content: center !important;
+        }
+    }
+    /* =========================================================
+       NX FOOTER 2026 - THE NUCLEAR OVERRIDE ends
+       ========================================================= */
+
+    /* =========================================================
+       NX NEWSLETTER MODAL - SANDBOXED CSS
+       ========================================================= */
+    #nx-sub-modal-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(5px) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 999999 !important; /* Forces it over absolutely everything */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #nx-sub-modal-overlay.nx-sub-active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    #nx-sub-modal-box {
+        background: #ffffff !important;
+        border-radius: 20px !important;
+        padding: 40px 30px !important;
+        width: 90% !important;
+        max-width: 400px !important;
+        text-align: center !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        transform: scale(0.8) translateY(30px);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-family: system-ui, -apple-system, sans-serif !important;
+    }
+
+    #nx-sub-modal-overlay.nx-sub-active #nx-sub-modal-box {
+        transform: scale(1) translateY(0);
+    }
+
+    #nx-sub-modal-icon {
+        width: 70px !important;
+        height: 70px !important;
+        border-radius: 50% !important;
+        margin: 0 auto 20px auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 30px !important;
+        color: white !important;
+    }
+
+    .nx-sub-status-success #nx-sub-modal-icon {
+        background: #22c55e !important; /* Green */
+    }
+
+    .nx-sub-status-error #nx-sub-modal-icon {
+        background: #ef4444 !important; /* Red */
+    }
+
+    #nx-sub-modal-title {
+        color: #363636 !important;
+        font-size: 24px !important;
+        font-weight: 600 !important;
+        margin: 0 0 10px 0 !important;
+        line-height: 1.2 !important;
+        letter-spacing: 1.5px;
+    }
+
+    #nx-sub-modal-msg {
+        color: #4b5563 !important;
+        font-size: 16px !important;
+        line-height: 1.5 !important;
+        margin: 0 0 25px 0 !important;
+    }
+
+    #nx-sub-modal-btn {
+        background: #11689b !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 30px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        width: 100% !important;
+        transition: background 0.2s ease !important;
+    }
+
+    #nx-sub-modal-btn:hover {
+        background: #0d4f78 !important;
+    }
 </style>
 
 
@@ -1025,6 +1501,15 @@ html.mbn2-open .site-wrapper {
     </div>
 </div>
 
+<div id="nx-sub-modal-overlay" class="nx-sub-modal-hidden">
+    <div id="nx-sub-modal-box">
+        <div id="nx-sub-modal-icon"></div>
+        <h3 id="nx-sub-modal-title"></h3>
+        <p id="nx-sub-modal-msg"></p>
+        <button id="nx-sub-modal-btn">Close</button>
+    </div>
+</div>
+
    <!-- jquery js -->
 <script src="{% static 'portal/assets/js/plugins/jquery.min.js' %}"></script>
 <script src="{% static 'portal/assets/js/plugins/bootstrap.min.js' %}"></script>
@@ -1039,6 +1524,7 @@ html.mbn2-open .site-wrapper {
 <script src="{% static 'portal/assets/js/plugins/isotop.js' %}"></script>
 <script src="{% static 'portal/assets/js/plugins/contact-form.js' %}"></script>
 <script src="{% static 'portal/assets/js/main.js' %}"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 
 <!-- Iconify (icons) -->
 <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
@@ -1134,6 +1620,87 @@ html.mbn2-open .site-wrapper {
             }
         });
     })();
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.nx-foot-form');
+        const modalOverlay = document.getElementById('nx-sub-modal-overlay');
+        const modalBox = document.getElementById('nx-sub-modal-box');
+        const modalIcon = document.getElementById('nx-sub-modal-icon');
+        const modalTitle = document.getElementById('nx-sub-modal-title');
+        const modalMsg = document.getElementById('nx-sub-modal-msg');
+        const closeBtn = document.getElementById('nx-sub-modal-btn');
+
+        // Close Modal logic
+        function closeModal() {
+            modalOverlay.classList.remove('nx-sub-active');
+            setTimeout(() => {
+                modalBox.className = ''; // Reset state classes
+            }, 300);
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', function(e) {
+            if(e.target === modalOverlay) closeModal();
+        });
+
+        // Intercept Form Submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const emailInput = form.querySelector('.nx-foot-input').value;
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            const submitBtn = form.querySelector('.nx-foot-btn');
+            
+            // Prevent multiple clicks
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Sending...';
+
+            const formData = new URLSearchParams();
+            formData.append('email', emailInput);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            fetch("{% url 'subscribe_newsletter' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset states
+                modalBox.className = '';
+                
+                if (data.status === 'success') {
+                    modalBox.classList.add('nx-sub-status-success');
+                    modalIcon.innerHTML = '✓';
+                    modalTitle.innerText = 'Success!';
+                    form.reset(); // Clear input on success
+                } else {
+                    modalBox.classList.add('nx-sub-status-error');
+                    modalIcon.innerHTML = '✕';
+                    modalTitle.innerText = 'Oops!';
+                }
+                
+                modalMsg.innerText = data.message;
+                modalOverlay.classList.add('nx-sub-active');
+            })
+            .catch(error => {
+                modalBox.className = 'nx-sub-status-error';
+                modalIcon.innerHTML = '✕';
+                modalTitle.innerText = 'Error';
+                modalMsg.innerText = 'Something went wrong. Please try again.';
+                modalOverlay.classList.add('nx-sub-active');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Subscribe';
+            });
+        });
+    });
 </script>
 
 {% block custom_js %}

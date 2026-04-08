@@ -47,8 +47,8 @@
         </li> {% endcomment %}
         <li class="profile-nav onhover-dropdown pe-0 py-0">
           <div class="d-flex profile-media"><img class="b-r-10" src="{% static 'assets/images/dashboard/profile.png' %}" alt="">
-            <div class="flex-grow-1"><span>Ajay</span>
-              <p class="mb-0">Admin <i class="middle fa-solid fa-angle-down"></i></p>
+            <div class="flex-grow-1"><span>{{ request.user.get_display_name|default:request.user.phone_number|default:request.user.email|default:"User" }}</span>
+              <p class="mb-0">{% if request.user.user_type == 0 %}Admin{% elif request.user.user_type == 2 %}Staff{% else %}Customer{% endif %} <i class="middle fa-solid fa-angle-down"></i></p>
             </div>
           </div>
           <ul class="profile-dropdown onhover-show-div">

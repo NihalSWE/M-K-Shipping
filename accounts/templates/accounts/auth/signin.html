@@ -33,9 +33,10 @@
 
         width: 100% !important;
         max-width: 1305px !important;
-        margin: 20px auto !important;
+        margin: 140px auto 20px auto !important;
 
-        min-height: auto !important;
+        height: max-content !important; /* Forces container to tightly wrap ONLY the form */
+        min-height: 0 !important;       /* Prevents default stretch behavior from parent elements */
         background: #f7fbff !important;
         padding: 0 !important;
         box-sizing: border-box !important;
@@ -45,15 +46,22 @@
 
     /* Left image panel */
     .sign-in-area > .image {
+        position: relative !important;
         display: block !important;
         width: 58% !important;
         flex: 0 0 58% !important;
-        min-height: 100% !important;
+        height: auto !important;  /* Nuke the 100% min-height to fix flexbox calculation bugs */
+        min-height: 0 !important; 
         overflow: hidden !important;
         border-radius: 14px 0 0 14px !important;
     }
 
     .sign-in-area > .image img {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;  /* Explicitly lock all corners */
+        bottom: 0 !important;
         width: 100% !important;
         height: 100% !important;
         object-fit: cover !important;
@@ -541,11 +549,17 @@
 {% block content %}
     <div class="sign-in-area">
         <div class="image radius-10 overflow-hidden">
-            <img src="{% static 'portal/assets/images/contact/01.webp'%}" width="1245" alt="">
+            <img src="{% static 'portal/assets/images/auth/ship_image.jpg'%}" width="1245" alt="">
         </div>
         <div class="sign-in-form radius-10 overflow-hidden body-bg-one">
             <div class="logo-area">
-                <a href="{% url 'home' %}"><img src="{% static 'portal/assets/images/logo/02.svg'%}" alt=""></a>
+                <a href="{% url 'home' %}" class="logo">
+                    {% if site_identity.logo %}
+                        <img src="{{ site_identity.logo.url }}" alt="logo" style="height: 100px;">
+                    {% else %}
+                        <img src="{% static 'portal/assets/images/logo/09.svg'%}" alt="logo">
+                    {% endif %}
+                </a>
             </div>
             <h4 class="title">Sign In</h4>
             

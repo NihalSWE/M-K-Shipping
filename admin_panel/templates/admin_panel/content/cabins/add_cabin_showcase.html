@@ -167,13 +167,22 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-12 mb-4">
+                            <div class="col-md-6 mb-4">
                                 <label class="form-label required-field" for="cover_image">Cover Image</label>
                                 <input class="form-control btn-pill" id="cover_image" name="cover_image" type="file" accept="image/*" required>
                                 <small class="text-muted ms-2">Format: JPG, PNG, WEBP, etc. Must be Square (up to 800x800) and max 500KB.</small>
                                 
                                 <div class="mt-3">
                                     <img id="cover-preview" src="" alt="Image Preview" style="max-width: 150px; display: none; border-radius: 8px; border: 1px solid #ccc; object-fit: cover;">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label" for="banner_image">Banner Image (Optional)</label>
+                                <input class="form-control btn-pill" id="banner_image" name="banner_image" type="file" accept="image/*">
+                                <small class="text-muted ms-2">Format: JPG, PNG, WEBP. Must be 4:1 ratio (Recommended 1920x480px), max 2MB.</small>
+
+                                <div class="mt-3">
+                                    <img id="banner-preview" src="" alt="Banner Preview" style="width: 100%; max-width: 400px; aspect-ratio: 4/1; display: none; border-radius: 8px; border: 1px solid #ccc; object-fit: cover;">
                                 </div>
                             </div>
                         </div>
@@ -263,6 +272,8 @@
         // 4. Image Preview and Client-Side Validation
         const coverInput = document.getElementById('cover_image');
         const coverPreview = document.getElementById('cover-preview');
+        const bannerInput = document.getElementById('banner_image');
+        const bannerPreview = document.getElementById('banner-preview');
 
         coverInput.addEventListener('change', function() {
             const file = this.files[0];
@@ -302,6 +313,40 @@
                 coverPreview.style.display = 'block';
             };
             
+            img.src = objectUrl;
+        });
+
+        // Cabin showcase update: optional banner preview and validation
+        bannerInput.addEventListener('change', function() {
+            const file = this.files[0];
+            bannerPreview.style.display = 'none';
+            bannerPreview.src = '';
+            $("#message-container").removeClass("show");
+
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                showMessage("error", "Banner image size must be 2MB or less.");
+                this.value = '';
+                return;
+            }
+
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+
+            img.onload = function() {
+                const ratio = img.width / img.height;
+                if (Math.abs(ratio - 4) > 0.2) {
+                    showMessage("error", "Banner image must be approximately 4:1 ratio.");
+                    bannerInput.value = '';
+                    URL.revokeObjectURL(objectUrl);
+                    return;
+                }
+
+                bannerPreview.src = objectUrl;
+                bannerPreview.style.display = 'block';
+            };
+
             img.src = objectUrl;
         });
 

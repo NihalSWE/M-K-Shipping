@@ -319,14 +319,13 @@ def signup(request):
         form = CustomSignUpForm(request.POST)
         if form.is_valid():
             # Get data
-            phone_number = form.cleaned_data['phone_number'] # CHANGED
-            email = form.cleaned_data.get('email') # CHANGED: .get() because it's optional
+            phone_number = form.cleaned_data['phone_number'] 
+            email = form.cleaned_data['email'] # CHANGED: No longer optional, direct fetch
             password = form.cleaned_data['password']
             first_name = form.cleaned_data['first_name']
             last_name = form.cleaned_data['last_name']
             
             try:
-                # CHANGED: create_user now requires phone_number as first arg
                 user = User.objects.create_user(
                     phone_number=phone_number, 
                     email=email, 
@@ -335,7 +334,6 @@ def signup(request):
                     last_name=last_name,
                     user_type=1 # Customer
                 )
-                # User is saved inside create_user, but calling save() again is harmless
                 user.save()
                 
                 login(request, user)

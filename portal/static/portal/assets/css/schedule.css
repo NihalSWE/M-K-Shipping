@@ -362,7 +362,7 @@ h5, h6, .h5, .h6{
 .rts-breadcrumb-area.one{
     height: auto !important;
     min-height: 0 !important;
-    padding: 26px 0 22px !important;
+    padding: 110px 0 22px !important;
     overflow: visible !important; /* so select2 dropdown doesn't clip */
 }
 

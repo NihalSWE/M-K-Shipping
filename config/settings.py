@@ -94,6 +94,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'portal.context_processors.global_site_identity',
+                'portal.context_processors.footer_data',
             ],
         },
     },

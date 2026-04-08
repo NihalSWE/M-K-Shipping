@@ -53,4 +53,9 @@ urlpatterns = [
     
     # Vessels Showcase
     path('vessels/', views.all_vessels, name='all_vessels'),
+    
+    path('subscribe-newsletter/', views.subscribe_newsletter, name='subscribe_newsletter'),
+    
+    
+    path('menu/pages/<path:page_path>', views.footer_page_view, name='footer_page'),
 ]
