@@ -551,8 +551,20 @@
                             {% endif %}
                         </td>
 
-                        <td class="align-middle">{{ request.user.get_display_name|default:request.user.phone_number|default:"Admin" }}</td>
-                        <td class="align-middle">{{ request.user.get_display_name|default:request.user.phone_number|default:"Admin" }}</td>
+                        <td class="align-middle">
+                            {% if ticket.booking.booked_by %}
+                                {{ ticket.booking.booked_by.get_display_name|default:ticket.booking.booked_by.phone_number|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if ticket.booking.issued_by %}
+                                {{ ticket.booking.issued_by.get_display_name|default:ticket.booking.issued_by.phone_number|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
 
                         <td class="align-middle">
                             {% if ticket.booking.status == 'PENDING' and ticket.booking.time_stopped %}

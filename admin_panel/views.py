@@ -2803,6 +2803,7 @@ def select_seats(request, trip_id):
 def admin_book_confirm(request):
     if request.method != 'POST':
         return redirect('admin_home')
+    
     gender = int(request.POST.get('passenger_gender', 0))
     # --- 1. GET BASIC DATA ---
     trip_id = request.POST.get('trip_id')
@@ -2886,6 +2887,14 @@ def admin_book_confirm(request):
             # Resolve which counter (if any) the logged-in operator belongs to
             operator_counter = get_logged_in_counter(request.user)
 
+            # Determine issued_by and booked_by based on status
+            if final_status == 'CONFIRMED':
+                issued_by_user = request.user
+            else: # final_status is 'PENDING'
+                issued_by_user = None
+                
+            booked_by_user = request.user
+
             # B. Create Booking
             booking = Booking.objects.create(
                 user=booking_user,                     # customer/passenger user (KEEP THIS)
@@ -2894,9 +2903,10 @@ def admin_book_confirm(request):
                 status=final_status,
                 payment_status=final_payment_status,
                 expiry_at=expiry_time,
-                sales_channel='COUNTER' if operator_counter else 'ONLINE',               # optional to keep; can stay
-                counter=operator_counter,              # NEW: nullable if no counter assigned
-                issued_by=request.user,                # NEW: who created it
+                sales_channel='COUNTER' if operator_counter else 'ONLINE',
+                counter=operator_counter,
+                issued_by=issued_by_user,              # REPLACED: Conditional based on status
+                booked_by=booked_by_user,              # ADDED: Always request.user
                 total_amount=0,
                 paid_amount=paid_amount
             )
@@ -3456,6 +3466,13 @@ def extend_booking_time_api(request):
 
         booking = Booking.objects.get(id=booking_id)
 
+        # Staff can extend time only for their own manageable booking.
+        if not _staff_can_manage_booking(request.user, booking):
+            return JsonResponse({
+                'success': False,
+                'message': 'You can only update your own booked or issued tickets.'
+            }, status=403)
+
         # Safety Check: Can only extend Pending or Expired
         if booking.status not in ['PENDING', 'EXPIRED']:
              return JsonResponse({'success': False, 'message': 'Cannot extend a Confirmed or Cancelled booking.'})
@@ -3487,6 +3504,36 @@ def extend_booking_time_api(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
+def _staff_can_manage_booking(user, booking):
+    """
+    Admins can manage everything.
+    Staff can manage a booking only when:
+    1) issued_by matches the logged-in staff user, or
+    2) issued_by is blank and booked_by matches the logged-in staff user.
+    """
+    if getattr(user, 'is_superuser', False) or getattr(user, 'user_type', None) == 0:
+        return True
+
+    if getattr(user, 'user_type', None) != 2:
+        return False
+
+    if getattr(booking, 'issued_by_id', None):
+        return booking.issued_by_id == user.id
+
+    return getattr(booking, 'booked_by_id', None) == user.id
+
+
+def _mark_booking_manageability(bookings, user):
+    """
+    Add a simple UI flag so booking list pages can hide update buttons
+    when the logged-in staff user does not own that booking.
+    """
+    for booking in bookings:
+        # Expose manageability to the template without changing the queryset shape.
+        booking.can_manage = _staff_can_manage_booking(user, booking)
+    return bookings
+
+
 @login_required
 @require_POST
 def stop_booking_time(request, booking_id):
@@ -3497,6 +3544,13 @@ def stop_booking_time(request, booking_id):
     try:
         data = json.loads(request.body) if request.body else {}
         booking = get_object_or_404(Booking, id=booking_id)
+
+        # Staff can stop time only for their own manageable booking.
+        if not _staff_can_manage_booking(request.user, booking):
+            return JsonResponse({
+                'success': False,
+                'message': 'You can only update your own booked or issued tickets.'
+            }, status=403)
         
         # Security: Can only stop time for PENDING bookings
         if booking.status != 'PENDING':
@@ -3545,6 +3599,13 @@ def resume_booking_time(request, booking_id):
         minutes_to_add = int(data.get('minutes', 120))  # Default 2 hours
         
         booking = get_object_or_404(Booking, id=booking_id)
+
+        # Staff can resume time only for their own manageable booking.
+        if not _staff_can_manage_booking(request.user, booking):
+            return JsonResponse({
+                'success': False,
+                'message': 'You can only update your own booked or issued tickets.'
+            }, status=403)
         
         if not booking.time_stopped:
             return JsonResponse({
@@ -3578,6 +3639,11 @@ def resume_booking_time(request, booking_id):
 @login_required
 def update_booking_status(request, booking_id, new_status):
     booking = get_object_or_404(Booking, id=booking_id)
+
+    # Staff can confirm/update only their own manageable booking.
+    if not _staff_can_manage_booking(request.user, booking):
+        messages.error(request, "You can only update your own booked or issued tickets.")
+        return redirect('booking_issue_list')
     
     # 1. Handle CONFIRM
     if new_status == 'CONFIRMED':
@@ -3595,16 +3661,23 @@ def update_booking_status(request, booking_id, new_status):
         if selected_payment_status == 'PAID':
             booking.paid_amount = booking.total_amount
 
+        # ADDED: Set issued_by to the user who is confirming it.
+        # booked_by is left completely untouched.
+        booking.issued_by = request.user
+        
         booking.save()
         messages.success(request, "Booking Confirmed.")
 
     # 2. Handle CANCEL (Add this block)
     elif new_status == 'CANCELLED':
         booking.status = 'CANCELLED'
+        
+        # ADDED: Set cancelled_by to the user performing the cancellation
+        booking.cancelled_by = request.user
+        
         # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
         booking.save() 
         Ticket.objects.filter(booking=booking).update(status='CANCELLED')
-        messages.warning(request, "Booking Cancelled.")
 
     # --- SEND SMS FOR BOTH CASES ---
     try:
@@ -3902,6 +3975,8 @@ def booking_issue_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
+    # Mark which rows the current user is allowed to update from the list page.
+    bookings = _mark_booking_manageability(bookings, request.user)
     
     context = {'bookings': bookings, 'page_title': 'Issued (Confirmed) Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
@@ -3913,6 +3988,8 @@ def booking_pending_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
+    # Mark which rows the current user is allowed to update from the list page.
+    bookings = _mark_booking_manageability(bookings, request.user)
 
     context = {'bookings': bookings, 'page_title': 'Pending Payment Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
@@ -3927,6 +4004,8 @@ def booking_cancel_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).distinct().order_by('-created_at')
+    # Mark which rows the current user is allowed to update from the list page.
+    bookings = _mark_booking_manageability(bookings, request.user)
 
     # 2. The Context: YOU MUST INCLUDE 'is_cancel_page': True HERE
     context = {
@@ -3947,6 +4026,8 @@ def booking_expired_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
+    # Mark which rows the current user is allowed to update from the list page.
+    bookings = _mark_booking_manageability(bookings, request.user)
 
     context = {
         'bookings': bookings, 
@@ -4081,6 +4162,11 @@ def cancel_booking(request, booking_id):
         
     booking = get_object_or_404(Booking, id=booking_id)
 
+    # Staff can cancel only their own manageable booking.
+    if not _staff_can_manage_booking(request.user, booking):
+        messages.error(request, "You can only cancel your own booked or issued tickets.")
+        return redirect('booking_cancel_list')
+
     # Prevent cancelling already cancelled bookings
     if booking.status == 'CANCELLED':
         messages.warning(request, "This booking is already cancelled.")
@@ -4130,6 +4216,11 @@ def cancel_seats(request):
     selected_ticket_ids = request.POST.getlist('ticket_ids') 
 
     booking = get_object_or_404(Booking, id=booking_id)
+
+    # Staff can partially cancel only their own manageable booking.
+    if not _staff_can_manage_booking(request.user, booking):
+        messages.error(request, "You can only update your own booked or issued tickets.")
+        return redirect('booking_cancel_list')
 
     if not selected_ticket_ids:
         messages.warning(request, "No seats were selected for cancellation.")
@@ -4927,6 +5018,16 @@ def export_manifest_xls(request, trip_id):
             status_text = "Confirmed"
         else:
             status_text = f"Pending ({b_data['payment_label']})"
+
+        # Booked By logic (safely handle None)
+        booked_by_name = "-"
+        if booking.booked_by:
+            booked_by_name = booking.booked_by.get_display_name() or booking.booked_by.phone_number or "-"
+
+        # Issued By logic (safely handle None)
+        issued_by_name = "-"
+        if booking.issued_by:
+            issued_by_name = booking.issued_by.get_display_name() or booking.issued_by.phone_number or "-"
             
         row = [
             index,
@@ -4941,10 +5042,11 @@ def export_manifest_xls(request, trip_id):
             ticket.from_stop.location.name,
             ticket.to_stop.location.name,
             status_text,
-            booking.user.first_name or "Admin",
-            request.user.first_name or "Admin",
+            booked_by_name,
+            issued_by_name,
             remarks
         ]
+        
         ws.append(row)
         for cell in ws[ws.max_row]:
             cell.border = thin_border

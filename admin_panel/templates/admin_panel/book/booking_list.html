@@ -279,6 +279,7 @@
                                                         <!-- ===== END MODIFIED TIMER ===== -->
                                                         
                                                         <!-- ===== NEW: Time Control Buttons Group ===== -->
+                                                        {% if booking.can_manage %}
                                                         <div class="btn-group btn-group-xs" role="group">
                                                             <!-- Existing Extend Time button (unchanged) -->
                                                             <button type="button" 
@@ -309,6 +310,10 @@
                                                             </button>
                                                             {% endif %}
                                                         </div>
+                                                        {% else %}
+                                                        <!-- Keep timer visible, but block timer actions for non-owner staff users. -->
+                                                        <div class="small text-muted">No update access</div>
+                                                        {% endif %}
                                                         <!-- ===== END NEW BUTTONS ===== -->
                                                     </div>
                                                 {% endif %}
@@ -326,12 +331,13 @@
                                             <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Map">
                                                 <i class="fa fa-eye"></i>
                                             </a>
-                                            {% if booking.status == 'PENDING' %}
+                                            <!-- Hide update actions when the logged-in staff user does not own this booking. -->
+                                            {% if booking.can_manage and booking.status == 'PENDING' %}
                                             <button type="button" class="btn btn-xs btn-success px-2" data-bs-toggle="modal" data-bs-target="#confirmStatusModal" data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}">
                                                 <i class="fa fa-check"></i>
                                             </button>
                                             {% endif %}
-                                            {% if booking.status != 'CANCELLED' and booking.status != 'EXPIRED' %}
+                                            {% if booking.can_manage and booking.status != 'CANCELLED' and booking.status != 'EXPIRED' %}
                                                 {% for ticket in booking.tickets.all %}
                                                     {% if ticket.status != 'CANCELLED' %}
                                                         <span class="d-none ticket-info" 
@@ -349,6 +355,10 @@
                                                         data-booking-ref="{{ booking.booking_ref }}">
                                                     <i class="fa fa-times"></i>
                                                 </button>
+                                            {% endif %}
+                                            {% if not booking.can_manage %}
+                                                <!-- Read-only viewers still see the booking, but not its update buttons. -->
+                                                <span class="small text-muted align-self-center">No update access</span>
                                             {% endif %}
                                         </div>
                                     </td>

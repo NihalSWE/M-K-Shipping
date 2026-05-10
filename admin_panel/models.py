@@ -495,7 +495,6 @@ class TripPricing(models.Model):
         
 
 # --- 4. BOOKING TRANSACTIONS ---
-
 class Booking(models.Model):
     # --- CHOICES ---
     STATUS_CHOICES = (
@@ -524,7 +523,25 @@ class Booking(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name='issued_bookings',
+        help_text="Admin/staff user who issued this booking."
+    )
+    
+    booked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='booked_bookings',
         help_text="Admin/staff user who created this booking."
+    )
+    
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='cancelled_bookings',
+        help_text="Admin/staff user who cancelled this booking."
     )
     
     sales_channel = models.CharField(max_length=20, default='ONLINE', choices=(('ONLINE', 'Online'), ('COUNTER', 'Counter')))
