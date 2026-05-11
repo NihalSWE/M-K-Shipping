@@ -49,6 +49,12 @@ class CustomSignInForm(forms.Form):
     
     
 class AdminUserEditForm(forms.ModelForm):
+    # 1. Explicitly make last_name optional
+    last_name = forms.CharField(
+        required=False, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name (Optional)'})
+    )
+
     class Meta:
         model = User
         fields = [
@@ -57,3 +63,20 @@ class AdminUserEditForm(forms.ModelForm):
             'balance', 'credit_limit',
             'company_name', 'city'
         ]
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'user_type': forms.Select(attrs={'class': 'form-select'}),
+            'user_status': forms.Select(attrs={'class': 'form-select'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'balance': forms.NumberInput(attrs={'class': 'form-control'}),
+            'credit_limit': forms.NumberInput(attrs={'class': 'form-control'}),
+            'company_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    # 2. Ensure empty last_name is saved as "" instead of None
+    def clean_last_name(self):
+        last_name = self.cleaned_data.get('last_name')
+        return last_name.strip() if last_name else ""

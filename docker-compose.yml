@@ -3,7 +3,6 @@ version: '3.8'
 services:
   web:
     build: .
-    # This runs your Django server
     command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     volumes:
       - .:/app
@@ -12,33 +11,58 @@ services:
     depends_on:
       - redis
       - db
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
 
-  # Redis (Required for Channels & Celery)
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
 
-  # Celery Worker (The Auto-Cancel Timer)
   celery:
     build: .
-    # UPDATED LINE BELOW: We changed 'project_name' to 'config'
     command: celery -A config worker --loglevel=info
     volumes:
       - .:/app
     depends_on:
       - redis
       - web
-
-  # Postgres Database
-  db:
-    image: postgres:13
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_DB=mydb
-      - POSTGRES_USER=myuser
-      - POSTGRES_PASSWORD=mypassword
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+
+  celery-beat:
+    build: .
+    command: celery -A config beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - web
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+
+  db:
+    image: postgres:18
+    volumes:
+      - postgres_data:/var/lib/postgresql   # ✅ FIXED
+    environment:
+      - POSTGRES_DB=${DB_NAME:-mk_shipping}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-root}
+    ports:
+      - "5432:5432"
 
 volumes:
   postgres_data:

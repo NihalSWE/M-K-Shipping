@@ -418,7 +418,7 @@ class Trip(models.Model):
             # Check if seat is BOOKED by anyone
             booked_exists = self.tickets.select_for_update().filter(
                 seat_object=seat_object,
-                status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+                status__in=['BOOKED', 'CONFIRMED', 'LOCKED', 'PENDING']
             ).filter(
                 Q(from_stop__stop_order__lt=end_order) & 
                 Q(to_stop__stop_order__gt=start_order)
@@ -431,10 +431,13 @@ class Trip(models.Model):
             return True
 
     # Method 2: For admin panel (with exclude_user parameter)
-    def is_seat_available_admin(self, seat_object, from_stop, to_stop, exclude_user=None):
+    # Update the method signature to accept exclude_holder_id
+    # Update the method signature to accept exclude_holder_id
+    def is_seat_available_admin(self, seat_object, from_stop, to_stop, exclude_user=None, exclude_holder_id=None):
         """
         Admin version that checks both tickets AND active holds.
-        exclude_user: If provided, ignores holds/tickets belonging to this user.
+        exclude_user: If provided, ignores tickets belonging to this user.
+        exclude_holder_id: If provided, ignores holds placed by this specific session/holder.
         """
         with transaction.atomic():
             start_order = from_stop.stop_order
@@ -443,7 +446,7 @@ class Trip(models.Model):
             # Check TICKETS
             tickets_qs = self.tickets.select_for_update().filter(
                 seat_object=seat_object,
-                status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+                status__in=['BOOKED', 'CONFIRMED', 'LOCKED', 'PENDING']
             ).filter(
                 Q(from_stop__stop_order__lt=end_order) & 
                 Q(to_stop__stop_order__gt=start_order)
@@ -459,7 +462,7 @@ class Trip(models.Model):
                 Q(to_stop__stop_order__gt=from_stop.stop_order)
             )
 
-            # Handle exclude_user
+            # Handle exclude_user (for Tickets and legacy holds)
             if exclude_user:
                 if hasattr(exclude_user, 'is_authenticated') and exclude_user.is_authenticated:
                     tickets_qs = tickets_qs.exclude(booking__user=exclude_user)
@@ -469,6 +472,10 @@ class Trip(models.Model):
                         Q(holder_id=str(exclude_user.id)) |
                         Q(holder_id=f"user_{exclude_user.id}")
                     )
+            
+            # --- ADD THIS: Properly exclude the exact session holder ---
+            if exclude_holder_id:
+                holds_qs = holds_qs.exclude(holder_id=exclude_holder_id)
 
             tickets_exist = tickets_qs.exists()
             holds_exist = holds_qs.exists()
@@ -513,7 +520,7 @@ class Booking(models.Model):
     # --- FIELDS ---
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
     trip = models.ForeignKey('Trip', on_delete=models.CASCADE) # specific 'Trip' string or class
-    booking_ref = models.CharField(max_length=12, unique=True)
+    booking_ref = models.CharField(max_length=30, unique=True)
     
     # Counter Logic
     counter = models.ForeignKey('Counter', null=True, blank=True, on_delete=models.SET_NULL)
@@ -578,6 +585,13 @@ class Booking(models.Model):
     share_token = models.CharField(max_length=40, blank=True, null=True, db_index=True)
     qr_image = models.ImageField(upload_to="booking_qr/", blank=True, null=True)
     ticket_pdf = models.FileField(upload_to="booking_pdfs/", blank=True, null=True)
+    
+    class Meta:
+        # Keep any existing meta options you have
+        permissions = [
+            ("can_view_trip_sheet", "Can view trip sheet"),
+            ("can_export_trip_sheet", "Can export trip sheet")
+        ]
     
     def save(self, *args, **kwargs):
         # Auto-set expiry if PENDING and not set
@@ -657,10 +671,11 @@ class Ticket(models.Model):
     STATUS_CHOICES = (
         ('LOCKED', 'Temporary Hold'),
         ('BOOKED', 'Booked'),
+        ('PENDING', 'Pending'),
         ('CANCELLED', 'Cancelled'),
     )
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='tickets')
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name='tickets')
+    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name='tickets', null=True, blank=True)
     trip = models.ForeignKey('Trip', on_delete=models.CASCADE, related_name='tickets')
     seat_object = models.ForeignKey(LayoutObject, on_delete=models.CASCADE)
     passenger_name = models.CharField(max_length=100)
@@ -684,6 +699,8 @@ class Ticket(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+
 
 class SeatHold(models.Model):
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="seat_holds")
@@ -1167,11 +1184,22 @@ class FeaturedArticle(models.Model):
         return f"{self.name} | {self.organization_name}"
 
     def save(self, *args, **kwargs):
-        # Auto-generate the unique identifier from the name if it isn't provided
         if not self.article_identifier:
-            # We add a bit of the organization name to make it truly unique
+            # 1. Attempt to make a standard slug
             base_string = f"{self.organization_name}-{self.name}"
-            self.article_identifier = slugify(base_string)[:250] 
+            slug = slugify(base_string)
+            
+            # 2. Generate an 8-character unique hash
+            unique_hash = uuid.uuid4().hex[:8]
+            
+            # 3. Combine them. 
+            # If `slugify` returned an empty string (e.g., due to foreign characters),
+            # it falls back to just "article-<hash>". Otherwise, it's "slug-<hash>".
+            if slug:
+                self.article_identifier = f"{slug}-{unique_hash}"[:255]
+            else:
+                self.article_identifier = f"article-{unique_hash}"
+                
         super().save(*args, **kwargs)
         
         

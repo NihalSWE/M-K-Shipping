@@ -16,7 +16,7 @@
 
     .prf-page {
         font-family: var(--prf-font-family);
-        background: linear-gradient(180deg, #f8fbff 0%, #f4f9ff 100%);
+        /* background: linear-gradient(180deg, #f8fbff 0%, #f4f9ff 100%); */
         min-height: 100%;
         padding: 28px 0 50px;
     }

@@ -1,0 +1,490 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+<style>
+    /* CARD STYLING: Light, elegant, slightly transparent (Glassmorphism) */
+    .profile-card {
+        background: rgba(248, 250, 252, 0.85); 
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        margin-bottom: 24px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+    
+    .profile-card-header {
+        background: rgba(241, 245, 249, 0.6); 
+        padding: 20px 25px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .profile-card-body { padding: 25px; }
+
+    /* AVATAR & IMAGES */
+    .image-upload-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 15px;
+        flex-shrink: 0; /* Prevents squishing */
+    }
+
+    .image-preview {
+        width: 120px !important; /* Forced exact dimensions to prevent oval shape */
+        height: 120px !important;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        background-color: #e2e8f0;
+        display: block;
+    }
+
+    .image-edit-overlay {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #3b82f6; /* Adjust to your theme primary */
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid #fff;
+        z-index: 10;
+    }
+
+    /* BUTTON STYLES & HOVER EFFECTS */
+    .btn-modern {
+        border-radius: 8px;
+        font-weight: 500;
+        padding: 12px 28px; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-primary-soft { background-color: #3b82f6; color: #fff; }
+    .btn-primary-soft:hover { background-color: #2563eb; }
+    
+    .btn-danger-soft {
+        background-color: #ef4444; 
+        color: #ffffff;
+        border: 1px solid #ef4444;
+    }
+
+    .btn-danger-soft:hover {
+        background-color: #b91c1c !important; 
+        border-color: #b91c1c !important;
+        transform: translateY(-1px);
+    }
+
+    /* TYPOGRAPHY & FORMS */
+    h4, h5, h6 { font-weight: 600 !important; color: #334155; }
+    
+    .info-label {
+        font-size: 0.8rem;
+        font-weight: 500; 
+        color: #94a3b8;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        color: #334155;
+        font-weight: 400; 
+        padding: 6px 0;
+    }
+
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #e2e8f0;
+        font-weight: 400;
+    }
+
+    /* EDIT MODE TOGGLES */
+    .edit-mode-field { display: none; }
+    .editing .view-mode-field { display: none; }
+    .editing .edit-mode-field { display: block; }
+    
+    .section-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    /* PASSWORD BOX */
+    .password-confirm-box {
+        display: none; 
+        background: #fff5f5;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #fed7d7;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* PASSWORD REQS */
+    .password-req-list { list-style: none; padding: 0; margin: 0; }
+    .req-item {
+        font-size: 0.75rem; 
+        color: #94a3b8; 
+        margin-bottom: 2px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+    }
+    .req-item i { font-size: 0.65rem; margin-right: 6px; width: 12px; text-align: center; }
+    .req-item.valid { color: #10b981; font-weight: 500; }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        
+        <div class="col-lg-4 order-2 order-lg-1">
+            <div class="profile-card">
+                <div class="profile-card-body">
+                    <div class="section-title mb-3"><i class="fas fa-shield-alt me-2 text-primary"></i>Security Settings</div>
+                    
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-1">Password</h6>
+                            <p class="text-muted small mb-0">Update your password to keep your account secure.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2 mt-md-0" onclick="showPasswordConfirm()">Change Password</button>
+                    </div>
+
+                    <div id="passwordConfirmBox" class="password-confirm-box">
+                        <h6 class="text-danger mb-3"><i class="fas fa-key me-2"></i>Change Password</h6>
+                        
+                        <div id="passwordError" class="alert alert-danger" style="display: none; padding: 10px; font-size: 0.85rem;"></div>
+                        <div id="passwordSuccess" class="alert alert-success" style="display: none; padding: 10px; font-size: 0.85rem;"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Current Password</label>
+                            <input type="password" id="current_password" class="form-control form-control-sm">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label small text-muted">New Password</label>
+                                <input type="password" id="new_password" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label small text-muted">Confirm New Password</label>
+                                <input type="password" id="confirm_password" class="form-control form-control-sm">
+                            </div>
+                        </div>
+
+                        <ul class="password-req-list mb-3">
+                            <li id="req-length" class="req-item"><i class="far fa-circle"></i> At least 8 characters</li>
+                            <li id="req-upper" class="req-item"><i class="far fa-circle"></i> One uppercase letter</li>
+                            <li id="req-lower" class="req-item"><i class="far fa-circle"></i> One lowercase letter</li>
+                            <li id="req-number" class="req-item"><i class="far fa-circle"></i> One number</li>
+                        </ul>
+
+                        <div class="text-end mt-2">
+                            <button type="button" class="btn btn-sm btn-secondary me-2" onclick="hidePasswordConfirm()">Cancel</button>
+                            <button type="button" id="submitPasswordBtn" class="btn btn-sm btn-danger">Update</button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 order-1 order-lg-2">
+            <form id="profileForm" action="{% url 'update_profile' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <h5 class="mb-0">My Profile</h5>
+                        <button type="button" id="editToggleBtn" class="btn btn-modern btn-primary-soft btn-sm" onclick="toggleEditMode()">
+                            <i class="fas fa-edit me-1"></i> Edit Profile
+                        </button>
+                    </div>
+
+                    <div class="profile-card-body">
+                        
+                        <div class="text-center mb-4">
+                            <div class="image-upload-container">
+                                {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}" id="avatarPreview" class="image-preview" alt="User Avatar">
+                                {% else %}
+                                    <img src="{% static 'assets/images/default-avatar.png' %}" id="avatarPreview" class="image-preview" alt="Default Avatar">
+                                {% endif %}
+                                
+                                <label for="profile_pic_input" class="image-edit-overlay edit-mode-field" title="Change Avatar">
+                                    <i class="fas fa-camera"></i>
+                                </label>
+                                <input type="file" id="profile_pic_input" name="profile_pic" class="d-none" accept="image/*">
+                            </div>
+                            <h4 class="mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h4>
+                            <p class="text-muted small">{{ request.user.get_user_type_display }}</p>
+                        </div>
+
+                        <div class="section-title">Personal Information</div>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="info-label">First Name</div>
+                                <div class="view-mode-field info-value">{{ request.user.first_name|default:"--" }}</div>
+                                <div class="edit-mode-field">
+                                    <input type="text" name="first_name" class="form-control" value="{{ request.user.first_name }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="info-label">Last Name</div>
+                                <div class="view-mode-field info-value">{{ request.user.last_name|default:"--" }}</div>
+                                <div class="edit-mode-field">
+                                    <input type="text" name="last_name" class="form-control" value="{{ request.user.last_name }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-label">Email Address</div>
+                                <div class="info-value">
+                                    <i class="fas fa-envelope text-muted me-2"></i>{{ request.user.email|default:"Not Provided" }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-label">Phone Number</div>
+                                <div class="info-value">
+                                    <i class="fas fa-phone text-muted me-2"></i>{{ request.user.phone_number }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4 edit-mode-field">
+                            <button type="submit" class="btn btn-modern btn-primary-soft">
+                                <i class="fas fa-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    // 1. TOGGLE EDIT MODE
+    function toggleEditMode() {
+        const formContainer = document.getElementById('profileForm');
+        const btn = document.getElementById('editToggleBtn');
+        
+        formContainer.classList.toggle('editing');
+        
+        if (formContainer.classList.contains('editing')) {
+            btn.innerHTML = '<i class="fas fa-times me-1"></i> Cancel';
+            btn.classList.replace('btn-primary-soft', 'btn-danger-soft');
+        } else {
+            btn.innerHTML = '<i class="fas fa-edit me-1"></i> Edit Profile';
+            btn.classList.replace('btn-danger-soft', 'btn-primary-soft');
+            // Reset image preview if canceled
+            document.getElementById('profileForm').reset();
+        }
+    }
+
+    // 2. IMAGE PREVIEW + AUTO-ENABLE SAVE
+    function setupImagePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        const formContainer = document.getElementById('profileForm');
+        
+        if (input && preview) {
+            input.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        // Force edit mode open if they upload an image while not in edit mode
+                        if (!formContainer.classList.contains('editing')) {
+                            toggleEditMode();
+                        }
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        }
+    }
+
+    // 3. PASSWORD UI TOGGLES
+    function showPasswordConfirm() { 
+        $('#passwordConfirmBox').slideDown(); 
+        $('#passwordError').hide();
+        $('#passwordSuccess').hide();
+    }
+    
+    function hidePasswordConfirm() { 
+        $('#passwordConfirmBox').slideUp(); 
+        $('#current_password, #new_password, #confirm_password').val('');
+        document.querySelectorAll('.req-item').forEach(el => {
+            el.classList.remove('valid');
+            const icon = el.querySelector('i');
+            if(icon) {
+                icon.classList.remove('fa-check', 'fas');
+                icon.classList.add('fa-circle', 'far');
+            }
+        });
+    }
+
+    // INITIALIZATION
+    document.addEventListener('DOMContentLoaded', function() {
+        setupImagePreview('profile_pic_input', 'avatarPreview');
+
+        // Password Validation UI
+        const newPassInput = document.getElementById('new_password');
+        const reqLength = document.getElementById('req-length');
+        const reqUpper = document.getElementById('req-upper');
+        const reqLower = document.getElementById('req-lower');
+        const reqNumber = document.getElementById('req-number');
+
+        if (newPassInput) {
+            newPassInput.addEventListener('input', function() {
+                const val = this.value;
+                
+                const toggleReq = (element, isValid) => {
+                    if (!element) return;
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        if(icon) {
+                            icon.classList.remove('fa-circle', 'far');
+                            icon.classList.add('fa-check', 'fas');
+                        }
+                    } else {
+                        element.classList.remove('valid');
+                        if(icon) {
+                            icon.classList.remove('fa-check', 'fas');
+                            icon.classList.add('fa-circle', 'far');
+                        }
+                    }
+                };
+
+                toggleReq(reqLength, val.length >= 8);
+                toggleReq(reqUpper, /[A-Z]/.test(val));
+                toggleReq(reqLower, /[a-z]/.test(val));
+                toggleReq(reqNumber, /[0-9]/.test(val));
+            });
+        }
+
+        // Submit Password Change
+        const submitBtn = document.getElementById('submitPasswordBtn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                const current = document.getElementById('current_password').value;
+                const newPass = document.getElementById('new_password').value;
+                const confirmPass = document.getElementById('confirm_password').value;
+                const errorDiv = document.getElementById('passwordError');
+                const successDiv = document.getElementById('passwordSuccess');
+                const btn = this;
+
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+
+                // Basic Validation
+                if (!current || !newPass || !confirmPass) {
+                    errorDiv.innerText = "All fields are required.";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (newPass !== confirmPass) {
+                    errorDiv.innerText = "New passwords do not match.";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                if (newPass.length < 8 || !/[A-Z]/.test(newPass) || !/[a-z]/.test(newPass) || !/[0-9]/.test(newPass)) {
+                    errorDiv.innerText = "Password does not meet the security requirements.";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                const originalBtnText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+                // API Call
+                fetch("{% url 'change_password' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: current,
+                        new_password: newPass
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        successDiv.innerText = data.message;
+                        successDiv.style.display = 'block';
+                        setTimeout(hidePasswordConfirm, 2000); // Hide after success
+                    } else {
+                        errorDiv.innerText = data.message;
+                        errorDiv.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    errorDiv.innerText = "Network error occurred.";
+                    errorDiv.style.display = 'block';
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnText;
+                });
+            });
+        }
+    });
+</script>
+{% endblock scriptcontent %}

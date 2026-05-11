@@ -1,199 +1,3 @@
-{% comment %} <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        @page {
-            size: A4 landscape;
-            margin: 0.5cm;
-        }
-
-        body {
-            font-family: 'Helvetica', Arial, sans-serif;
-            font-size: 9pt;
-            color: #000;
-            margin: 0;
-            padding: 0;
-            line-height: 1.0;
-        }
-
-        .sheet-title {
-            text-align: center; font-weight: bold; font-size: 16pt;
-            margin: 0 0 12px 0; text-transform: uppercase;
-        }
-
-        .info-table, .main-table {
-            width: 100%; border-collapse: collapse; font-size: 9pt;
-        }
-        
-        .info-table { margin-bottom: 12px; }
-        .info-table th, .main-table th {
-            background-color: #e8e8e8; border: 1px solid #000;
-            padding: 5px; font-weight: bold; text-align: center; vertical-align: middle;
-        }
-
-        /* Standard cell */
-        .cell-normal {
-            border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;
-        }
-
-        /* --- VISUAL MERGE CSS --- */
-        /* Tricks the eye into seeing a rowspan without crashing the PDF generator */
-        .merge-single {
-            border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle;
-        }
-        .merge-top {
-            border-top: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: none;
-            padding: 4px; text-align: center; vertical-align: top;
-        }
-        .merge-mid {
-            border-top: none; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: none;
-            padding: 4px; text-align: center;
-        }
-        .merge-bot {
-            border-top: none; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000;
-            padding: 4px; text-align: center;
-        }
-        
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
-    </style>
-</head>
-<body>
-
-    <div class="sheet-title">TRIP SHEET</div>
-
-    <table class="info-table">
-        <tr>
-            <th>Launch</th><th>Route</th><th>Starting Place</th>
-            <th>Journey Date Time</th><th>Ticket Sold</th><th>Seats Sold</th>
-        </tr>
-        <tr>
-            <td class="cell-normal">{{ trip.ship.name }}</td>
-            <td class="cell-normal">{{ trip.route.name }}</td>
-            <td class="cell-normal">{{ trip.route.source.name }}</td>
-            <td class="cell-normal">{{ trip.departure_datetime|date:"Y-m-d H:i" }}</td>
-            <td class="cell-normal">{{ total_tickets }}</td>
-            <td class="cell-normal">{{ total_tickets }}</td>
-        </tr>
-    </table>
-
-    <table class="main-table">
-        <thead>
-            <tr>
-                <th style="width: 3%;">SL</th>
-                <th style="width: 6.5%;">Ticket No</th>
-                <th style="width: 5.5%;">Cabin</th>
-                <th style="width: 13%;">Pass. Name</th>
-                <th style="width: 8.5%;">Phone No</th>
-                <th style="width: 7%;">Paid</th>
-                <th style="width: 6.5%;">Discount</th>
-                <th style="width: 7%;">Due</th>
-                <th style="width: 7.5%;">From Station</th>
-                <th style="width: 7.5%;">To Station</th>
-                <th style="width: 8.5%;">Ticket Status</th>
-                <th style="width: 8.5%;">Booked By</th>
-                <th style="width: 8.5%;">Issued By</th>
-                <th style="width: 8.5%;">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in pdf_rows %}
-                {% if row.is_header %}
-                    <tr>
-                        <td colspan="14" style="background-color: #e8f4f8; font-weight: bold; border: 1px solid #000; padding: 4px; text-align: left;">
-                            Booking #{{ row.booking_id }} (Ref: {{ row.booking_ref }}) 
-                            - Total Fare: {{ row.total_fare|floatformat:0 }}
-                            - Paid: {{ row.paid_amount|floatformat:0 }}
-                            - Due: {{ row.due_amount|floatformat:0 }}
-                            {% if row.status == 'PENDING' %}<span style="color: orange;"> - PENDING</span>{% endif %}
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr {% if row.status == 'PENDING' %}style="background-color: #fffcf2;"{% endif %}>
-                        <td class="cell-normal">{{ row.sl }}</td>
-                        <td class="cell-normal">{{ row.ticket_id }}</td>
-                        <td class="cell-normal">{{ row.cabin }}</td>
-                        <td class="cell-normal text-left">{{ row.pass_name }}</td>
-                        <td class="cell-normal">{{ row.phone }}</td>
-
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}<strong style="color: green;">{{ row.group_paid|floatformat:0 }}</strong>{% endif %}
-                        </td>
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}0{% endif %}
-                        </td>
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}<strong style="{% if row.group_due > 0 %}color: red;{% endif %}">{{ row.group_due|floatformat:0 }}</strong>{% endif %}
-                        </td>
-
-                        <td class="cell-normal">{{ row.from_station }}</td>
-                        <td class="cell-normal">{{ row.to_station }}</td>
-
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}
-                                <span style="color: {% if row.status == 'CONFIRMED' %}green{% else %}orange{% endif %};">
-                                    {{ row.status|title }}
-                                </span><br>
-                                <span style="font-size: 7pt; color: #555;">{{ row.payment_label }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}{{ row.booked_by }}{% endif %}
-                        </td>
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}{{ current_user.first_name|default:"Admin" }}{% endif %}
-                        </td>
-                        <td class="{% if row.is_single %}merge-single{% elif row.is_first %}merge-top{% elif row.is_last %}merge-bot{% else %}merge-mid{% endif %}">
-                            {% if row.is_first %}
-                                {% if row.status == 'PENDING' and row.time_stopped %}
-                                    Timer Stopped
-                                {% elif row.group_due > 0 %}
-                                    Due
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
-
-            <tr>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                
-                <td class="cell-normal" style="font-weight: bold; color: green; text-align: center; vertical-align: middle;">
-                    Total<br>Paid:<br>{{ total_paid|floatformat:0 }}
-                </td>
-                
-                <td class="cell-normal">&nbsp;</td>
-                
-                <td class="cell-normal" style="font-weight: bold; {% if total_due > 0 %}color: red;{% else %}color: #000;{% endif %} text-align: center; vertical-align: middle;">
-                    Total<br>Due:<br>{{ total_due|floatformat:0 }}
-                </td>
-                
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-                <td class="cell-normal">&nbsp;</td>
-            </tr>
-        </tbody>
-    </table>
-
-</body>
-</html> {% endcomment %}
-
-
-
-
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -322,7 +126,7 @@
                 <th style="width: 6%;">Due</th>
                 <th style="width: 7%;">From Station</th>
                 <th style="width: 7%;">To Station</th>
-                <th style="width: 7%;">Ticket Status</th>
+                <th style="width: 8%;">Ticket Status</th>
                 <th style="width: 6%;">Booked By</th>
                 <th style="width: 6%;">Issued By</th>
                 <th style="width: 4%;">Remarks</th>
@@ -364,7 +168,9 @@
                     <td>
                         {% if ticket.booking.status == 'CONFIRMED' %}
                             <span class="text-success">Confirmed</span><br>
-                            <span class="text-success" style="font-size: 8px;">Paid</span>
+                            <span class="small-note" style="color: {% if ticket.booking.payment_status == 'PAID' %}green{% else %}#fd7e14{% endif %}; font-size: 8px;">
+                                {{ ticket.booking_data.payment_label }}
+                            </span>
                         {% elif ticket.booking.status == 'PENDING' %}
                             <span style="color: orange;">Pending</span><br>
                             <span class="text-warning small-note">{{ ticket.booking_data.payment_label }}</span>

@@ -1,0 +1,89 @@
+# ==========================================
+# CUSTOM RULES
+# ==========================================
+
+# 1. Logs
+*.log
+/log/
+/logs/
+
+# 2. Database
+db.sqlite3
+db.sqlite3-journal
+
+# 3. Media folder (root only)
+/media/
+
+# 4. Project-level static folder (root only)
+# The leading slash ensures it only ignores the root static folder (from collectstatic).
+# It will NOT ignore app-level static folders (e.g., myapp/static/).
+/static/
+/staticfiles/
+/static_root/
+
+# --- Custom Static File Tracking Rules ---
+# The /static/ line above ignores the project-root static folder.
+# We must re-include app-level static folders (e.g., app_name/static/):
+!*/static/
+!*/static/*
+
+# 5. Virtual Environments
+venv/
+env/
+.env
+.venv/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# STANDARD DJANGO / PYTHON RULES
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+mk_shipping.json

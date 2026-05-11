@@ -69,6 +69,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         (0, 'Admin'),
         (1, 'Customer'),
         (2, 'Staff'),
+        (3, 'Counter'),
+        (4, 'Super Counter'),
     )
 
     STATUS_CHOICES = (

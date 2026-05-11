@@ -1,0 +1,141 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block custom_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+{% endblock custom_css %}
+
+{% block content %}
+
+<div class="container-fluid datatable-init">
+    
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 card-no-border">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <h1>User Management</h1>
+                            <p class="text-muted" style="font-size: 14px;">View and manage all registered users.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end">
+                                <a href="{% url 'user_add' %}" class="btn btn-pill btn-primary btn-lg">
+                                    <span class="me-2">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </span> Add New User
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive custom-scrollbar">
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>Customer Info</th>
+                                    <th>Phone</th>
+                                    <th>Total Bookings</th>
+                                    <th>Status</th>
+                                    <th>Joined Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3" 
+                                                style="width: 40px; height: 40px; font-weight: bold;">
+                                                {% if user.first_name %}
+                                                    {{ user.first_name|slice:":1"|upper }}
+                                                {% elif user.email %}
+                                                    {{ user.email|slice:":1"|upper }}
+                                                {% else %}
+                                                    <i class="fa fa-user"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 text-dark fw-bold">
+                                                    {% if user.first_name or user.last_name %}
+                                                        {{ user.first_name|default:"" }} {{ user.last_name|default:"" }}
+                                                    {% else %}
+                                                        <span class="text-muted fst-italic">Unknown Name</span>
+                                                    {% endif %}
+                                                </h6>
+                                                <small class="text-muted">
+                                                    {% if user.email %}
+                                                        {{ user.email }}
+                                                    {% else %}
+                                                        <span class="fst-italic">No Email</span>
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <td>
+                                        {% if user.phone_number %}
+                                            {{ user.phone_number }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-dark text-white px-3 py-2 rounded-pill">
+                                            {{ user.total_bookings }} Booking{{ user.total_bookings|pluralize }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> Active</span>
+                                        {% else %}
+                                            <span class="text-muted"><i class="fa-solid fa-circle-xmark me-1"></i> Inactive</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {{ user.created_at|date:"d M, Y" }}
+                                    </td>
+
+                                    <td>
+                                        {% comment %} <a href="{% url 'admin_user_edit' user.id %}" 
+                                            class="btn btn-sm btn-outline-primary me-1" 
+                                            title="Edit User">
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                        </a> {% endcomment %}
+                                    
+                                        {% if user != request.user %}
+                                            <a href="{% url 'admin_user_delete' user.id %}" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Are you sure?')"
+                                                title="Delete User">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables1.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
+{% endblock %}

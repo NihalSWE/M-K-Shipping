@@ -385,11 +385,15 @@ h5, h6, .h5, .h6{
 @media (max-width: 991px){
     .rts-breadcrumb-area,
     .rts-breadcrumb-area.one{
-        padding: 18px 0 16px !important;
+        padding: 130px 0 16px !important;
     }
 
     .breadcrumb-area-wrapper--with-search{
         gap: 12px;
+    }
+
+    .search-results-wrapper{
+        padding: 40px 0 110px 0;
     }
 }
 
@@ -1133,7 +1137,7 @@ h5, h6, .h5, .h6{
     width: 100%;
 
     /* give it a background so content doesn't show behind while scrolling */
-    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%);
+    /* background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%); */
     padding: 10px 10px;
     /* margin: -16px -16px 10px -16px;  */
     border-bottom: 1px solid rgba(226, 232, 240, 0.9);
@@ -1385,6 +1389,7 @@ h5, h6, .h5, .h6{
 
 /* Selected Items panel style starts */
 .selected-items-panel {
+    margin-top: 18px;
     margin-bottom: 10px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid #e2e8f0;
@@ -1465,6 +1470,8 @@ h5, h6, .h5, .h6{
     gap: 6px;
     max-height: 150px;
     overflow-y: auto;
+    /* transition: height 0.25s ease-out; */
+    view-transition-name: selected-items-list;
 }
 
 .selected-items-panel__item {
@@ -2555,7 +2562,7 @@ input:checked + .slider:before {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: 999999;
     align-items: center;
     justify-content: center;
     padding: 20px;
@@ -2642,7 +2649,11 @@ input:checked + .slider:before {
 /* Inline Booking Panel Styles */
 
 /* [NEW:PAYMENT_MODAL_CSS] */
-.pay-modal { position: fixed; inset: 0; z-index: 9999; }
+.pay-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+}
 .pay-modal__backdrop {
     position: absolute; inset: 0;
     background: rgba(15, 23, 42, .55);
@@ -3014,6 +3025,7 @@ input:checked + .slider:before {
         margin-top: 0;
         margin-bottom: 0;
         padding-bottom: 8px;
+        z-index: 99999;
     }
 
     #inlineBookingPanel.inline-booking-panel.is-open {

@@ -5,7 +5,7 @@
         <div class="header-inner">
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="header-style-one-wrapper">
+                    <div class="header-style-one-wrapper d-flex justify-content-between align-items-center w-100">
                         <div class="left-area">
                             <div class="logo-area">
                                 <a href="{% url 'home' %}" class="logo">
@@ -32,15 +32,15 @@
                                         <i class="fa-solid fa-phone"></i>
                                     </div>
                                     <div class="phone-numbers-box">
-                                        <a href="tel:+1234567890" class="phone-link">+123 456 7890</a>
-                                        <a href="tel:+0987654321" class="phone-link">+098 765 4321</a>
+                                        <a href="tel:+8801713428523" class="phone-link">+880 1713 428 523</a>
+                                        <a href="tel:+09678330055" class="phone-link">+880 9678 33 00 55</a>
                                     </div>
                                 </div>
 
                                 <div id="headerAuthControls">
                                     {% if user.is_authenticated %}
-                                        <div class="dropdown d-inline-block me-3">
-                                            <div class="user-dropdown-toggle d-flex align-items-center" 
+                                        <div class="dropdown d-none d-lg-inline-block me-3">
+                                            <div class="user-dropdown-toggle d-flex align-items-center"  
                                                 id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
                                                 
                                                 <div class="user-icon-wrapper">

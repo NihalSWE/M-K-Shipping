@@ -110,8 +110,23 @@
         color: #117a8b !important;
     }
 
+    .layout-obj.locked {
+        background: rgba(23, 162, 184, 0.25) !important;
+        border: 1px solid rgba(23, 162, 184, 0.45) !important;
+        color: #117a8b !important;
+    }
+
+    .layout-obj.locked::after {
+        content: "";
+        position: absolute;
+        width: 55px;
+        height: 2px;
+        background: rgba(0, 79, 190, 0.4); /* Dark blue line */
+        transform: rotate(-45deg);
+    }
+
     /* 3d. Generic booked fallback (if gender class missing) */
-    .layout-obj.booked:not(.booked-male):not(.booked-female):not(.booked-other) {
+    .layout-obj.booked:not(.booked-male):not(.booked-female):not(.booked-other):not(.locked) {
         background-color: rgba(148, 163, 184, 0.18) !important;
         border: 1px solid rgba(148, 163, 184, 0.45) !important;
         color: rgba(100, 116, 139, 0.85) !important;
@@ -133,6 +148,25 @@
 
     .layout-obj.booked-female::after {
         background: rgba(236, 72, 153, 0.6);
+    }
+
+    /* 4. PENDING -> Grayish background (like selected) with diagonal line */
+    .layout-obj.pending {
+        cursor: pointer;
+        pointer-events: auto;
+        background: rgba(148, 163, 184, 0.18) !important;
+        border: 2px solid rgba(100, 116, 139, 0.90) !important;
+        color: #333 !important;
+        z-index: 4;
+    }
+
+    .layout-obj.pending::after {
+        content: "";
+        position: absolute;
+        width: 55px;
+        height: 2px;
+        background: rgba(100, 116, 139, 0.65); /* Dark gray line */
+        transform: rotate(-45deg);
     }
 
     /* 4. NON-SEATS (Space, Walls, Washroom) */
@@ -317,105 +351,110 @@
             </div>
 
             {% if messages %}
-                {% endif %}
+            {% endif %}
 
             <div class="seat-map-wrapper" id="seat-map-container">
                 {% for deck in decks %}
-                <div class="deck-section">
-                    <div class="deck-title">{{ deck.name }}</div>
-                    <div class="deck-grid" style="
-                    grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
-                    grid-template-rows: repeat({{ deck.total_rows }}, 45px);
-                ">
-                {% for obj in deck.layout_objects.all %}
-                    {% with cat_name=obj.category.name %}
-                    <div 
-                        class="layout-obj 
-                            {% if not obj.category.is_bookable %}
-                                non-seat {{ obj.category.name|slugify }}
-                            {% else %}
-                                seat
-                                {% if obj.id in booked_seat_ids %}
-                                    booked
-                                    {% with gender=seat_gender_map|get_item:obj.id %}
-                                        {% if gender == 0 %}booked-male{% elif gender == 1 %}booked-female{% else %}booked-other{% endif %}
-                                    {% endwith %}
-                                {% elif obj.id in held_seat_ids %}
-                                    held
-                                    {% with seat_holder=held_by_map|get_item:obj.id %}
-                                        {% if seat_holder == holder_id %}held-by-me{% else %}held-by-other{% endif %}
-                                    {% endwith %}
-                                {% else %}
-                                    available
-                                {% endif %}
-                            {% endif %}"
+                    <div class="deck-section">
+                        <div class="deck-title">{{ deck.name }}</div>
+                        <div class="deck-grid" style="
+                            grid-template-columns: repeat({{ deck.grid_cols }}, 50px); 
+                            grid-template-rows: repeat({{ deck.total_rows }}, 45px);
+                        ">
+                            {% for obj in deck.layout_objects.all %}
+                                {% with cat_name=obj.category.name %}
+                                <div 
+                                    class="layout-obj 
+                                        {% if not obj.category.is_bookable %}
+                                            non-seat {{ obj.category.name|slugify }}
+                                        {% else %}
+                                            seat
+                                            {% if obj.id in booked_seat_ids %}
+                                                booked
+                                                {% with gender=seat_gender_map|get_item:obj.id %}
+                                                    {% if gender == 0 %}booked-male{% elif gender == 1 %}booked-female{% else %}booked-other{% endif %}
+                                                {% endwith %}
+                                            {% elif obj.id in locked_seat_ids %}
+                                                locked
+                                            {% elif obj.id in pending_seat_ids %}
+                                                pending
+                                            {% elif obj.id in held_seat_ids %}
+                                                held
+                                                {% with seat_holder=held_by_map|get_item:obj.id %}
+                                                    {% if seat_holder == holder_id %}held-by-me{% else %}held-by-other{% endif %}
+                                                {% endwith %}
+                                            {% else %}
+                                                available
+                                            {% endif %}
+                                        {% endif %}"
+                                    style="
+                                        /* 1. Grid Positioning (Existing) */
+                                        grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
+                                        grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
                         
-                        style="
-                            /* 1. Grid Positioning (Existing) */
-                            grid-column: {{ obj.col_index }} / span {{ obj.col_span }};
-                            grid-row: {{ obj.row_index }} / span {{ obj.row_span }};
-            
-                            /* 2. NEW: Flex Layout to center Icons & Text */
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            padding: 2px;
-                            line-height: 1.2;
-            
-                            /* 3. NEW: Dynamic Colors */
-                            /* If NOT bookable (like River/Wall), use the Category Color as background */
-                            {% if not obj.category.is_bookable and obj.category.color_code %}
-                                background-color: {{ obj.category.color_code }};
-                                color: #000; /* Text color for non-seats */
-                                border: none;
-                            {% endif %}
-                        "
-            
-                        data-id="{{ obj.id }}"
-                        data-label="{{ obj.label }}"
-                        data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
-                        data-category="{{ obj.category.name }}"
-                    >
-                        {# --- A. RENDER ICON (Only for bookable seats like Single Bed) --- #}
-                        {% if obj.category.is_bookable and obj.category.icon %}
-                            <iconify-icon 
-                                icon="{{ obj.category.icon.iconify_code }}" 
-                                style="font-size: 16px; margin-bottom: 2px; color: {{ obj.category.color_code|default:'#666' }};">
-                            </iconify-icon>
-                        {% endif %}
-            
-                        {# --- B. RENDER LABEL --- #}
-                        <span style="font-size: 10px; font-weight: 600;">
-                            {{ obj.label }}
-                        </span>
-            
-                        {# --- C. RENDER LOCK ICON (If Booked) --- #}
-                        {% if obj.id in booked_seat_ids %}
-                            <i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>
-                        {% endif %}
+                                        /* 2. NEW: Flex Layout to center Icons & Text */
+                                        display: flex;
+                                        flex-direction: column;
+                                        align-items: center;
+                                        justify-content: center;
+                                        padding: 2px;
+                                        line-height: 1.2;
+                        
+                                        /* 3. NEW: Dynamic Colors */
+                                        /* If NOT bookable (like River/Wall), use the Category Color as background */
+                                        {% if not obj.category.is_bookable and obj.category.color_code %}
+                                            background-color: {{ obj.category.color_code }};
+                                            color: #000; /* Text color for non-seats */
+                                            border: none;
+                                        {% endif %}
+                                    "
+                        
+                                    data-id="{{ obj.id }}"
+                                    data-label="{{ obj.label }}"
+                                    data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
+                                    data-category="{{ obj.category.name }}"
+                                >
+                                    {# --- A. RENDER ICON (Only for bookable seats like Single Bed) --- #}
+                                    {% if obj.category.is_bookable and obj.category.icon %}
+                                        <iconify-icon 
+                                            icon="{{ obj.category.icon.iconify_code }}" 
+                                            style="font-size: 16px; margin-bottom: 2px; color: {{ obj.category.color_code|default:'#666' }};">
+                                        </iconify-icon>
+                                    {% endif %}
+                        
+                                    {# --- B. RENDER LABEL --- #}
+                                    <span style="font-size: 10px; font-weight: 600;">
+                                        {{ obj.label }}
+                                    </span>
+                        
+                                    {# --- C. RENDER LOCK ICON (If Booked or Locked) --- #}
+                                    {% if obj.id in booked_seat_ids %}
+                                        <i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>
+                                    {% elif obj.id in locked_seat_ids %}
+                                        <i class="fa fa-lock ms-1" style="font-size:9px; color: #17a2b8;"></i> {# Cyan lock to match your CSS #}
+                                    {% endif %}
 
-                        {% if obj.id in held_seat_ids and obj.id not in booked_seat_ids %}
-                            {% with seat_holder=held_by_map|get_item:obj.id %}
-                                {% if seat_holder == holder_id %}
-                                    <i class="fa fa-clock ms-1" style="font-size:9px; color: #0d6efd;"></i>
-                                {% else %}
-                                    <i class="fa fa-clock ms-1" style="font-size:9px; color: #f59e0b;"></i>
-                                {% endif %}
-                            {% endwith %}
-                        {% endif %}
-            
+                                    {% if obj.id in held_seat_ids and obj.id not in booked_seat_ids and obj.id not in locked_seat_ids %}
+                                        {% with seat_holder=held_by_map|get_item:obj.id %}
+                                            {% if seat_holder == holder_id %}
+                                                <i class="fa fa-clock ms-1" style="font-size:9px; color: #0d6efd;"></i>
+                                            {% else %}
+                                                <i class="fa fa-clock ms-1" style="font-size:9px; color: #f59e0b;"></i>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                        
+                                </div>
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
                     </div>
-                    {% endwith %}
-                {% endfor %}
-            </div>
-                </div>
                 {% endfor %}
             </div>
         </div>
 
         <div class="col-lg-4">
-            <form method="POST" action="{% url 'admin_book_confirm' %}">
+            <form method="POST" action="{% url 'admin_book_confirm' %}" id="booking-form">
                 {% csrf_token %}
                 <input type="hidden" name="trip_id" value="{{ trip.id }}">
                 <input type="hidden" name="from_stop_id" value="{{ from_stop.id }}">
@@ -455,36 +494,15 @@
 
                     <div class="bg-light p-3 rounded mb-4 border">
                         <h6 class="fw-bold small text-uppercase text-muted mb-2">Payment Info</h6>
-                        
                         <div class="row g-2">
-                            <div class="col-6">
-                                <label class="small text-muted mb-1">Status</label>
-                                <select name="payment_status" id="payment-status-select" class="form-select form-select-sm fw-bold">
-                                    <option value="UNPAID" selected>Unpaid (Pending)</option>
-                                    <option value="PAID">Paid (Confirmed)</option>
-                                </select>
-                            </div>
-                    
-                            <div class="col-6">
+                            <div class="col-12">
                                 <label class="small text-muted mb-1">Collected Amount</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">৳</span>
-                                    <input 
-                                        type="number" 
-                                        name="manual_amount" 
-                                        id="manual-amount-input" 
-                                        class="form-control fw-bold" 
-                                        placeholder="0" 
-                                        min="0"
-                                        step="0.01"
-                                        autocomplete="off"
-                                    >
+                                    <input type="number" name="manual_amount" id="manual-amount-input" class="form-control fw-bold" placeholder="0" min="0" step="0.01" autocomplete="off">
                                 </div>
+                                <div class="form-text small text-end mt-1 text-muted">Leave empty for 0.</div>
                             </div>
-                        </div>
-                        
-                        <div id="amount-helper-text" class="form-text small text-end mt-1 text-muted">
-                            Leave empty for 0.
                         </div>
                     </div>
 
@@ -494,9 +512,16 @@
                         <small class="text-muted">Default is 2 hours (120 mins)</small>
                     </div>
 
-                    <button type="submit" id="btn-book" class="btn btn-secondary w-100 py-2 fw-bold text-uppercase" disabled>
-                        Confirm Booking
-                    </button>
+                    <div id="ajax-message-container" class="mb-3 d-none p-3 rounded small fw-bold text-center" style="transition: opacity 0.3s ease;"></div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btn-book-pending" class="btn btn-secondary w-50 py-2 fw-bold text-uppercase" disabled>
+                            Book
+                        </button>
+                        <button type="button" id="btn-issue" class="btn btn-secondary w-50 py-2 fw-bold text-uppercase" disabled>
+                            Issue
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -598,7 +623,7 @@
 
 {% block scriptcontent %}
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-
+{{ holder_id|json_script:"admin-holder-id-data" }}
 <style>
     /* Styles for seats held by OTHER admins via WebSocket */
     .layout-obj.remote-held {
@@ -630,7 +655,7 @@
         const currentUserName = "{{ request.user.username|default:'Admin' }}";
 
         // --- ADD THESE 3 LINES ---
-        const USER_ID = "{{ request.user.id }}";      // Needed to identify YOU in the DB
+        const USER_ID = JSON.parse(document.getElementById('admin-holder-id-data').textContent);      // Needed to identify YOU in the DB
         const FROM_STOP_ID = "{{ from_stop.id }}";    // Needed for Route logic
         const TO_STOP_ID = "{{ to_stop.id }}";        // Needed for Route logic
         // -------------------------
@@ -638,14 +663,14 @@
         // ============================================================
         // 1. WEBSOCKET SETUP (REAL-TIME)
         // ============================================================
-        /*const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsUrl = wsScheme + '://' + window.location.host + '/ws/seats/' + tripId + '/';
-        
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = wsScheme + '://' + window.location.host + '/ws/seats/' + tripId + '/' + FROM_STOP_ID + '/' + TO_STOP_ID + '/';
+
         let seatSocket = null;
 
         try {
             seatSocket = new WebSocket(wsUrl);
- 
+
             seatSocket.onopen = function(e) {
                 console.log("✅ WebSocket Connected");
             };
@@ -657,58 +682,140 @@
             seatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 
-                // --- NEW: Handle Initial State (The "Sticky Note") ---
+                // --- Handle Initial State (The "Sticky Note") ---
                 if (data.type === 'initial_state') {
-                    const holds = data.holds; // This is { seat_id: user_name, ... }
+                    const holds = data.holds; // { seat_id: "User Name", ... }
                     
                     Object.keys(holds).forEach(seatId => {
-                        // Find the seat
                         const seatEl = document.querySelector(`.layout-obj[data-id="${seatId}"]`);
-                        
-                        // Only mark it if I don't already have it selected (sanity check)
-                        if (seatEl && !selectedSeatIds.includes(seatId)) {
-                            seatEl.classList.add('remote-held');
+                        // If it's held by someone else and I don't have it explicitly selected
+                        if (seatEl && !selectedSeatIds.includes(seatId) && !seatEl.classList.contains('held-by-me')) {
+                            seatEl.classList.remove('available');
+                            seatEl.classList.add('held-by-other');
                             seatEl.title = `Being viewed by ${holds[seatId]}`;
                         }
                     });
                 } 
-                // --- Standard Update ---
+                // --- Standard Real-time Updates ---
                 else {
                     handleRemoteUpdate(data);
                 }
             };
         } catch (error) {
             console.error("WebSocket failed to initialize:", error);
-        }*/
+        }
 
-        // --- Handle Incoming Messages from Other Admins ---
-        /*function handleRemoteUpdate(data) {
+        // --- Helper to remove a sniped seat from the current Admin's selection ---
+        function forceDeselect(seatEl, seatId) {
+            selectedSeatIds = selectedSeatIds.filter(id => id !== seatId);
+            const price = parseFloat(seatEl.dataset.price) || 0;
+            total = Math.max(0, total - price);
+            updateUI();
+        }
+
+        // --- Handle Incoming Messages from Other Admins or Portal Users ---
+        function handleRemoteUpdate(data) {
             const seatEl = document.querySelector(`.layout-obj[data-id="${data.seat_id}"]`);
             if (!seatEl) return;
 
-            // Prevent messing with seats I have currently selected
-            if (selectedSeatIds.includes(data.seat_id) && data.user_name !== currentUserName) {
-                 // If someone else grabs it, force deselect mine or warn me
-                 // For now, we just let the visual update happen
+            // 1. Someone grabbed a HOLD
+            if (data.action === 'hold') {
+                console.log('the seat has just been holded by someone:', data);
+                
+                if (String(data.holder_id) !== String(USER_ID)) { 
+                    // Case A: Someone ELSE held it
+                    if (selectedSeatIds.includes(String(data.seat_id))) {
+                        forceDeselect(seatEl, String(data.seat_id));
+                        alert(`Warning: Seat ${seatEl.dataset.label} is currently being viewed by someone else.`);
+                    }
+                    seatEl.className = 'layout-obj seat held-by-other';
+                    seatEl.title = 'Being viewed by Another User';
+                    if (!seatEl.querySelector('.fa-clock')) {
+                        seatEl.innerHTML += '<i class="fa fa-clock ms-1" style="font-size:9px; color: #f59e0b;"></i>';
+                    }
+                } else {
+                    // 👇 NEW: Case B: YOU held it (from the portal or another tab)
+                    if (!selectedSeatIds.includes(String(data.seat_id))) {
+                        // Apply the class that makes it look selected to the Admin. 
+                        // (Based on your code, this appears to be 'held-by-me', but change to 'selected' if that's what your CSS uses)
+                        seatEl.className = 'layout-obj seat held-by-me'; 
+                        seatEl.title = 'Held by you (via Portal)';
+                    }
+                }
+            } 
+            
+            // 2. Someone RELEASED a hold
+            else if (data.action === 'release') {
+                // 👇 CHANGED: Removed the condition that checked if it was a different user.
+                // If a seat is released anywhere (even by YOU in the portal), it must become available.
+                if (!seatEl.classList.contains('booked')) {
+                    seatEl.className = 'layout-obj seat available';
+                    seatEl.title = '';
+                    const icon = seatEl.querySelector('.fa-clock');
+                    if (icon) icon.remove();
+
+                    // If your admin panel currently thinks it's selected, force deselect it
+                    if (selectedSeatIds.includes(String(data.seat_id))) {
+                        forceDeselect(seatEl, String(data.seat_id));
+                    }
+                }
+            }
+            // 3. Someone officially BOOKED it (Confirmed/Issued)
+            else if (data.action === 'booked') {
+                if (String(data.holder_id) !== String(USER_ID)) {
+                    if (selectedSeatIds.includes(String(data.seat_id))) {
+                        forceDeselect(seatEl, String(data.seat_id));
+                        alert(`Too slow! Seat ${seatEl.dataset.label || 'Unknown'} was just booked by someone else.`);
+                    }
+                } 
+                const genderClass = data.gender === 1 ? 'booked-female' : (data.gender === 0 ? 'booked-male' : 'booked-other');
+                
+                seatEl.className = `layout-obj seat booked ${genderClass}`;
+                seatEl.title = 'Booked';
+                
+                const clockIcon = seatEl.querySelector('.fa-clock');
+                if (clockIcon) clockIcon.remove();
+                if (!seatEl.querySelector('.fa-lock')) {
+                    seatEl.innerHTML += '<i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>';
+                }
+            }
+            // 4. Someone clicked BOOK (Pending status)
+            else if (data.action === 'pending') {
+                if (String(data.holder_id) !== String(USER_ID)) {
+                    if (selectedSeatIds.includes(String(data.seat_id))) {
+                        forceDeselect(seatEl, String(data.seat_id));
+                        alert(`Too slow! Seat ${seatEl.dataset.label || 'Unknown'} is currently pending for someone else.`);
+                    }
+                } 
+                
+                // This applies ONLY the "pending" class (making it gray), exactly like your HTML template
+                seatEl.className = 'layout-obj seat pending';
+                seatEl.title = 'Pending';
+                
+                const clockIcon = seatEl.querySelector('.fa-clock');
+                if (clockIcon) clockIcon.remove();
             }
 
-            if (data.action === 'select') {
-                // Someone else selected this. Mark it as visually held.
-                seatEl.classList.add('remote-held');
-                seatEl.title = `Being viewed by ${data.user_name}`;
-            } 
-            else if (data.action === 'unselect') {
-                // They let go. Make it available again.
-                seatEl.classList.remove('remote-held');
-                seatEl.title = '';
+            else if (data.action === 'locked') {
+                // Force deselect if the user currently has this seat selected
+                if (selectedSeatIds.includes(String(data.seat_id))) {
+                    forceDeselect(seatEl, String(data.seat_id));
+                    alert(`System Alert: Seat ${seatEl.dataset.label || 'Unknown'} was just locked by an Admin.`);
+                } 
+                
+                // Style it similarly to a booked seat. 
+                // You can change 'booked-other' to a custom 'locked' class if you have specific CSS for admin locks.
+                seatEl.className = 'layout-obj seat booked booked-other'; 
+                seatEl.title = 'Locked by Admin';
+                
+                // Manage the icons
+                const clockIcon = seatEl.querySelector('.fa-clock');
+                if (clockIcon) clockIcon.remove();
+                if (!seatEl.querySelector('.fa-lock')) {
+                    seatEl.innerHTML += '<i class="fa fa-lock ms-1" style="font-size:9px; color: #dc3545;"></i>';
+                }
             }
-            else if (data.action === 'booked') {
-                // It was officially booked. Turn it Red/Booked.
-                seatEl.classList.remove('available', 'seat', 'remote-held', 'selected');
-                seatEl.classList.add('booked');
-                seatEl.style.backgroundColor = '#fc564a'; // Red
-            }
-        }*/
+        }
 
 
         // ============================================================
@@ -892,23 +999,92 @@
             selectedInput.value = selectedSeatIds.join(',');
             totalAmountEl.textContent = total.toFixed(2);
 
-            // Auto-fill amount if PAID is selected
-            if(paymentSelect && paymentSelect.value === 'PAID') {
-                manualAmountInput.value = total.toFixed(2);
-            }
+            const btnBookPending = document.getElementById('btn-book-pending');
+            const btnIssue = document.getElementById('btn-issue');
 
             if (selectedSeatIds.length > 0) {
                 selectedListEl.innerHTML = `<span class="text-success fw-bold">Selected ${selectedSeatIds.length} seat(s)</span>`;
-                btnBook.disabled = false;
-                btnBook.classList.remove('btn-secondary');
-                btnBook.classList.add('btn-success');
+                // Enable buttons and style them
+                btnBookPending.disabled = false;
+                btnBookPending.classList.replace('btn-secondary', 'btn-warning');
+                btnBookPending.classList.add('text-white');
+                
+                btnIssue.disabled = false;
+                btnIssue.classList.replace('btn-secondary', 'btn-success');
             } else {
                 selectedListEl.textContent = "No seats selected.";
-                btnBook.disabled = true;
-                btnBook.classList.add('btn-secondary');
-                btnBook.classList.remove('btn-success');
+                // Disable buttons and revert style
+                btnBookPending.disabled = true;
+                btnBookPending.classList.replace('btn-warning', 'btn-secondary');
+                btnBookPending.classList.remove('text-white');
+                
+                btnIssue.disabled = true;
+                btnIssue.classList.replace('btn-success', 'btn-secondary');
             }
         }
+
+        function submitBooking(actionType) {
+            const form = document.getElementById('booking-form');
+            const formData = new FormData(form);
+            
+            // Append which button was clicked (ISSUE or BOOK)
+            formData.append('action_type', actionType);
+
+            const msgContainer = document.getElementById('ajax-message-container');
+            const btnIssue = document.getElementById('btn-issue');
+            const btnBookPending = document.getElementById('btn-book-pending');
+
+            // Disable buttons & show loading state
+            btnIssue.disabled = true;
+            btnBookPending.disabled = true;
+            msgContainer.classList.add('d-none');
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                msgContainer.classList.remove('d-none');
+                if (data.success) {
+                    // Modern Success style (light green bg, dark green text)
+                    msgContainer.style.backgroundColor = 'rgba(25, 135, 84, 0.15)';
+                    msgContainer.style.color = '#146c43';
+                    msgContainer.style.border = '1px solid rgba(25, 135, 84, 0.3)';
+                    msgContainer.textContent = data.message;
+                    
+                    // Reload page after a brief delay
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    // Modern Error style (light red bg, dark red text)
+                    msgContainer.style.backgroundColor = 'rgba(220, 53, 69, 0.15)';
+                    msgContainer.style.color = '#b02a37';
+                    msgContainer.style.border = '1px solid rgba(220, 53, 69, 0.3)';
+                    msgContainer.textContent = data.message;
+                    
+                    // Re-enable buttons
+                    btnIssue.disabled = false;
+                    btnBookPending.disabled = false;
+                }
+            })
+            .catch(error => {
+                msgContainer.classList.remove('d-none');
+                msgContainer.style.backgroundColor = 'rgba(220, 53, 69, 0.15)';
+                msgContainer.style.color = '#b02a37';
+                msgContainer.style.border = '1px solid rgba(220, 53, 69, 0.3)';
+                msgContainer.textContent = "A network error occurred. Please try again.";
+                
+                btnIssue.disabled = false;
+                btnBookPending.disabled = false;
+            });
+        }
+
+        // Bind clicks to the buttons
+        document.getElementById('btn-issue').addEventListener('click', () => submitBooking('ISSUE'));
+        document.getElementById('btn-book-pending').addEventListener('click', () => submitBooking('BOOK'));
 
 
         // ============================================================
@@ -1088,6 +1264,17 @@
                 // 2. Check if clicked element is a seat
                 const seat = e.target.closest('.layout-obj');
                 if (!seat) return;
+
+                /* if (seat.classList.contains('pending') || 
+                    seat.classList.contains('held-by-other') || 
+                    seat.classList.contains('held-by-me')) {
+                    
+                    alert("Action Denied: This seat is currently on hold or pending checkout. You cannot lock it right now.");
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation(); 
+                    return; // Stops the function so no API call is made
+                } */
 
                 // 3. STOP STANDARD BOOKING
                 e.preventDefault();

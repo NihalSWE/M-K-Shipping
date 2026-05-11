@@ -170,7 +170,7 @@ class BookingAdmin(admin.ModelAdmin):
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('seat_object', 'passenger_name', 'trip', 'status', 'from_stop', 'to_stop')
+    list_display = ('seat_object', 'id', 'passenger_name', 'trip', 'status', 'from_stop', 'to_stop')
     list_filter = ('status', 'trip__departure_datetime')
     search_fields = ('passenger_name', 'booking__booking_ref', 'seat_object__label')
     autocomplete_fields = ('booking', 'trip', 'seat_object')

@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet preload" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="{% static 'portal/assets/css/schedule.css' %}" />
+<link rel="stylesheet" href="{% static 'portal/assets/css/schedule.css' %}?v=1" />
 
 <style>
     .clean-route-path {
@@ -430,26 +430,27 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-<script>
-    $(document).ready(function () {
-        $('.select2').select2();
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        flatpickr("#journey-date", {
-            altInput: true,       // Shows the "pretty" date to user
-            altFormat: "d M Y",   // Format shown: 04 Jan 2026
-            dateFormat: "Y-m-d",  // Format sent to Django: 2026-01-04
-            minDate: "today",
-            disableMobile: "true",
-            animate: true,
-            nextArrow: '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"></path></svg>',
-            prevArrow: '<svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"></path></svg>'
+    <script>
+        $(document).ready(function () {
+            $('.select2').select2();
         });
-    });
-</script>
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr("#journey-date", {
+                altInput: true,       // Shows the "pretty" date to user
+                altFormat: "d M Y",   // Format shown: 04 Jan 2026
+                dateFormat: "Y-m-d",  // Format sent to Django: 2026-01-04
+                minDate: "today",
+                disableMobile: "true",
+                animate: true,
+                nextArrow: '<svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"></path></svg>',
+                prevArrow: '<svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"></path></svg>'
+            });
+        });
+    </script>
+
     {{ holder_id|json_script:"holder-id-data" }}
     {{ logged_in_user_prefill|default:None|json_script:"logged-in-user-prefill-data" }}
 
@@ -465,23 +466,26 @@
     <script>
         // Add this helper to the top of your script to get CSRF token
         $(document).ready(function() {
-            let seatSocket = null;
             let bookingOtpSent = false;
             let deckFitResizeTimer;
             let otpResendCountdown = 0;
             let otpResendTimer = null;
             let pendingPaymentPayload = null;
 
-            // const HOLDER_ID = {{ holder_id|default:"null" }};
-            // const IS_AUTH = {{ is_authenticated|yesno:"true,false" }};
-
-            // Enable for websockets starts
-            /* 
+            let layoutFetchController = null;
+            let seatSocket = null;
+            let wsReconnectTimer = null;
+            let wsReconnectAttempts = 0;
+            
+            // Wesocket function for syncing with the admin panel
             function connectSeatSocket(tripId, fromStop, toStop) {
                 if (seatSocket) {
+                    // Prevent ghost connections if re-initializing
+                    seatSocket.onclose = null; 
                     seatSocket.close();
                     seatSocket = null;
                 }
+                clearTimeout(wsReconnectTimer);
 
                 const proto = window.location.protocol === "https:" ? "wss" : "ws";
                 const wsUrl = `${proto}://${window.location.host}/ws/seats/${tripId}/${fromStop}/${toStop}/`;
@@ -489,37 +493,97 @@
                 seatSocket = new WebSocket(wsUrl);
 
                 seatSocket.onmessage = function(e) {
-                    const msg = JSON.parse(e.data);
-                    const seatId = msg.seat_id;
+                    try {
+                        const msg = JSON.parse(e.data);
+                        
+                        // SECURITY: Sanitize incoming seat_id to prevent DOM injection
+                        const seatId = parseInt(msg.seat_id, 10);
+                        if (isNaN(seatId)) return;
 
-                    const $seat = $(`.layout-item[data-id="${seatId}"]`);
-                    if (!$seat.length) return;
+                        // --- NEW OVERLAP CHECK START ---
+                        const $orderData = $('#current-segment-orders');
+                        const currentStartOrder = parseInt($orderData.attr('data-start-order'), 10);
+                        const currentEndOrder = parseInt($orderData.attr('data-end-order'), 10);
+                        
+                        const eventStartOrder = parseInt(msg.start_order, 10);
+                        const eventEndOrder = parseInt(msg.end_order, 10);
 
-                    if (msg.action === "hold") {
-                        if (msg.holder_id != null && Number(msg.holder_id) === HOLDER_ID) {
-                            // this hold is mine → show selected
-                            $seat.removeClass("available on-hold").addClass("selected");
-                        } else {
-                            // someone else’s hold → show on-hold
-                            $seat.removeClass("available selected").addClass("on-hold");
+                        // Only evaluate if we successfully grabbed all the order numbers
+                        if (!isNaN(currentStartOrder) && !isNaN(currentEndOrder) && !isNaN(eventStartOrder) && !isNaN(eventEndOrder)) {
+                            // The math: contiguous segments (like A->B and B->C) do NOT overlap
+                            const doesOverlap = (eventStartOrder < currentEndOrder) && (eventEndOrder > currentStartOrder);
+                            
+                            // If they don't overlap, stop right here. Ignore this WebSocket message.
+                            if (!doesOverlap) {
+                                return; 
+                            }
                         }
-                        updateSummary();
-                    }
+                        // --- NEW OVERLAP CHECK END ---
 
-                    if (msg.action === "release") {
-                        // If seat is booked/occupied, don’t change
-                        if ($seat.hasClass("occupied")) return;
+                        const $seat = $(`.layout-item[data-id="${seatId}"]`);
+                        if (!$seat.length) return;
 
-                        // If release is mine or unknown -> make available
-                        $seat.removeClass("on-hold selected").addClass("available");
-                        updateSummary();
-                        return;
-                    }
+                        if (msg.action === "hold") {
+                            if ($seat.hasClass("occupied")) return;
 
-                    if (msg.action === "booked") {
-                        $seat.removeClass("available selected on-hold").addClass("occupied");
-                        updateSummary();
-                        return;
+                            // Use strict string checking, falling back to window.HOLDER_ID if needed
+                            if (msg.holder_id != null && String(msg.holder_id) === String(window.HOLDER_ID || HOLDER_ID)) {
+                                $seat.removeClass("available on-hold").addClass("selected");
+                            } else {
+                                $seat.removeClass("available selected").addClass("on-hold");
+                            }
+                            if (typeof updateSummary === 'function') updateSummary();
+                        }
+
+                        if (msg.action === "release") {
+                            $seat.removeClass("on-hold selected occupied").addClass("available");
+                            if (typeof updateSummary === 'function') updateSummary();
+                        }
+
+                        if (msg.action === "booked") {
+                            // 1. Remove old classes (including pending) and add base 'occupied' class
+                            $seat.removeClass("available selected on-hold pending").addClass("occupied");
+                            console.log('The seat has been occupied');
+                            
+                            // 2. Add specific gender class based on payload
+                            if (msg.gender === 0 || msg.gender === "0") {
+                                $seat.addClass("occupied-male");
+                                console.log('Occupied by male');
+                            } else if (msg.gender === 1 || msg.gender === "1") {
+                                $seat.addClass("occupied-female");
+                                console.log('Occupied by female');
+                            }
+                            
+                            if (typeof updateSummary === 'function') updateSummary();
+                        }
+
+                        if (msg.action === "pending") {
+                            // If someone ELSE triggered the pending state, and we currently have it selected
+                            if (msg.holder_id != null && String(msg.holder_id) !== String(window.HOLDER_ID || HOLDER_ID)) {
+                                if ($seat.hasClass("selected")) {
+                                    alert(`Too slow! Seat ${$seat.data('label') || 'Unknown'} is currently pending for someone else.`);
+                                }
+                            }
+                            
+                            // Apply the standard 'occupied' class so nobody else can click it
+                            $seat.removeClass("available selected on-hold").addClass("occupied");
+                            
+                            if (typeof updateSummary === 'function') updateSummary();
+                        }
+
+                        if (msg.action === "locked") {
+                            // If the portal user currently has this seat selected in their cart, warn them
+                            if ($seat.hasClass("selected")) {
+                                alert(`System Alert: Seat ${$seat.data('label') || 'Unknown'} was just locked by an Admin.`);
+                            }
+                            
+                            // Apply the exact same UI state as "pending"
+                            $seat.removeClass("available selected on-hold").addClass("occupied");
+                            
+                            if (typeof updateSummary === 'function') updateSummary();
+                        }
+                    } catch (err) {
+                        console.error("WS Payload Error:", err); // Catch bad JSON gracefully
                     }
                 };
 
@@ -527,11 +591,22 @@
                     console.error("Seat WS error:", err);
                 };
 
-                seatSocket.onclose = function() {
-                    // ignore
+                seatSocket.onclose = function(e) {
+                    // OPTIMIZATION: Exponential backoff reconnect logic (max 30s)
+                    if (e.code !== 1000) { 
+                        let timeout = Math.min(1000 * Math.pow(2, wsReconnectAttempts), 30000);
+                        wsReconnectTimer = setTimeout(() => {
+                            wsReconnectAttempts++;
+                            connectSeatSocket(tripId, fromStop, toStop);
+                        }, timeout);
+                    }
+                };
+
+                seatSocket.onopen = function() {
+                    wsReconnectAttempts = 0; // Reset attempts on successful connection
                 };
             }
-            */
+            
             // Enable for websockets ends
 
             /* =========================
@@ -651,36 +726,41 @@
             /* =========================
             SEAT HOLD API HELPERS
             ========================= */
+            async function apiRequest(url, payload) {
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    return { ok: response.ok, data: data };
+                } catch (error) {
+                    console.error("API Request Failed:", error);
+                    return { ok: false, data: { error: "Network Error" } };
+                }
+            }
+
             function holdSeatOnServer(tripId, fromStop, toStop, seatId) {
-                return fetch("{% url 'hold_seats' %}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({
-                        trip_id: tripId,
-                        from_stop: fromStop,
-                        to_stop: toStop,
-                        seat_ids: [seatId],
-                    })
-                }).then(r => r.json().then(j => ({ ok: r.ok, data: j })));
+                return apiRequest("{% url 'hold_seats' %}", {
+                    trip_id: tripId,
+                    from_stop: fromStop,
+                    to_stop: toStop,
+                    // SECURITY: Cast to int to prevent payload manipulation
+                    seat_ids: [parseInt(seatId, 10)] 
+                });
             }
 
             function releaseSeatOnServer(tripId, fromStop, toStop, seatId) {
-                return fetch("{% url 'release_seats' %}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({
-                        trip_id: tripId,
-                        from_stop: fromStop,
-                        to_stop: toStop,
-                        seat_ids: [seatId],
-                    })
-                }).then(r => r.json().then(j => ({ ok: r.ok, data: j })));
+                return apiRequest("{% url 'release_seats' %}", {
+                    trip_id: tripId,
+                    from_stop: fromStop,
+                    to_stop: toStop,
+                    seat_ids: [parseInt(seatId, 10)]
+                });
             }
             /* =========================
             END SEAT HOLD API HELPERS
@@ -689,50 +769,55 @@
             /* =========================
             LAYOUT LOAD / RELOAD
             ========================= */
-            // Enable for websockets starts
-            /*
             function reloadLayout(tripId, fromStop, toStop) {
-                let requestUrl = baseLayoutUrl.replace('0', tripId);
-                const params = new URLSearchParams({ from_stop: fromStop, to_stop: toStop });
+                // OPTIMIZATION: Kill pending layout fetches if user spam-clicks dates/trips
+                if (layoutFetchController) layoutFetchController.abort();
+                layoutFetchController = new AbortController();
+                const signal = layoutFetchController.signal;
 
-                fetch(`${requestUrl}?${params.toString()}`)
-                    .then(r => r.text())
-                    .then(html => {
-                        $('#drawerContent').html(html);
-                        initializeSeatBooking();
-                        updateSummary();
-                    });
-            }
-            */
-            // Enable for websockets ends
-
-            
-            function reloadLayout(tripId, fromStop, toStop) {
                 let requestUrl = baseLayoutUrl.replace('/0/', `/${tripId}/`);
                 const params = new URLSearchParams({ from_stop: fromStop, to_stop: toStop });
 
-                fetch(`${requestUrl}?${params.toString()}`)
-                    .then(r => r.text())
+                fetch(`${requestUrl}?${params.toString()}`, { signal })
+                    .then(r => {
+                        if (!r.ok) throw new Error("Network response was not ok");
+                        return r.text();
+                    })
                     .then(html => {
-                        // ✅ FIX: clear old legend from previous load
                         $('#desktopLegendSlot').hide().empty();
-
+                        
+                        connectSeatSocket(tripId, fromStop, toStop);
+                        
                         $('#drawerContent').html(html);
 
-                        // Convert MY held seats (server rendered as on-hold) to selected
+                        // OPTIMIZATION: Batch DOM mutations instead of looping and triggering repaints
+                        const seatsToSelect = [];
                         $('#drawerContent .layout-item.on-hold').each(function() {
                             const holder = String($(this).data('holder-id') || '');
-                            if (holder && holder === String(HOLDER_ID)) {
-                                $(this).removeClass('on-hold').addClass('selected');
+                            if (holder && holder === String(window.HOLDER_ID || HOLDER_ID)) {
+                                seatsToSelect.push(this);
                             }
                         });
+                        
+                        if (seatsToSelect.length > 0) {
+                            $(seatsToSelect).removeClass('on-hold').addClass('selected');
+                        }
 
-                        initializeSeatBooking();
-                        updateSummary();
-                        syncDesktopBookingUI();
-                        setTimeout(function() {
-                            autoFitDeckLayouts();
-                        }, 50);
+                        if (typeof initializeSeatBooking === 'function') initializeSeatBooking();
+                        if (typeof updateSummary === 'function') updateSummary();
+                        if (typeof syncDesktopBookingUI === 'function') syncDesktopBookingUI();
+                        
+                        // OPTIMIZATION: requestAnimationFrame is heavily optimized by the browser compared to setTimeout(fn, 50)
+                        requestAnimationFrame(() => {
+                            if (typeof autoFitDeckLayouts === 'function') autoFitDeckLayouts();
+                        });
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') {
+                            console.log('Stale layout fetch aborted.');
+                        } else {
+                            console.error("Failed to load layout:", err);
+                        }
                     });
             }
             /* =========================
@@ -798,7 +883,7 @@
                     .data('to-stop', toStop);
 
                 // Enable for websockets starts
-                //connectSeatSocket(tripId, fromStop, toStop);
+                connectSeatSocket(tripId, fromStop, toStop);
                 // Enable for websockets ends
 
                 const $panel = $('#inlineBookingPanel');
@@ -936,12 +1021,12 @@
                         }
 
                         passengers.push({
-                        seat_id: $(this).data('seat-id'),
-                        name: name,
-                        gender: gender,
-                        phone: phone,
-                        email: email,
-                        address: address
+                            seat_id: $(this).data('seat-id'),
+                            name: name,
+                            gender: gender,
+                            phone: phone,
+                            email: email,
+                            address: address
                         });
                     });
 
@@ -1892,34 +1977,43 @@
                     $subtotal.text(`৳${subtotal.toLocaleString()}`);
                 }
 
-                if (selected.length === 0) {
-                    $list.empty();
-                    $panel.stop(true, true).slideUp(120);
-                    return;
+                // 1. Build the HTML string first
+                let html = '';
+                if (selected.length > 0) {
+                    selected.forEach(item => {
+                        html += `
+                            <div class="selected-items-panel__item">
+                                <div class="selected-items-panel__left">
+                                    <span class="selected-items-panel__badge">
+                                        <i class="fa-solid fa-chair"></i>
+                                    </span>
+                                    <div>
+                                        <div class="selected-items-panel__name">${item.label}</div>
+                                        <div class="selected-items-panel__meta">${item.category || 'Seat/Cabin'}</div>
+                                    </div>
+                                </div>
+                                <div class="selected-items-panel__price">৳${item.price.toLocaleString()}</div>
+                            </div>
+                        `;
+                    });
                 }
 
-                let html = '';
-                selected.forEach(item => {
-                    html += `
-                        <div class="selected-items-panel__item">
-                            <div class="selected-items-panel__left">
-                                <span class="selected-items-panel__badge">
-                                    <i class="fa-solid fa-chair"></i>
-                                </span>
-                                <div>
-                                    <div class="selected-items-panel__name">${item.label}</div>
-                                    <div class="selected-items-panel__meta">${item.category || 'Seat/Cabin'}</div>
-                                </div>
-                            </div>
-                            <div class="selected-items-panel__price">৳${item.price.toLocaleString()}</div>
-                        </div>
-                    `;
-                });
+                // 2. Define the instant DOM updates (Zero jQuery animations)
+                const updateLayout = () => {
+                    if (selected.length === 0) {
+                        $panel.hide(); // Instant hide
+                        $list.empty();
+                    } else {
+                        $list.html(html);
+                        $panel.show(); // Instant show
+                    }
+                };
 
-                $list.html(html);
-
-                if (!$panel.is(':visible')) {
-                    $panel.stop(true, true).slideDown(140);
+                // 3. Hand the layout shift to the GPU
+                if (document.startViewTransition) {
+                    document.startViewTransition(() => updateLayout());
+                } else {
+                    updateLayout(); // Fallback for older browsers
                 }
             }
             // Selected Items panel render ends

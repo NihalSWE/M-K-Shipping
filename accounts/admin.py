@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin # Rename import
 from django.contrib import admin, messages
-from .models import User
+from .models import User, UserProfile
 
 
 
@@ -63,3 +63,37 @@ class CustomUserAdmin(BaseUserAdmin): # <--- Rename to CustomUserAdmin
             'fields': ('email', 'username', 'password', 'user_type'),
         }),
     )
+    
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    # Fields to display in the main list view
+    list_display = ('user_email', 'job_title', 'city', 'country', 'hire_date')
+    
+    # Enable filtering on the right sidebar
+    list_filter = ('country', 'job_title', 'hire_date', 'gender')
+    
+    # Enable searching (user__email allows searching via the related User model)
+    search_fields = ('user__email', 'user__first_name', 'user__last_name', 'job_title', 'skills')
+    
+    # Organize fields into logical sections (Fieldsets)
+    fieldsets = (
+        ('Account Information', {
+            'fields': ('user', 'profile_picture')
+        }),
+        ('Personal Details', {
+            'fields': ('date_of_birth', 'gender', 'biography')
+        }),
+        ('Professional Info', {
+            'fields': ('job_title', 'hire_date', 'skills', 'linkedin_profile', 'github_profile')
+        }),
+        ('Contact & Location', {
+            'fields': ('address', 'city', 'state', 'postal_code', 'country', 'timezone'),
+            'classes': ('collapse',),  # This makes the section collapsible
+        }),
+    )
+
+    # Helper method to show the user's email in list_display
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = 'User Email'

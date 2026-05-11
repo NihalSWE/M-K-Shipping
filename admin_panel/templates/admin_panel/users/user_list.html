@@ -37,6 +37,7 @@
                             <thead>
                                 <tr>
                                     <th>User Info</th>
+                                    <th>Phone</th>
                                     <th>Role</th>
                                     <th>Status</th>
                                     <th>Joined Date</th>
@@ -49,7 +50,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3" 
-                                                 style="width: 40px; height: 40px; font-weight: bold;">
+                                                style="width: 40px; height: 40px; font-weight: bold;">
                                                 {{ user.email|slice:":1"|upper }}
                                             </div>
                                             <div>
@@ -59,6 +60,13 @@
                                                 <small class="text-muted">{{ user.email }}</small>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        {% if user.phone_number %}
+                                            {{ user.phone_number }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
                                     </td>
 
                                     <td>

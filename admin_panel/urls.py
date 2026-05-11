@@ -1,6 +1,13 @@
 from django.urls import path
 from .import views
 
+
+
+
+
+
+
+
 urlpatterns = [
     path('', views.dashboard, name='admin_dashboard'),
     path("logout/", views.admin_logout, name="admin_logout"),
@@ -93,6 +100,7 @@ urlpatterns = [
     path('bookings/cancelled/', views.booking_cancel_list, name='booking_cancel_list'),
     path('bookings/expired/', views.booking_expired_list, name='booking_expired_list'),
     path('booking/extend-time/', views.extend_booking_time_api, name='extend_booking_time'),
+    path('booking/invoice/<str:booking_ref>/', views.admin_booking_invoice, name='admin_booking_invoice'),
     
     # In your urls.py
     path('booking/<int:booking_id>/stop-time/', views.stop_booking_time, name='stop_booking_time'),
@@ -143,4 +151,9 @@ urlpatterns = [
     # Content Add/Edit (Separate Pages)
     path('footer-management/content/add/', views.add_content, name='add_content'),
     path('footer-management/content/edit/<int:id>/', views.edit_content, name='edit_content'),
+    
+    # User Profile
+    path('profile/', views.profile_view, name='admin_profile'),
+    path('profile/update/', views.update_profile, name='update_profile'),
+    path('profile/change-password/', views.change_password, name='change_password'),
 ]

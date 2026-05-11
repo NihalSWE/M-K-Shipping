@@ -63,7 +63,7 @@
                         
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
                                 {{ form.first_name }}
                                 {% if form.first_name.errors %}
                                     <div class="text-danger small mt-1">{{ form.first_name.errors|striptags }}</div>
@@ -80,14 +80,14 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Email Address</label>
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
                                 {{ form.email }}
                                 {% if form.email.errors %}
                                     <div class="text-danger small mt-1">{{ form.email.errors|striptags }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Phone Number</label>
+                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
                                 {{ form.phone_number }}
                                 {% if form.phone_number.errors %}
                                     <div class="text-danger small mt-1">{{ form.phone_number.errors|striptags }}</div>
@@ -97,7 +97,7 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Role</label>
+                                <label class="form-label">Role <span class="text-danger">*</span></label>
                                 {{ form.user_type }}
                                 {% if form.user_type.errors %}
                                     <div class="text-danger small mt-1">{{ form.user_type.errors|striptags }}</div>
@@ -114,14 +114,14 @@
 
                         <div class="row mb-4">
                             <div class="col-md-6">
-                                <label class="form-label">Password</label>
+                                <label class="form-label">Password <span class="text-danger">*</span></label>
                                 {{ form.password }}
                                 {% if form.password.errors %}
                                     <div class="text-danger small mt-1">{{ form.password.errors|striptags }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Confirm Password</label>
+                                <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
                                 {{ form.confirm_password }}
                                 {% if form.confirm_password.errors %}
                                     <div class="text-danger small mt-1">{{ form.confirm_password.errors|striptags }}</div>
@@ -131,9 +131,9 @@
 
                         <div class="card mb-4 border shadow-sm">
                             <div class="card-header bg-white py-2 perm-toggle-header" 
-                                 data-bs-toggle="collapse" 
-                                 data-bs-target="#permissionCollapse" 
-                                 aria-expanded="false">
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#permissionCollapse" 
+                                aria-expanded="false">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-shield-alt text-primary me-2"></i>
@@ -160,10 +160,10 @@
                                                                 <div class="col-12">
                                                                     <div class="form-check mb-1">
                                                                         <input type="checkbox" 
-                                                                               class="form-check-input" 
-                                                                               id="perm_{{ perm.id }}" 
-                                                                               name="permissions[]" 
-                                                                               value="{{ perm.id }}">
+                                                                            class="form-check-input" 
+                                                                            id="perm_{{ perm.id }}" 
+                                                                            name="permissions[]" 
+                                                                            value="{{ perm.id }}">
                                                                         <label class="form-check-label small text-secondary" for="perm_{{ perm.id }}" style="cursor: pointer; font-size: 11px;">
                                                                             {{ perm.display_label }}
                                                                         </label>

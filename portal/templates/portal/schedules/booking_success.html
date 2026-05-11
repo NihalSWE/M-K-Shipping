@@ -491,7 +491,7 @@
         /* [/NEW:QR_ZOOM_OVERLAY_CSS] */
 
         /* Responsive */
-        @media (max-width: 780px){
+        @media screen and (max-width: 780px){
 
             /* 1) Stop squeezing the whole layout */
             body{
@@ -634,22 +634,58 @@
         /* [/FIX:MOBILE_PADDING_MORE + MOBILE_TABLE_CARDS] */
 
         /* Print */
-        @media print{
-            body{
-                background:#fff;
-                padding: 0;
+        @media print {
+            /* 1) Force browsers to print exact background colors and gradients */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            .no-print{ display:none; }
-            .ticket{
-                max-width: 100%;
-                border: none;
-                box-shadow: none;
-                border-radius: 0;
+
+            body {
+                /* You can change this to var(--surface) if you want the blue background to print too */
+                background: #fff !important; 
+                padding: 0 !important;
+                margin: 0 !important;
             }
-            .card, table{
+
+            /* 2) Hide buttons */
+            .no-print { 
+                display: none !important; 
+            }
+
+            /* 3) Retain the exact desktop shape, borders, and rounded corners */
+            .ticket {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 auto !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 18px !important;
+                box-shadow: none !important; /* Shadows can look muddy in print */
+                page-break-inside: avoid; /* Prevent splitting across pages */
+            }
+
+            /* 4) Keep inner cards structured */
+            .card {
                 box-shadow: none !important;
+                border: 1px solid var(--border) !important;
+                page-break-inside: avoid;
             }
-            @page { margin: 1cm; size: A4; }
+
+            /* 5) Ensure table rows don't split across page breaks */
+            table { 
+                page-break-inside: auto; 
+            }
+            tr { 
+                page-break-inside: avoid; 
+                page-break-after: auto; 
+            }
+
+            /* 6) Define page size and margins */
+            @page { 
+                margin: 15mm; 
+                size: A4 portrait; 
+            }
         }
     </style>
 </head>
@@ -739,6 +775,16 @@
                                 {{ booking.total_amount }} BDT
                             </p>
                         </div>
+
+                        {% if due_amount and due_amount > 0 %}
+                            <div class="meta__item">
+                                <p class="meta__label">Due Amount</p>
+                                <p class="meta__value" style="font-size: 18px; font-weight: 1000; color: #dc2626;">
+                                    {{ due_amount }} BDT
+                                </p>
+                            </div>
+                        {% endif %}
+                        
                         <div class="meta__item">
                             <p class="meta__label">Payment Status</p>
                             <p class="meta__value" style="display:flex; align-items:center; gap:8px;">

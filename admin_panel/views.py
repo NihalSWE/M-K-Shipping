@@ -2,6 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required
+from django.contrib.auth import update_session_auth_hash
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 import sys
 import re
 from django.http import JsonResponse
@@ -12,7 +15,9 @@ from datetime import timedelta, datetime
 from django.utils.crypto import get_random_string
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils.dateparse import parse_datetime
-from django.utils import timezone            # <--- NEW IMPORT
+from django.utils import timezone
+
+from portal.booking_invoice.qr_generation import ensure_booking_qr            # <--- NEW IMPORT
 from .tasks import send_sms_task, auto_cancel_booking  # <--- NEW IMPORT
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
@@ -24,6 +29,7 @@ from django.http import HttpResponse
 import uuid 
 import json
 from .models import *
+from accounts.models import UserProfile
 import logging
 from django.db.models import Max
 from django.views.decorators.http import require_POST
@@ -2465,7 +2471,7 @@ def get_search_locations(request):
 @login_required
 def admin_user_list(request):
     # Fetch all users, newest first
-    users = User.objects.all().order_by('-created_at')
+    users = User.objects.exclude(user_type=1).order_by('-created_at')
     
     context = {
         'users': users,
@@ -2591,6 +2597,7 @@ def admin_user_edit(request, id):
     }
     return render(request, 'admin_panel/users/edit.html', context)
 
+
 @login_required
 def admin_user_delete(request, id):
     user_to_delete = get_object_or_404(User, id=id)
@@ -2604,6 +2611,82 @@ def admin_user_delete(request, id):
     user_to_delete.delete()
     messages.success(request, "User deleted successfully.")
     return redirect('admin_user_list')
+
+
+@login_required
+def profile_view(request):
+    # Ensure a UserProfile exists for the user so we can access the picture without errors
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
+    context = {
+        'profile': profile,
+    }
+    return render(request, 'admin_panel/profile/edit_profile.html', context)
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        
+        # 1. Update First & Last Name
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+
+        # 2. Update Profile Picture
+        # Get or create profile just in case
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        
+        if 'profile_pic' in request.FILES:
+            profile.profile_picture = request.FILES['profile_pic']
+            profile.save()
+
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('admin_profile')
+        
+    return redirect('admin_profile')
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            current_password = data.get('current_password')
+            new_password = data.get('new_password')
+            
+            user = request.user
+
+            # 1. Verify current password
+            if not user.check_password(current_password):
+                return JsonResponse({'success': False, 'message': 'Incorrect current password.'})
+
+            # 2. Validate new password requirements (backend validation)
+            if len(new_password) < 8:
+                return JsonResponse({'success': False, 'message': 'Password must be at least 8 characters long.'})
+            if not any(char.isupper() for char in new_password):
+                return JsonResponse({'success': False, 'message': 'Password must contain at least one uppercase letter.'})
+            if not any(char.islower() for char in new_password):
+                return JsonResponse({'success': False, 'message': 'Password must contain at least one lowercase letter.'})
+            if not any(char.isdigit() for char in new_password):
+                return JsonResponse({'success': False, 'message': 'Password must contain at least one number.'})
+
+            # 3. Save new password
+            user.set_password(new_password)
+            user.save()
+            
+            # Keep the user logged in after password change
+            update_session_auth_hash(request, user)
+
+            return JsonResponse({'success': True, 'message': 'Password changed successfully.'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': 'An error occurred while processing your request.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'})
+
 
 
 @login_required
@@ -2701,28 +2784,40 @@ def select_seats(request, trip_id):
         category_prices[cat_id] = float(price) # Convert Decimal to float for JSON
 
     # 4. Determine Availability (The Overlap Logic)
-    # Find all tickets for this trip that OVERLAP with our requested segment.
-    # Logic: Ticket Start < Our End AND Ticket End > Our Start
-    booked_tickets = Ticket.objects.filter(
+    # Fetch ALL unavailable tickets in one optimized query
+    unavailable_tickets = Ticket.objects.filter(
         trip=trip,
-        status__in=['BOOKED', 'CONFIRMED', 'LOCKED']
+        status__in=['BOOKED', 'CONFIRMED', 'LOCKED', 'PENDING']
     ).filter(
         Q(from_stop__stop_order__lt=to_stop.stop_order) & 
         Q(to_stop__stop_order__gt=from_stop.stop_order)
-    )
-    
-     # --- NEW: fetch passengers for gender info ---
-    booked_tickets = booked_tickets.select_related('passenger')
-    
-    booked_seat_ids = list(booked_tickets.values_list('seat_object_id', flat=True))
+    ).prefetch_related('passenger')
 
+    booked_seat_ids = []
+    pending_seat_ids = []
+    locked_seat_ids = [] # NEW: Dedicated list for locked seats
     seat_gender_map = {}
-    for ticket in booked_tickets:
-        if ticket.passenger and ticket.passenger.gender is not None:
-            gender = ticket.passenger.gender
+
+    # Sort tickets into the correct lists to keep frontend styles accurate
+    for ticket in unavailable_tickets:
+        if ticket.status == 'PENDING':
+            pending_seat_ids.append(ticket.seat_object_id)
+        elif ticket.status == 'LOCKED':
+            locked_seat_ids.append(ticket.seat_object_id)
         else:
-            gender = 0   # Male
-        seat_gender_map[ticket.seat_object_id] = gender
+            # Treats BOOKED and CONFIRMED as fully booked
+            booked_seat_ids.append(ticket.seat_object_id)
+            
+            # Map gender only for actual bookings
+            gender = 0   # Default to Male
+            if getattr(ticket, 'passenger_id', None):
+                try:
+                    if ticket.passenger and ticket.passenger.gender is not None:
+                        gender = ticket.passenger.gender
+                except Exception:
+                    pass # Failsafe if the passenger record is missing/corrupted
+            
+            seat_gender_map[ticket.seat_object_id] = gender
 
     # 4.5) Active holds for overlapping segment (so admin UI stays in sync)
     holder_id = get_holder_id(request)
@@ -2749,6 +2844,8 @@ def select_seats(request, trip_id):
     print(f"Route: {trip.route.name}")
     print(f"Requested segment: {from_stop.location.name} ({from_stop.stop_order}) -> {to_stop.location.name} ({to_stop.stop_order})")
     print(f"Admin holder_id (current user): {holder_id}")
+    
+    print(f"============================================= Locked seat IDs ==========================================\n: {locked_seat_ids}")
 
     # Show ALL active holds on this trip (before overlap filter)
     all_trip_holds = SeatHold.objects.filter(
@@ -2789,6 +2886,8 @@ def select_seats(request, trip_id):
         'to_stop': to_stop,
         'decks': decks,
         'booked_seat_ids': booked_seat_ids,
+        'pending_seat_ids': pending_seat_ids,
+        'locked_seat_ids': locked_seat_ids,
         'category_prices': category_prices,
         'seat_gender_map': seat_gender_map,
         'held_seat_ids': held_seat_ids,
@@ -2802,12 +2901,20 @@ def select_seats(request, trip_id):
 @login_required
 def admin_book_confirm(request):
     if request.method != 'POST':
-        return redirect('admin_home')
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'})
     
+    # Check if request is AJAX
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if not is_ajax:
+        return JsonResponse({'success': False, 'message': 'Expected AJAX request.'})
+
     gender = int(request.POST.get('passenger_gender', 0))
     # --- 1. GET BASIC DATA ---
     trip_id = request.POST.get('trip_id')
     seat_ids_str = request.POST.get('selected_seats')
+    
+    # Action type determines status ('ISSUE' or 'BOOK')
+    action_type = request.POST.get('action_type') 
     
     # Customer Data
     c_phone = request.POST.get('customer_phone')
@@ -2818,48 +2925,40 @@ def admin_book_confirm(request):
     from_stop_id = request.POST.get('from_stop_id')
     to_stop_id = request.POST.get('to_stop_id')
     
-    # Payment & Amounts
-    payment_status_input = request.POST.get('payment_status') # 'PAID' or 'UNPAID'
+    # Payment Amount
     manual_amount_str = request.POST.get('manual_amount')
     
-    # --- 2. GET DYNAMIC DURATION (KEY FIX) ---
-    # We grab the input from your HTML form. Default to 120 mins only if input is missing.
+    if not seat_ids_str:
+        return JsonResponse({'success': False, 'message': 'No seats selected.'})
+
+    # --- 2. GET DYNAMIC DURATION ---
     try:
         hold_duration_minutes = int(request.POST.get('hold_duration', 120))
     except (ValueError, TypeError):
         hold_duration_minutes = 120
 
-    # Handle collected/paid amount (the form field is manual_amount)
     paid_amount_input = 0.0
     if manual_amount_str:
         try:
             paid_amount_input = float(manual_amount_str)
         except ValueError:
             paid_amount_input = 0.0
-    
-    if not seat_ids_str:
-        messages.error(request, "No seats selected.")
-        return redirect(request.META.get('HTTP_REFERER'))
 
     trip = get_object_or_404(Trip, id=trip_id)
     seat_ids = seat_ids_str.split(',')
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
-    # --- 3. DETERMINE STATUS & EXPIRY ---
-    if payment_status_input == 'PAID':
+    # --- 3. DETERMINE STATUS & EXPIRY BASED ON BUTTON CLICKED ---
+    if action_type == 'ISSUE':
         final_status = 'CONFIRMED'
-        final_payment_status = 'PAID'
         expiry_time = None
-    else:
+    else: # 'BOOK' clicked
         final_status = 'PENDING'
-        final_payment_status = 'UNPAID'
-        # DYNAMIC CALCULATION: Now + The minutes you entered
         expiry_time = timezone.now() + timedelta(minutes=hold_duration_minutes)
 
     try:
         with transaction.atomic():
-            
             # A. Handle User
             booking_user = request.user 
             if c_name and c_phone:
@@ -2880,38 +2979,34 @@ def admin_book_confirm(request):
                     )
                 booking_user = user
 
-            # Paid amount comes from "manual_amount" field (Collected Amount input)
             paid_amount = paid_amount_input
             
             # B. Create Booking
-            # Resolve which counter (if any) the logged-in operator belongs to
             operator_counter = get_logged_in_counter(request.user)
 
-            # Determine issued_by and booked_by based on status
             if final_status == 'CONFIRMED':
                 issued_by_user = request.user
-            else: # final_status is 'PENDING'
+            else:
                 issued_by_user = None
                 
             booked_by_user = request.user
 
-            # B. Create Booking
             booking = Booking.objects.create(
-                user=booking_user,                     # customer/passenger user (KEEP THIS)
+                user=booking_user,
                 trip=trip,
                 booking_ref=str(uuid.uuid4())[:12].upper(),
                 status=final_status,
-                payment_status=final_payment_status,
+                payment_status='UNPAID', # Default, will calculate accurately below
                 expiry_at=expiry_time,
                 sales_channel='COUNTER' if operator_counter else 'ONLINE',
                 counter=operator_counter,
-                issued_by=issued_by_user,              # REPLACED: Conditional based on status
-                booked_by=booked_by_user,              # ADDED: Always request.user
+                issued_by=issued_by_user,
+                booked_by=booked_by_user,
                 total_amount=0,
                 paid_amount=paid_amount
             )
             
-            # --- NEW: Create Passenger (requires name and phone) ---
+            # Create Passenger
             passenger = None
             if c_name and c_phone:
                 passenger = Passenger.objects.create(
@@ -2929,14 +3024,20 @@ def admin_book_confirm(request):
             calculated_total = 0
             booked_seat_labels = [] 
             
+            # ---> ADD THIS: Get the exact holder ID <---
+            admin_holder_id = get_holder_id(request) 
+            
             for seat_id in seat_ids:
                 layout_obj = get_object_or_404(LayoutObject, id=seat_id)
                 
-                # Check Availability
-                if not trip.is_seat_available_admin(layout_obj, from_stop, to_stop, exclude_user=request.user):
+                # ---> UPDATE THIS: Pass the exclude_holder_id <---
+                if not trip.is_seat_available_admin(layout_obj, from_stop, to_stop, exclude_user=request.user, exclude_holder_id=admin_holder_id):
                     raise Exception(f"Seat {layout_obj.label} is currently held by someone else!")
 
                 price = trip.get_price(layout_obj.category, from_stop, to_stop)
+
+                # Determine ticket status based on the final_status of the booking
+                ticket_status = 'BOOKED' if final_status == 'CONFIRMED' else 'PENDING'
 
                 Ticket.objects.create(
                     booking=booking,
@@ -2947,8 +3048,28 @@ def admin_book_confirm(request):
                     to_stop=to_stop,
                     passenger_name=c_name if c_name else "Walk-in Guest",
                     fare_amount=price,
-                    status='BOOKED',
+                    status=ticket_status, # <-- Now dynamically assigned
                     lock_expires_at=timezone.now(),
+                )
+                
+                # ---> BROADCAST to CHANNEL <---
+                channel_layer = get_channel_layer()
+                admin_holder_id = get_holder_id(request) # Get the exact holder ID
+                
+                # Determine the correct WebSocket action
+                ws_action = 'booked' if final_status == 'CONFIRMED' else 'pending'
+                
+                async_to_sync(channel_layer.group_send)(
+                    f"seats_{trip_id}",  # 1. FIXED: Group name must match portal
+                    {
+                        'type': 'seat_event', # 2. FIXED: Type must match portal consumer
+                        'action': ws_action,  # <-- CHANGED: Send dynamic action
+                        'seat_id': int(layout_obj.id),
+                        'holder_id': admin_holder_id, # 3. Added for consistency
+                        'start_order': from_stop.stop_order, # 4. REQUIRED for route logic
+                        'end_order': to_stop.stop_order,     # 5. REQUIRED for route logic
+                        'gender': gender
+                    }
                 )
                 
                 SeatHold.objects.filter(
@@ -2961,67 +3082,42 @@ def admin_book_confirm(request):
                 calculated_total += price
                 booked_seat_labels.append(layout_obj.label)
 
-            # D. Update amounts (finalize after ticket fares are known)
+            # D. Update amounts dynamically
             booking.total_amount = calculated_total
 
             # Clamp paid amount
             if booking.paid_amount < 0:
                 booking.paid_amount = 0
-
             if booking.paid_amount > booking.total_amount:
                 booking.paid_amount = booking.total_amount
 
-            # Final status/payment sync based on actual paid vs total
+            # E. Automatically set PAID vs UNPAID based strictly on amount
             if booking.total_amount > 0 and booking.paid_amount >= booking.total_amount:
-                booking.status = 'CONFIRMED'
                 booking.payment_status = 'PAID'
-                booking.expiry_at = None
             else:
-                booking.status = 'PENDING'
                 booking.payment_status = 'UNPAID'
-                if not booking.expiry_at:
-                    booking.expiry_at = timezone.now() + timedelta(minutes=hold_duration_minutes)
 
             booking.save()
-
-            # channel_layer = get_channel_layer()
-
-            # for seat_id in seat_ids:
-            #     async_to_sync(channel_layer.group_send)(
-            #         f"trip_{trip.id}",
-            #         {
-            #             "type": "seat_update",
-            #             "action": "booked",
-            #             "seat_id": seat_id,
-            #             "user_name": "System"
-            #         }
-            #     )
             
-            # E. Send SMS (Non-blocking)
+            # F. Send SMS (Non-blocking)
             if booking_user.phone_number:
                 try:
                     send_booking_sms(booking, booked_seat_labels)
                 except Exception as e:
                     print(f"SMS Error: {e}")
 
-            # F. TRIGGER AUTO-CANCEL (DYNAMIC TIMER)
+            # G. TRIGGER AUTO-CANCEL (DYNAMIC TIMER)
             if booking.status == 'PENDING':
-                # Convert minutes to seconds for Celery
                 countdown_seconds = hold_duration_minutes * 60 
-                
-                # Apply the dynamic countdown
                 auto_cancel_booking.apply_async((booking.id,), countdown=countdown_seconds)
 
-            msg_type = "success" if booking.status == 'CONFIRMED' else "warning"
-            msg_text = f"Booking {booking.status}! Ref: {booking.booking_ref}"
-            messages.add_message(request, getattr(messages, msg_type.upper()), msg_text)
+            msg_text = f"Successfully { 'issued' if final_status == 'CONFIRMED' else 'booked' }. Ref: {booking.booking_ref}"
             
-            return redirect('booking_issue_list')
+            # Return JSON for JS to handle instead of redirect
+            return JsonResponse({'success': True, 'message': msg_text})
 
     except Exception as e:
-        print(f"Booking Failed: {e}")
-        messages.error(request, f"Booking Failed: {e}")
-        return redirect(request.META.get('HTTP_REFERER'))
+        return JsonResponse({'success': False, 'message': str(e)})
 
 
 
@@ -3066,21 +3162,27 @@ def check_seat_availability(request):
             from_stop = get_object_or_404(RouteStop, id=from_stop_id)
             to_stop = get_object_or_404(RouteStop, id=to_stop_id)
             
-            # Check availability
-            available = trip.is_seat_available_admin(seat, from_stop, to_stop, exclude_user=request.user)
+            # 1. Fetch the holder ID FIRST
+            admin_holder_id = get_holder_id(request)
+            
+            # 2. Pass BOTH exclude_user AND exclude_holder_id
+            available = trip.is_seat_available_admin(
+                seat, 
+                from_stop, 
+                to_stop, 
+                exclude_user=request.user,
+                exclude_holder_id=admin_holder_id
+            )
             
             if available:
                 return JsonResponse({'available': True})
             
             # If not available, find why
-            admin_user_id = get_holder_id(request)
-            
-            # 🔴 FIXED: Use holder_id instead of holder
             hold = SeatHold.objects.filter(
                 trip=trip,
                 seat_object=seat,
                 expires_at__gt=timezone.now()
-            ).exclude(holder_id=admin_user_id).first()
+            ).exclude(holder_id=admin_holder_id).first()
             
             if hold:
                 return JsonResponse({
@@ -3182,6 +3284,21 @@ def create_seat_hold(request):
                 expires_at=timezone.now() + timedelta(minutes=5)
             )
             
+            # ---> ADD THIS BROADCAST <---
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"seats_{trip_id}",  # 🔴 Match the portal group name
+                {
+                    "type": "seat_event", # 🔴 Match the portal event type
+                    "action": "hold",
+                    "seat_id": seat.id,
+                    "holder_id": admin_user_id,
+                    "expires_at": hold.expires_at.isoformat(),
+                    "start_order": from_stop.stop_order,
+                    "end_order": to_stop.stop_order,
+                }
+            )
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Seat held successfully',
@@ -3215,8 +3332,12 @@ def release_seat_hold(request):
             trip_id = data.get('trip_id')
             seat_id = data.get('seat_id')
             
+            # ✅ NEW: We need the stops to broadcast the segment correctly!
+            from_stop_id = data.get('from_stop')
+            to_stop_id = data.get('to_stop')
+            
             # Validate
-            if not trip_id or not seat_id:
+            if not all([trip_id, seat_id, from_stop_id, to_stop_id]):
                 return JsonResponse({
                     'success': False, 
                     'error': 'Missing required fields'
@@ -3225,16 +3346,34 @@ def release_seat_hold(request):
             # Convert to integers
             trip_id = int(trip_id)
             seat_id = int(seat_id)
+            from_stop_id = int(from_stop_id)
+            to_stop_id = int(to_stop_id)
+            
+            # Get stops to determine order for the broadcast
+            from_stop = get_object_or_404(RouteStop, id=from_stop_id)
+            to_stop = get_object_or_404(RouteStop, id=to_stop_id)
             
             # Convert admin user ID to string
             admin_user_id = get_holder_id(request)
             
-            # 🔴 FIXED: Use holder_id NOT holder
             deleted_count = SeatHold.objects.filter(
                 trip_id=trip_id,
                 seat_object_id=seat_id,
-                holder_id=admin_user_id  # ✅ CORRECT - using holder_id
+                holder_id=admin_user_id
             ).delete()
+            
+            # ✅ FIXED: Broadcast to the exact same group with the exact same payload shape
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"seats_{trip_id}",  # Match portal group name
+                {
+                    "type": "seat_event", # Match portal event type
+                    "action": "release",
+                    "seat_id": seat_id,
+                    "start_order": from_stop.stop_order,
+                    "end_order": to_stop.stop_order,
+                }
+            )
             
             return JsonResponse({
                 'success': True,
@@ -3466,13 +3605,6 @@ def extend_booking_time_api(request):
 
         booking = Booking.objects.get(id=booking_id)
 
-        # Staff can extend time only for their own manageable booking.
-        if not _staff_can_manage_booking(request.user, booking):
-            return JsonResponse({
-                'success': False,
-                'message': 'You can only update your own booked or issued tickets.'
-            }, status=403)
-
         # Safety Check: Can only extend Pending or Expired
         if booking.status not in ['PENDING', 'EXPIRED']:
              return JsonResponse({'success': False, 'message': 'Cannot extend a Confirmed or Cancelled booking.'})
@@ -3504,35 +3636,6 @@ def extend_booking_time_api(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
-def _staff_can_manage_booking(user, booking):
-    """
-    Admins can manage everything.
-    Staff can manage a booking only when:
-    1) issued_by matches the logged-in staff user, or
-    2) issued_by is blank and booked_by matches the logged-in staff user.
-    """
-    if getattr(user, 'is_superuser', False) or getattr(user, 'user_type', None) == 0:
-        return True
-
-    if getattr(user, 'user_type', None) != 2:
-        return False
-
-    if getattr(booking, 'issued_by_id', None):
-        return booking.issued_by_id == user.id
-
-    return getattr(booking, 'booked_by_id', None) == user.id
-
-
-def _mark_booking_manageability(bookings, user):
-    """
-    Add a simple UI flag so booking list pages can hide update buttons
-    when the logged-in staff user does not own that booking.
-    """
-    for booking in bookings:
-        # Expose manageability to the template without changing the queryset shape.
-        booking.can_manage = _staff_can_manage_booking(user, booking)
-    return bookings
-
 
 @login_required
 @require_POST
@@ -3544,13 +3647,6 @@ def stop_booking_time(request, booking_id):
     try:
         data = json.loads(request.body) if request.body else {}
         booking = get_object_or_404(Booking, id=booking_id)
-
-        # Staff can stop time only for their own manageable booking.
-        if not _staff_can_manage_booking(request.user, booking):
-            return JsonResponse({
-                'success': False,
-                'message': 'You can only update your own booked or issued tickets.'
-            }, status=403)
         
         # Security: Can only stop time for PENDING bookings
         if booking.status != 'PENDING':
@@ -3599,13 +3695,6 @@ def resume_booking_time(request, booking_id):
         minutes_to_add = int(data.get('minutes', 120))  # Default 2 hours
         
         booking = get_object_or_404(Booking, id=booking_id)
-
-        # Staff can resume time only for their own manageable booking.
-        if not _staff_can_manage_booking(request.user, booking):
-            return JsonResponse({
-                'success': False,
-                'message': 'You can only update your own booked or issued tickets.'
-            }, status=403)
         
         if not booking.time_stopped:
             return JsonResponse({
@@ -3639,37 +3728,59 @@ def resume_booking_time(request, booking_id):
 @login_required
 def update_booking_status(request, booking_id, new_status):
     booking = get_object_or_404(Booking, id=booking_id)
-
-    # Staff can confirm/update only their own manageable booking.
-    if not _staff_can_manage_booking(request.user, booking):
-        messages.error(request, "You can only update your own booked or issued tickets.")
-        return redirect('booking_issue_list')
     
     # 1. Handle CONFIRM
     if new_status == 'CONFIRMED':
-        # NEW: allow pending-list quick confirm to choose paid or unpaid confirmation
-        selected_payment_status = request.GET.get('payment_status', 'PAID').upper()
-        if selected_payment_status not in ['PAID', 'UNPAID']:
-            selected_payment_status = 'PAID'
+        # Retrieve the paid amount entered in the modal (fallback to existing if none)
+        try:
+            new_paid_amount = float(request.GET.get('paid_amount', booking.paid_amount))
+        except ValueError:
+            new_paid_amount = float(booking.paid_amount)
+            
+        booking.paid_amount = new_paid_amount
+        
+        # Calculate payment_status dynamically
+        if booking.paid_amount >= booking.total_amount:
+            booking.payment_status = 'PAID'
+        else:
+            booking.payment_status = 'UNPAID'
 
         booking.status = 'CONFIRMED'
-        booking.payment_status = selected_payment_status
         booking.expiry_at = None
         booking.time_stopped = False
         booking.stopped_at = None
 
-        if selected_payment_status == 'PAID':
-            booking.paid_amount = booking.total_amount
-
-        # ADDED: Set issued_by to the user who is confirming it.
-        # booked_by is left completely untouched.
+        # Set issued_by to the user who is confirming it
         booking.issued_by = request.user
         
         booking.save()
         messages.success(request, "Booking Confirmed.")
 
     # 2. Handle CANCEL (Add this block)
+    # elif new_status == 'CANCELLED':
+    #     booking.status = 'CANCELLED'
+        
+    #     # ADDED: Set cancelled_by to the user performing the cancellation
+    #     booking.cancelled_by = request.user
+        
+    #     # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
+    #     booking.save() 
+    #     Ticket.objects.filter(booking=booking).update(status='CANCELLED')
+    
+    # 2. Handle CANCEL (Add this block)
     elif new_status == 'CANCELLED':
+        
+        # --- ADDED: Authorization Check for Cancellation ---
+        is_admin = (request.user.user_type == 0)
+        has_perm = request.user.has_perm('admin_panel.delete_booking')
+        is_staff_issuer = (request.user.user_type == 2 and booking.issued_by == request.user)
+        is_staff_booker = (request.user.user_type == 2 and not booking.issued_by and booking.booked_by == request.user)
+
+        if not (is_admin or has_perm or is_staff_issuer or is_staff_booker):
+            messages.error(request, "You do not have permission to cancel this booking.")
+            return redirect('booking_issue_list')
+        # ---------------------------------------------------
+
         booking.status = 'CANCELLED'
         
         # ADDED: Set cancelled_by to the user performing the cancellation
@@ -3749,12 +3860,43 @@ def get_seat_details(request, trip_id, seat_id):
 def toggle_trip_lock(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
     
+    # ADDED: Get channel layer for WebSockets
+    channel_layer = get_channel_layer() 
+    
+    # Moved Route Stop logic up so BOTH unlock and lock can use it for the broadcast payload
+    route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
+    if not route_stops.exists():
+        return JsonResponse({'status': 'error', 'message': 'Route has no stops defined.'})
+
+    start_stop = route_stops.first()
+    end_stop = route_stops.last()
+
     # 1. CHECK: Is it currently locked by Admin?
     locked_booking = Booking.objects.filter(trip=trip, status='LOCKED').first()
     
     if locked_booking:
         # --- UNLOCK ACTION ---
+        
+        # ADDED: Grab the seat IDs *before* we delete the booking so we can broadcast them
+        locked_tickets = Ticket.objects.filter(booking=locked_booking)
+        seat_ids_to_release = list(locked_tickets.values_list('seat_object_id', flat=True))
+
         locked_booking.delete()
+        print(f"Unlocked Trip {trip_id} and released all seats.")
+        
+        # ADDED: Broadcast the 'release' event for every unlocked seat
+        for seat_id in seat_ids_to_release:
+            async_to_sync(channel_layer.group_send)(
+                f"seats_{trip_id}",
+                {
+                    "type": "seat_event",
+                    "action": "release",  # Triggers your existing JS release logic
+                    "seat_id": seat_id,
+                    "start_order": start_stop.stop_order,
+                    "end_order": end_stop.stop_order,
+                }
+            )
+
         return JsonResponse({'status': 'unlocked', 'message': 'Seats have been released.'})
         
     else:
@@ -3771,25 +3913,13 @@ def toggle_trip_lock(request, trip_id):
                 sales_channel='COUNTER'
             )
             
-            # B. [FIXED] Identify Route Start/End safely using 'stop_order'
-            route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
-            
-            if not route_stops.exists():
-                return JsonResponse({'status': 'error', 'message': 'Route has no stops defined.'})
-
-            start_stop = route_stops.first()
-            end_stop = route_stops.last()
-            
             # C. Find ALL Seats
             all_seats = LayoutObject.objects.filter(
                 deck__ship=trip.ship,
                 category__is_bookable=True
             )
-
             
             locked_count = 0
-            
-            # Define a long expiry (10 years)
             long_expiry = timezone.now() + timedelta(days=3650)
 
             for seat in all_seats:
@@ -3807,9 +3937,25 @@ def toggle_trip_lock(request, trip_id):
                         lock_expires_at=long_expiry 
                     )
                     locked_count += 1
+                    
+                    # ADDED: Broadcast the 'locked' event for this seat
+                    async_to_sync(channel_layer.group_send)(
+                        f"seats_{trip_id}",
+                        {
+                            "type": "seat_event",
+                            "action": "locked", # New action to handle in JS
+                            "seat_id": seat.id,
+                            "holder_id": request.user.id,
+                            # "start_order": start_stop.stop_order, 
+                            # "end_order": end_stop.stop_order,
+                        }
+                    )
+                    
+            print(f"Locked {locked_count} seats for Trip {trip_id}.")
             
             if locked_count == 0:
                 booking.delete()
+                print(f"No seats were locked for Trip {trip_id}. Blocker booking deleted.")
                 return JsonResponse({'status': 'error', 'message': 'No available seats to lock!'})
 
             return JsonResponse({
@@ -3818,6 +3964,8 @@ def toggle_trip_lock(request, trip_id):
             })
 
 
+
+from django.core.cache import cache  # Ensure this is imported at the top of your file
 
 @require_POST
 @login_required
@@ -3830,23 +3978,65 @@ def toggle_single_seat_lock(request):
         trip = get_object_or_404(Trip, id=trip_id)
         seat_obj = get_object_or_404(LayoutObject, id=seat_id)
 
-        # 1. Check if this specific seat is ALREADY locked/booked
-        # We look for a TICKET, not just a booking
+        channel_layer = get_channel_layer()
+
+        route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
+        if not route_stops.exists():
+            return JsonResponse({'success': False, 'message': 'Route error'})
+        
+        start_stop = route_stops.first()
+        end_stop = route_stops.last()
+
+        # =========================================================
+        # SECURITY CHECK 1: Is the seat currently ON HOLD in the DB?
+        # =========================================================
+        active_hold = SeatHold.objects.filter(
+            trip=trip,
+            seat_object=seat_obj,
+            expires_at__gt=timezone.now() # Only check holds that haven't expired yet
+        ).first()
+        
+        if active_hold:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Action Denied: Seat is currently on hold and being viewed by someone else.'
+            })
+
+        # =========================================================
+        # SECURITY CHECK 2: Is the seat BOOKED or PENDING in the DB?
+        # =========================================================
+        # We exclude CANCELLED or REFUNDED tickets just to be safe
         existing_ticket = Ticket.objects.filter(
             trip=trip, 
             seat_object=seat_obj
-        ).first()
+        ).exclude(status__in=['CANCELLED', 'REFUNDED']).first()
 
         # ==============================
         # CASE A: UNLOCK (Remove Ticket)
         # ==============================
         if existing_ticket:
-            # ONLY delete if it's a "LOCKED" ticket. Don't touch real sales.
             if existing_ticket.status == 'LOCKED':
                 existing_ticket.delete()
+                
+                # Broadcast the 'release' event to all listeners
+                async_to_sync(channel_layer.group_send)(
+                    f"seats_{trip_id}",
+                    {
+                        "type": "seat_event",
+                        "action": "release",
+                        "seat_id": seat_id,
+                        "start_order": start_stop.stop_order,
+                        "end_order": end_stop.stop_order,
+                    }
+                )
+                
                 return JsonResponse({'success': True, 'action': 'unlocked'})
+            
+            # Specific error messages for other DB states
+            elif existing_ticket.status == 'PENDING':
+                return JsonResponse({'success': False, 'message': 'Action Denied: Seat is currently pending checkout by a customer!'})
             else:
-                return JsonResponse({'success': False, 'message': 'Seat is sold to a customer!'})
+                return JsonResponse({'success': False, 'message': 'Action Denied: Seat is already sold to a customer!'})
 
         # ==============================
         # CASE B: LOCK (Add Ticket)
@@ -3854,7 +4044,6 @@ def toggle_single_seat_lock(request):
         else:
             with transaction.atomic():
                 # 1. Find or Create the Main "Blocker" Booking
-                # We reuse the existing one if it exists, or make a new one
                 booking = Booking.objects.filter(trip=trip, status='LOCKED').first()
                 
                 if not booking:
@@ -3868,13 +4057,6 @@ def toggle_single_seat_lock(request):
                         sales_channel='COUNTER'
                     )
 
-                # 2. Get Route Stops (Required for Ticket)
-                route_stops = RouteStop.objects.filter(route=trip.route).order_by('stop_order')
-                if not route_stops.exists():
-                    return JsonResponse({'success': False, 'message': 'Route error'})
-                
-                start_stop = route_stops.first()
-                end_stop = route_stops.last()
                 long_expiry = timezone.now() + timedelta(days=3650)
 
                 # 3. Create the TICKET
@@ -3888,6 +4070,17 @@ def toggle_single_seat_lock(request):
                     fare_amount=0,
                     status='LOCKED',
                     lock_expires_at=long_expiry
+                )
+                
+                # Broadcast the 'locked' event to all listeners
+                async_to_sync(channel_layer.group_send)(
+                    f"seats_{trip_id}",
+                    {
+                        "type": "seat_event",
+                        "action": "locked",
+                        "seat_id": seat_id,
+                        "holder_id": request.user.id,
+                    }
                 )
                 
                 return JsonResponse({'success': True, 'action': 'locked'})
@@ -3943,29 +4136,23 @@ def trip_seat_report(request, trip_id):
 
 
 
-from django.db.models import Prefetch
 @login_required
 def passenger_list(request):
     """
-    Display all passengers with their booking information
+    Display all unique Customers (User type 1) and their total bookings.
     """
-    passengers = Passenger.objects.select_related(
-        'user',
-        'booking',
-        'booking__trip',
-        'booking__trip__ship',
-        'booking__trip__route'
-    ).prefetch_related(
-        'tickets',
-        'tickets__seat_object'
-    ).order_by('-booking__created_at')
+    # Filter for Customers and count their related bookings
+    customers = User.objects.filter(user_type=1).annotate(
+        total_bookings=Count('bookings')
+    ).order_by('-created_at')
     
     context = {
-        'passengers': passengers,
-        'page_title': 'Passenger List',
-        'is_passenger_page': True  # Flag to use same template
+        'users': customers,  # Passed as 'users' to match your template loop
+        'page_title': 'Customer List',
     }
-    return render(request, 'admin_panel/book/booking_list.html', context)
+    # Pointing to the specific template you mentioned
+    return render(request, 'admin_panel/book/passenger_list.html', context)
+
 
 # --- Apply this same query logic to your other views (issue_list, pending_list, etc.) ---
 @login_required
@@ -3975,11 +4162,10 @@ def booking_issue_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
-    # Mark which rows the current user is allowed to update from the list page.
-    bookings = _mark_booking_manageability(bookings, request.user)
     
     context = {'bookings': bookings, 'page_title': 'Issued (Confirmed) Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
+
 
 @login_required
 def booking_pending_list(request):
@@ -3988,11 +4174,10 @@ def booking_pending_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
-    # Mark which rows the current user is allowed to update from the list page.
-    bookings = _mark_booking_manageability(bookings, request.user)
 
     context = {'bookings': bookings, 'page_title': 'Pending Payment Tickets'}
     return render(request, 'admin_panel/book/booking_list.html', context)
+
 
 @login_required
 def booking_cancel_list(request):
@@ -4004,8 +4189,6 @@ def booking_cancel_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).distinct().order_by('-created_at')
-    # Mark which rows the current user is allowed to update from the list page.
-    bookings = _mark_booking_manageability(bookings, request.user)
 
     # 2. The Context: YOU MUST INCLUDE 'is_cancel_page': True HERE
     context = {
@@ -4015,6 +4198,7 @@ def booking_cancel_list(request):
     }
     
     return render(request, 'admin_panel/book/booking_list.html', context)
+
 
 @login_required
 def booking_expired_list(request):
@@ -4026,14 +4210,43 @@ def booking_expired_list(request):
     ).prefetch_related(
         'tickets__seat_object', 'tickets__from_stop__location', 'tickets__to_stop__location'
     ).order_by('-created_at')
-    # Mark which rows the current user is allowed to update from the list page.
-    bookings = _mark_booking_manageability(bookings, request.user)
 
     context = {
         'bookings': bookings, 
         'page_title': 'Expired (Unpaid) Tickets'
     }
     return render(request, 'admin_panel/book/booking_list.html', context)
+
+
+@xframe_options_sameorigin
+def admin_booking_invoice(request, booking_ref):
+    booking = get_object_or_404(
+        Booking.objects.prefetch_related('tickets__seat_object'),
+        booking_ref=booking_ref
+    )
+
+    # [NEW:QR_ON_INVOICE]
+    # Ensure share_token exists (only once)
+    if not booking.share_token:
+        booking.share_token = uuid.uuid4().hex
+        booking.save(update_fields=["share_token"])
+
+    # Shareable public URL (use token)
+    public_url = request.build_absolute_uri(f"/ticket/{booking.booking_ref}/{booking.share_token}/")
+
+    # Generate+save QR only if missing
+    ensure_booking_qr(booking, public_url)
+    booking.refresh_from_db(fields=["qr_image"])
+    # [/NEW:QR_ON_INVOICE]
+
+    due_amount = max(0, (booking.total_amount or 0) - (booking.paid_amount or 0))
+    return render(request, 'portal/schedules/booking_success.html', {
+        'booking': booking,
+        'public_url': public_url,
+        'due_amount': due_amount,
+    })
+    
+    
 @login_required
 def ticket_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
@@ -4162,11 +4375,6 @@ def cancel_booking(request, booking_id):
         
     booking = get_object_or_404(Booking, id=booking_id)
 
-    # Staff can cancel only their own manageable booking.
-    if not _staff_can_manage_booking(request.user, booking):
-        messages.error(request, "You can only cancel your own booked or issued tickets.")
-        return redirect('booking_cancel_list')
-
     # Prevent cancelling already cancelled bookings
     if booking.status == 'CANCELLED':
         messages.warning(request, "This booking is already cancelled.")
@@ -4213,18 +4421,16 @@ def cancel_seats(request):
         return redirect('booking_cancel_list')
 
     booking_id = request.POST.get('booking_id')
-    selected_ticket_ids = request.POST.getlist('ticket_ids') 
+    selected_ticket_ids = request.POST.getlist('ticket_ids')
+    
+    print(f"=======Received cancellation request for Booking ID: {booking_id} with Ticket IDs: {selected_ticket_ids}======")
 
     booking = get_object_or_404(Booking, id=booking_id)
 
-    # Staff can partially cancel only their own manageable booking.
-    if not _staff_can_manage_booking(request.user, booking):
-        messages.error(request, "You can only update your own booked or issued tickets.")
-        return redirect('booking_cancel_list')
-
     if not selected_ticket_ids:
+        print("xxxxxxxxxxxxxxxxxxxNo tickets selected for cancellation.xxxxxxxxxxxxxxxx")
         messages.warning(request, "No seats were selected for cancellation.")
-        return redirect('admin_booking_list')
+        return redirect('booking_cancel_list')
 
     try:
         with transaction.atomic():
@@ -4232,22 +4438,56 @@ def cancel_seats(request):
             tickets_to_cancel = Ticket.objects.filter(
                 id__in=selected_ticket_ids, 
                 booking=booking,
-                status__in=['BOOKED', 'CONFIRMED'] 
-            )
+                status__in=['BOOKED', 'PENDING'] 
+            ).select_related('from_stop', 'to_stop', 'seat_object')
             
             if not tickets_to_cancel.exists():
+                print(f"xxxxxxxxxxxxxxxxxxxNo valid tickets found for cancellation.xxxxxxxxxxxxxxxx")
                 messages.error(request, "Selected tickets are already cancelled or invalid.")
-                return redirect('admin_booking_list')
+                return redirect('booking_cancel_list')
 
             # 2. Extract info for SMS/Logs
             cancelled_labels = [t.seat_object.label for t in tickets_to_cancel]
             # cancel_amount = sum(t.fare_amount for t in tickets_to_cancel) # Available if you need it later
 
+            # =========================================================
+            # ADDED: Prepare WebSockets for AFTER transaction commits
+            # =========================================================
+            # Extract the needed data BEFORE calling .update()
+            ws_events = [
+                {
+                    "seat_id": ticket.seat_object_id,
+                    "start_order": ticket.from_stop.stop_order if ticket.from_stop else None,
+                    "end_order": ticket.to_stop.stop_order if ticket.to_stop else None,
+                }
+                for ticket in tickets_to_cancel
+            ]
+            trip_id = booking.trip_id
+
+            def broadcast_releases():
+                channel_layer = get_channel_layer()
+                group_name = f"seats_{trip_id}"
+                for event in ws_events:
+                    async_to_sync(channel_layer.group_send)(
+                        group_name,
+                        {
+                            "type": "seat_event",
+                            "action": "release",
+                            "seat_id": event["seat_id"],
+                            "start_order": event["start_order"],
+                            "end_order": event["end_order"],
+                        }
+                    )
+
+            # Queue the broadcast to fire ONLY when the DB transaction is fully completed
+            transaction.on_commit(broadcast_releases)
+
             # 3. Update Tickets to CANCELLED
             tickets_to_cancel.update(status='CANCELLED')
 
             # 4. Check if ANY active tickets remain
-            remaining_tickets = booking.tickets.filter(status__in=['BOOKED', 'CONFIRMED'])
+            # Must check for BOOKED or PENDING here as well!
+            remaining_tickets = booking.tickets.filter(status__in=['BOOKED', 'PENDING'])
             
             is_full_cancel = False
 
@@ -4618,6 +4858,7 @@ from django.db.models import Sum, Q
 
 
 @login_required
+@permission_required('admin_panel.can_view_trip_sheet', raise_exception=True)
 def trip_passenger_manifest(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
 
@@ -4920,7 +5161,8 @@ def export_manifest_xls(request, trip_id):
         total_fare = data['total_fare']
         paid_amount = data['paid_amount']
 
-        if data['status'] == 'CONFIRMED':
+        # ✅ FIXED: only force paid=full when payment_status is actually PAID
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
             paid_amount = total_fare
             due_amount = 0
         else:
@@ -4930,9 +5172,15 @@ def export_manifest_xls(request, trip_id):
 
         data['paid_amount'] = paid_amount
         data['due_amount'] = due_amount
-        
-        if data['status'] == 'CONFIRMED':
+
+        # ✅ FIXED: match web view payment_label logic exactly
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
             data['payment_label'] = 'Paid'
+        elif data['status'] == 'CONFIRMED':
+            if due_amount > 0:
+                data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else:
+                data['payment_label'] = 'Paid'
         else:
             if paid_amount == 0: data['payment_label'] = 'Unpaid'
             elif paid_amount < total_fare: data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
@@ -5015,7 +5263,7 @@ def export_manifest_xls(request, trip_id):
 
         # Status logic
         if booking.status == 'CONFIRMED':
-            status_text = "Confirmed"
+            status_text = f"Confirmed ({b_data['payment_label']})"
         else:
             status_text = f"Pending ({b_data['payment_label']})"
 
@@ -5213,19 +5461,17 @@ import io
 @login_required
 def download_manifest_pdf(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
-    
-    # 1. Fetch tickets (Exact same query as web view)
+
     tickets = Ticket.objects.filter(
         trip=trip
     ).filter(
         Q(booking__status__in=['CONFIRMED', 'PENDING']) &
         ~Q(status='CANCELLED')
     ).select_related(
-        'booking', 'booking__user', 'seat_object', 
+        'booking', 'booking__user', 'seat_object',
         'from_stop__location', 'to_stop__location'
     )
 
-    # 2. Pre-calculate booking totals
     booking_totals = {}
     for ticket in tickets:
         bid = ticket.booking.id
@@ -5234,6 +5480,8 @@ def download_manifest_pdf(request, trip_id):
                 'total_fare': 0,
                 'paid_amount': ticket.booking.paid_amount or 0,
                 'status': ticket.booking.status,
+                # ✅ ADDED: needed to correctly handle confirmed-but-unpaid bookings
+                'payment_status': ticket.booking.payment_status,
                 'payment_label': '',
             }
         booking_totals[bid]['total_fare'] += (ticket.fare_amount or 0)
@@ -5241,12 +5489,12 @@ def download_manifest_pdf(request, trip_id):
     total_paid = 0
     total_due = 0
 
-    # 3. Finalize booking totals (Paid / Due)
     for bid, data in booking_totals.items():
         total_fare = data['total_fare']
         paid_amount = data['paid_amount']
 
-        if data['status'] == 'CONFIRMED':
+        # ✅ FIXED: match web view logic exactly — only force paid=full when payment_status is PAID
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
             paid_amount = total_fare
             due_amount = 0
         else:
@@ -5259,8 +5507,14 @@ def download_manifest_pdf(request, trip_id):
         data['paid_amount'] = paid_amount
         data['due_amount'] = due_amount
 
-        if data['status'] == 'CONFIRMED':
+        # ✅ FIXED: match web view payment_label logic exactly
+        if data['status'] == 'CONFIRMED' and data['payment_status'] == 'PAID':
             data['payment_label'] = 'Paid'
+        elif data['status'] == 'CONFIRMED':
+            if due_amount > 0:
+                data['payment_label'] = f'Partial ({paid_amount:.0f}/{total_fare:.0f})'
+            else:
+                data['payment_label'] = 'Paid'
         else:
             if paid_amount == 0:
                 data['payment_label'] = 'Unpaid'
@@ -5272,45 +5526,41 @@ def download_manifest_pdf(request, trip_id):
         total_paid += paid_amount
         total_due += due_amount
 
-    # 4. Attach booking data to tickets and extract cabin number for sorting
     ticket_list = []
     for ticket in tickets:
         bid = ticket.booking.id
         label = ticket.seat_object.seat_identifier if getattr(ticket.seat_object, 'seat_identifier', None) else ticket.seat_object.label
-        
+
         match = re.search(r'\d+', label) if label else None
         sort_key = int(match.group()) if match else 999999
-        
-        # Exact same attributes added to ticket as web view
+
         ticket.booking_data = booking_totals[bid]
         ticket.sort_key = sort_key
         ticket.display_label = label
         ticket_list.append(ticket)
 
-    # 5. Sort the flat list by the extracted cabin number
     ticket_list.sort(key=lambda x: x.sort_key)
 
-    # Note: 'request' is passed into context so we can access request.user in the template
     context = {
         'trip': trip,
-        'tickets': ticket_list, 
+        'tickets': ticket_list,
         'total_tickets': len(ticket_list),
         'total_paid': total_paid,
         'total_due': total_due,
-        'request': request, 
+        'request': request,
     }
 
-    template = get_template('admin_panel/book/manifest_pdf.html') 
+    template = get_template('admin_panel/book/manifest_pdf.html')
     html = template.render(context)
-    
+
     response = HttpResponse(content_type='application/pdf')
     filename = f"TripSheet_{trip.ship.name}_{trip.departure_datetime.date()}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
+
     pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err:
         return HttpResponse(f'PDF generation error: {pisa_status.err}')
-    
+
     return response
 
 

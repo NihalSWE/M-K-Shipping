@@ -29,6 +29,244 @@
         font-size: 0.7rem;
         line-height: 1.2;
     }
+
+    /* Modal Base Styles */
+    /* -----------------------------------------
+       MODAL BASE STYLES
+       ----------------------------------------- */
+    .ocean-modal-content {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
+        overflow: hidden !important;
+    }
+    
+    .ocean-modal-header {
+        background: linear-gradient(135deg, #005A87, #007EA7) !important;
+        padding: 1.25rem 1.5rem !important;
+        border-bottom: none !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    
+    .ocean-modal-header .modal-title {
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        color: #ffffff !important;
+        margin: 0 !important;
+    }
+
+    /* -----------------------------------------
+       MODERN CLOSE BUTTON (GUARANTEED VISIBLE)
+       ----------------------------------------- */
+    .ocean-close-btn {
+        width: 32px !important;
+        height: 32px !important;
+        background-color: rgba(255, 255, 255, 0.1) !important; /* Subtle circle background */
+        border-radius: 50% !important; /* Perfectly round */
+        border: none !important;
+        /* White SVG cross drawn directly via background-image */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ffffff' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 18L18 6M6 6l12 12'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 16px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .ocean-close-btn:hover {
+        background-color: rgba(255, 255, 255, 0.25) !important;
+        transform: rotate(90deg) !important; /* Modern spin effect on hover */
+    }
+    
+    .ocean-modal-body {
+        padding: 2rem 1.5rem !important;
+        color: #334155 !important;
+        background-color: #f8fafc !important; /* Very soft background */
+    }
+    
+    /* -----------------------------------------
+       PERFECTLY ALIGNED TICKET CONTAINER
+       ----------------------------------------- */
+    .ocean-ticket-container {
+        margin-top: 1rem !important;
+    }
+
+    /* Override the injected Bootstrap .form-check wrapper */
+    .ocean-ticket-container .form-check {
+        display: flex !important;
+        align-items: center !important;
+        padding: 0.875rem 1rem !important; /* Adds padding to make them look like individual rows */
+        margin-bottom: 0.5rem !important;
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+        transition: border-color 0.2s ease !important;
+    }
+
+    .ocean-ticket-container .form-check:hover {
+        border-color: #cbd5e0 !important;
+    }
+
+    /* The Checkbox Itself */
+    .ocean-ticket-container .form-check-input {
+        all: unset !important; /* Kills Bootstrap's float and negative margins completely */
+        flex-shrink: 0 !important; /* Prevents the box from shrinking */
+        width: 22px !important;
+        height: 22px !important;
+        background-color: #ffffff !important;
+        border: 2px solid #cbd5e0 !important;
+        border-radius: 6px !important;
+        margin: 0 14px 0 0 !important; /* Strict spacing between box and text */
+        cursor: pointer !important;
+        position: relative !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .ocean-ticket-container .form-check-input:checked {
+        background-color: #dc3545 !important;
+        border-color: #dc3545 !important;
+    }
+
+    /* The Animated Checkmark */
+    .ocean-ticket-container .form-check-input::after {
+        content: '' !important;
+        position: absolute !important;
+        left: 6px !important;
+        top: 2px !important;
+        width: 6px !important;
+        height: 11px !important;
+        border: solid white !important;
+        border-width: 0 2px 2px 0 !important;
+        transform: rotate(45deg) scale(0) !important;
+        opacity: 0 !important;
+        transition: transform 0.2s ease, opacity 0.2s ease !important;
+    }
+
+    .ocean-ticket-container .form-check-input:checked::after {
+        transform: rotate(45deg) scale(1) !important;
+        opacity: 1 !important;
+    }
+
+    /* The Label (Text and Price) */
+    .ocean-ticket-container .form-check-label {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 !important; /* Kills any default margin */
+        padding: 0 !important;
+        cursor: pointer !important;
+        font-size: 15px !important;
+        color: #1e293b !important;
+    }
+    
+    /* -----------------------------------------
+       ALERTS & BUTTONS
+       ----------------------------------------- */
+    .ocean-alert {
+        background-color: #e6f2f7 !important;
+        border-left: 4px solid #007EA7 !important;
+        color: #004b70 !important;
+        border-radius: 6px !important;
+        padding: 1rem !important;
+        border-top: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+    }
+    
+    .ocean-btn-secondary {
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        background-color: #f0f4f8 !important;
+        color: #4a5568 !important;
+        border: 1px solid #cbd5e0 !important;
+        padding: 0.5rem 1.25rem !important;
+    }
+    
+    .ocean-btn-danger {
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        padding: 0.5rem 1.5rem !important;
+        box-shadow: 0 4px 6px rgba(220, 53, 69, 0.15) !important;
+    }
+    /* Modal for cancel seats starts */
+
+    /* -----------------------------------------
+       INPUTS & BUTTONS (EXTEND TIME MODAL)
+       ----------------------------------------- */
+    .ocean-input-group {
+        display: flex !important;
+        border: 2px solid #cbd5e0 !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        transition: border-color 0.2s ease !important;
+        background-color: #ffffff !important;
+    }
+    
+    .ocean-input-group:focus-within {
+        border-color: #007EA7 !important;
+        box-shadow: 0 0 0 3px rgba(0, 126, 167, 0.1) !important;
+    }
+
+    .ocean-input-control {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0.6rem 1rem !important;
+        font-weight: 500 !important;
+        color: #334155 !important;
+        width: 100% !important;
+        outline: none !important;
+        background: transparent !important;
+    }
+
+    .ocean-input-text {
+        background-color: #f8fafc !important;
+        border: none !important;
+        border-left: 2px solid #cbd5e0 !important;
+        padding: 0.6rem 1rem !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ocean-btn-outline {
+        border: 2px solid #007EA7 !important;
+        color: #007EA7 !important;
+        background: transparent !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .ocean-btn-outline:hover {
+        background-color: #007EA7 !important;
+        color: #ffffff !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .ocean-btn-primary {
+        background: linear-gradient(135deg, #005A87, #007EA7) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        box-shadow: 0 4px 10px rgba(0, 126, 167, 0.2) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .ocean-btn-primary:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 15px rgba(0, 126, 167, 0.3) !important;
+        color: #ffffff !important;
+    }
     /* ===== END NEW STYLES ===== */
 </style>
 {% endblock css %}
@@ -180,198 +418,243 @@
                             </thead>
                             <tbody>
                                 {% for booking in bookings %}
-                                <tr>
-                                    <td>#{{ booking.id }}</td>
-                                    <td>
-                                        <div class="fw-bold">{{ booking.passenger_name }}</div>
-                                        <small class="text-muted">Ref: {{ booking.booking_ref }}</small>
-                                    </td>
-                                    <td>
-                                        {% if booking.user.phone_number %}
-                                            <a href="tel:{{ booking.user.phone_number }}" class="text-blue text-decoration-none fw-bold">
-                                                {{ booking.user.phone_number }}
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted">--</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% with first_ticket=booking.tickets.first %}
-                                            {% if first_ticket %}
-                                                {{ first_ticket.from_stop.location.name }} 
-                                                <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
-                                                {{ first_ticket.to_stop.location.name }}
+                                    <tr>
+                                        <td>#{{ booking.id }}</td>
+                                        <td>
+                                            <div class="fw-bold">{{ booking.passenger_name }}</div>
+                                            <small class="text-muted">Ref: {{ booking.booking_ref }}</small>
+                                        </td>
+                                        <td>
+                                            {% if booking.user.phone_number %}
+                                                <a href="tel:{{ booking.user.phone_number }}" class="text-blue text-decoration-none fw-bold">
+                                                    {{ booking.user.phone_number }}
+                                                </a>
                                             {% else %}
-                                                {{ booking.trip.route.source.name }} 
-                                                <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
-                                                {{ booking.trip.route.destination.name }}
+                                                <span class="text-muted">--</span>
                                             {% endif %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-wrap gap-1">
-                                            {% if booking.status == 'EXPIRED' and booking.seat_snapshot %}
-                                                <!-- Show seats from snapshot for expired bookings -->
-                                                {% with snapshot=booking.seat_snapshot %}
-                                                    {% if snapshot %}
-                                                        {% for seat in snapshot.split %}
-                                                            <span class="badge bg-secondary text-white">{{ seat }}</span>
-                                                        {% endfor %}
-                                                    {% else %}
-                                                        <span class="text-muted small">No seats recorded</span>
-                                                    {% endif %}
-                                                {% endwith %}
-                                            {% else %}
-                                                <!-- Normal ticket display for non-expired bookings -->
-                                                {% for ticket in booking.tickets.all %}
-                                                    {% if is_cancel_page %}
-                                                        {% if ticket.status == 'CANCELLED' %}
-                                                            <span class="badge badge-danger">{{ ticket.seat_object.label }}</span>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        {% if ticket.status != 'CANCELLED' %}
-                                                            <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
-                                                        {% endif %}
-                                                    {% endif %}
-                                                {% empty %}
-                                                    <span class="text-muted small">No Seats</span>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>{{ booking.trip.ship.name }}</td>
-                                    <td>{{ booking.trip.departure_datetime|date:"d M" }}</td>
-                                    <td>{{ booking.created_at|date:"d M" }}</td>
-                                    <td class="fw-bold">{{ booking.total_amount }}</td>
-                                    <td>
-                                        {% if is_cancel_page and booking.status == 'CONFIRMED' %}
-                                            <span class="badge bg-warning text-dark">Partial Cancel</span>
-                                            <div class="small text-muted mt-1">Booking Active</div>
-                                        {% else %}
-                                            {% if booking.status == 'CONFIRMED' %}
-                                                <span class="badge bg-success">Confirmed</span>
-                                                {% if booking.payment_status == 'PAID' %}
-                                                    <span class="badge bg-light text-dark border ms-1">Paid</span>
+                                        </td>
+                                        <td>
+                                            {% with first_ticket=booking.tickets.first %}
+                                                {% if first_ticket %}
+                                                    {{ first_ticket.from_stop.location.name }} 
+                                                    <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
+                                                    {{ first_ticket.to_stop.location.name }}
+                                                {% else %}
+                                                    {{ booking.trip.route.source.name }} 
+                                                    <i class="fa fa-long-arrow-right text-muted mx-1"></i> 
+                                                    {{ booking.trip.route.destination.name }}
                                                 {% endif %}
-                                            {% elif booking.status == 'PENDING' %}
-                                                <span class="badge bg-warning text-dark">Pending</span>
-                                                {% if booking.payment_status != 'PAID' %}
-                                                    <span class="badge bg-light text-danger border ms-1">Unpaid</span>
-                                                {% endif %}
-                                                
-                                                <!-- ===== NEW: Time Stopped Indicator ===== -->
-                                                {% if booking.time_stopped %}
-                                                    <span class="badge bg-purple text-white ms-1">
-                                                        <i class="fa fa-pause-circle"></i> Timer Stopped
-                                                    </span>
-                                                {% endif %}
-                                                <!-- ===== END NEW INDICATOR ===== -->
-                                                
-                                                {% if booking.expiry_at %}
-                                                    <div class="d-flex align-items-center mt-1 gap-2 flex-wrap">
-                                                        <!-- ===== MODIFIED: Timer display with stopped state ===== -->
-                                                        <div class="small {% if booking.time_stopped %}text-purple fw-bold{% else %}text-danger fw-bold{% endif %} countdown-timer" 
-                                                             id="timer-{{ booking.id }}"
-                                                             data-expiry="{{ booking.expiry_at|date:'c' }}"
-                                                             data-time-stopped="{{ booking.time_stopped|lower }}">
-                                                             {% if booking.time_stopped %}⏸️ Stopped{% else %}Calculating...{% endif %}
-                                                        </div>
-                                                        <!-- ===== END MODIFIED TIMER ===== -->
-                                                        
-                                                        <!-- ===== NEW: Time Control Buttons Group ===== -->
-                                                        {% if booking.can_manage %}
-                                                        <div class="btn-group btn-group-xs" role="group">
-                                                            <!-- Existing Extend Time button (unchanged) -->
-                                                            <button type="button" 
-                                                                    class="btn btn-xs btn-outline-secondary py-0 px-1 border-0" 
-                                                                    title="Extend Time"
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#extendTimeModal"
-                                                                    data-booking-id="{{ booking.id }}"
-                                                                    data-current-expiry="{{ booking.expiry_at|date:'c' }}">
-                                                                <i class="fa fa-clock-o"></i> <span class="small">+Add</span>
-                                                            </button>
-                                                            
-                                                            <!-- NEW: Stop Time button (only if not already stopped) -->
-                                                            {% if not booking.time_stopped %}
-                                                            <button type="button" 
-                                                                    class="btn btn-xs btn-outline-warning py-0 px-1 border-0" 
-                                                                    title="Stop Timer (Prevent Auto-Cancel)"
-                                                                    onclick="stopBookingTime('{{ booking.id }}')">
-                                                                <i class="fa fa-pause-circle"></i> <span class="small">Stop</span>
-                                                            </button>
-                                                            {% else %}
-                                                            <!-- NEW: Resume Time button (only if stopped) -->
-                                                            <button type="button" 
-                                                                    class="btn btn-xs btn-outline-success py-0 px-1 border-0" 
-                                                                    title="Resume Timer"
-                                                                    onclick="resumeBookingTime('{{ booking.id }}')">
-                                                                <i class="fa fa-play-circle"></i> <span class="small">Resume</span>
-                                                            </button>
-                                                            {% endif %}
-                                                        </div>
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if booking.status == 'EXPIRED' and booking.seat_snapshot %}
+                                                    <!-- Show seats from snapshot for expired bookings -->
+                                                    {% with snapshot=booking.seat_snapshot %}
+                                                        {% if snapshot %}
+                                                            {% for seat in snapshot.split %}
+                                                                <span class="badge bg-secondary text-white">{{ seat }}</span>
+                                                            {% endfor %}
                                                         {% else %}
-                                                        <!-- Keep timer visible, but block timer actions for non-owner staff users. -->
-                                                        <div class="small text-muted">No update access</div>
+                                                            <span class="text-muted small">No seats recorded</span>
                                                         {% endif %}
-                                                        <!-- ===== END NEW BUTTONS ===== -->
-                                                    </div>
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <!-- Normal ticket display for non-expired bookings -->
+                                                    {% for ticket in booking.tickets.all %}
+                                                        {% if is_cancel_page %}
+                                                            {% if ticket.status == 'CANCELLED' %}
+                                                                <span class="badge badge-danger">{{ ticket.seat_object.label }}</span>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            {% if ticket.status != 'CANCELLED' %}
+                                                                <span class="badge badge-light text-dark border">{{ ticket.seat_object.label }}</span>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% empty %}
+                                                        <span class="text-muted small">No Seats</span>
+                                                    {% endfor %}
                                                 {% endif %}
-                                            {% elif booking.status == 'EXPIRED' %}
-                                                <span class="badge bg-secondary text-white">Expired</span>
-                                            {% elif booking.status == 'CANCELLED' %}
-                                                <span class="badge bg-danger">Cancelled</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ booking.trip.ship.name }}</td>
+                                        <td>{{ booking.trip.departure_datetime|date:"d M" }}</td>
+                                        <td>{{ booking.created_at|date:"d M" }}</td>
+                                        <td class="fw-bold">{{ booking.total_amount }}</td>
+                                        <td>
+                                            {% if is_cancel_page and booking.status == 'CONFIRMED' %}
+                                                <span class="badge bg-warning text-dark">Partial Cancel</span>
+                                                <div class="small text-muted mt-1">Booking Active</div>
                                             {% else %}
-                                                <span class="badge bg-secondary">{{ booking.status }}</span>
-                                            {% endif %}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Map">
-                                                <i class="fa fa-eye"></i>
-                                            </a>
-                                            <!-- Hide update actions when the logged-in staff user does not own this booking. -->
-                                            {% if booking.can_manage and booking.status == 'PENDING' %}
-                                            <button type="button" class="btn btn-xs btn-success px-2" data-bs-toggle="modal" data-bs-target="#confirmStatusModal" data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                            {% endif %}
-                                            {% if booking.can_manage and booking.status != 'CANCELLED' and booking.status != 'EXPIRED' %}
-                                                {% for ticket in booking.tickets.all %}
-                                                    {% if ticket.status != 'CANCELLED' %}
-                                                        <span class="d-none ticket-info" 
-                                                              data-id="{{ ticket.id }}" 
-                                                              data-label="{{ ticket.seat_object.label }}" 
-                                                              data-price="{{ ticket.fare_amount }}">
+                                                {% if booking.status == 'CONFIRMED' %}
+                                                    <span class="badge bg-success">Confirmed</span>
+                                                    {% if booking.payment_status == 'PAID' %}
+                                                        <span class="badge bg-light text-dark border ms-1">Paid</span>
+                                                    {% endif %}
+                                                {% elif booking.status == 'PENDING' %}
+                                                    <span class="badge bg-warning text-dark">Pending</span>
+                                                    {% if booking.payment_status != 'PAID' %}
+                                                        <span class="badge bg-light text-danger border ms-1">Unpaid</span>
+                                                    {% endif %}
+                                                    
+                                                    <!-- ===== NEW: Time Stopped Indicator ===== -->
+                                                    {% if booking.time_stopped %}
+                                                        <span class="badge bg-purple text-white ms-1">
+                                                            <i class="fa fa-pause-circle"></i> Timer Stopped
                                                         </span>
                                                     {% endif %}
-                                                {% endfor %}
-                                                <button type="button" 
-                                                        class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                    <!-- ===== END NEW INDICATOR ===== -->
+                                                    
+                                                    {% if booking.expiry_at %}
+                                                        <div class="d-flex align-items-center mt-1 gap-2 flex-wrap">
+                                                            <!-- ===== MODIFIED: Timer display with stopped state ===== -->
+                                                            <div class="small {% if booking.time_stopped %}text-purple fw-bold{% else %}text-danger fw-bold{% endif %} countdown-timer" 
+                                                                id="timer-{{ booking.id }}"
+                                                                data-expiry="{{ booking.expiry_at|date:'c' }}"
+                                                                data-time-stopped="{{ booking.time_stopped|lower }}">
+                                                                {% if booking.time_stopped %}⏸️ Stopped{% else %}Calculating...{% endif %}
+                                                            </div>
+                                                            <!-- ===== END MODIFIED TIMER ===== -->
+                                                            
+                                                            <!-- ===== NEW: Time Control Buttons Group ===== -->
+                                                            <div class="btn-group btn-group-xs" role="group">
+                                                                <!-- Existing Extend Time button (unchanged) -->
+                                                                <button type="button" 
+                                                                        class="btn btn-xs btn-outline-secondary py-0 px-1 border-0" 
+                                                                        title="Extend Time"
+                                                                        data-bs-toggle="modal" 
+                                                                        data-bs-target="#extendTimeModal"
+                                                                        data-booking-id="{{ booking.id }}"
+                                                                        data-current-expiry="{{ booking.expiry_at|date:'c' }}">
+                                                                    <i class="fa fa-clock-o"></i> <span class="small">+Add</span>
+                                                                </button>
+                                                                
+                                                                <!-- NEW: Stop Time button (only if not already stopped) -->
+                                                                {% if not booking.time_stopped %}
+                                                                <button type="button" 
+                                                                        class="btn btn-xs btn-outline-warning py-0 px-1 border-0" 
+                                                                        title="Stop Timer (Prevent Auto-Cancel)"
+                                                                        onclick="stopBookingTime('{{ booking.id }}')">
+                                                                    <i class="fa fa-pause-circle"></i> <span class="small">Stop</span>
+                                                                </button>
+                                                                {% else %}
+                                                                <!-- NEW: Resume Time button (only if stopped) -->
+                                                                <button type="button" 
+                                                                        class="btn btn-xs btn-outline-success py-0 px-1 border-0" 
+                                                                        title="Resume Timer"
+                                                                        onclick="resumeBookingTime('{{ booking.id }}')">
+                                                                    <i class="fa fa-play-circle"></i> <span class="small">Resume</span>
+                                                                </button>
+                                                                {% endif %}
+                                                            </div>
+                                                            <!-- ===== END NEW BUTTONS ===== -->
+                                                        </div>
+                                                    {% endif %}
+                                                {% elif booking.status == 'EXPIRED' %}
+                                                    <span class="badge bg-secondary text-white">Expired</span>
+                                                {% elif booking.status == 'CANCELLED' %}
+                                                    <span class="badge bg-danger">Cancelled</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ booking.status }}</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'booking_visual_map' booking.id %}" class="btn btn-xs btn-info px-2" title="View Map">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
+                                                {% if booking.status == 'CONFIRMED' %}
+                                                    <button type="button" 
+                                                            class="btn btn-xs btn-primary px-2" 
+                                                            title="Print Invoice" 
+                                                            onclick="printInvoice('{% url 'admin_booking_invoice' booking.booking_ref %}')">
+                                                        <i class="fa fa-print"></i>
+                                                    </button>
+                                                {% endif %}
+                                                {% if booking.status == 'PENDING' %}
+                                                    <button type="button" 
+                                                        class="btn btn-xs btn-success px-2 confirm-status-trigger" 
                                                         data-bs-toggle="modal" 
-                                                        data-bs-target="#seatCancelModal"
-                                                        data-booking-id="{{ booking.id }}"
-                                                        data-booking-ref="{{ booking.booking_ref }}">
-                                                    <i class="fa fa-times"></i>
-                                                </button>
-                                            {% endif %}
-                                            {% if not booking.can_manage %}
-                                                <!-- Read-only viewers still see the booking, but not its update buttons. -->
-                                                <span class="small text-muted align-self-center">No update access</span>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="11" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <i class="fa fa-ticket fa-3x mb-3"></i>
-                                            <h5>No bookings found</h5>
-                                        </div>
-                                    </td>
-                                </tr>
+                                                        data-bs-target="#confirmStatusModal" 
+                                                        data-href="{% url 'update_booking_status' booking.id 'CONFIRMED' %}"
+                                                        data-total="{{ booking.total_amount }}"
+                                                        data-paid="{{ booking.paid_amount|default:0 }}"
+                                                        data-due="{{ booking.due_amount|default:booking.total_amount }}">
+                                                        <i class="fa fa-check"></i>
+                                                    </button>
+                                                {% endif %}
+                                                {% if booking.status != 'CANCELLED' and booking.status != 'EXPIRED' %}
+                                                    {% for ticket in booking.tickets.all %}
+                                                        {% if ticket.status != 'CANCELLED' %}
+                                                            <span class="d-none ticket-info" 
+                                                                data-id="{{ ticket.id }}" 
+                                                                data-label="{{ ticket.seat_object.label }}" 
+                                                                data-price="{{ ticket.fare_amount }}">
+                                                            </span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    {% comment %} {% if request.user.user_type == 0 or perms.admin_panel.delete_booking %}
+                                                        <button type="button" 
+                                                                class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#seatCancelModal"
+                                                                data-booking-id="{{ booking.id }}"
+                                                                data-booking-ref="{{ booking.booking_ref }}">
+                                                            <i class="fa fa-times"></i>
+                                                        </button>
+                                                    {% endif %} {% endcomment %}
+                                                    {% if request.user.user_type == 0 %}
+                                                        <button type="button" 
+                                                                class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#seatCancelModal"
+                                                                data-booking-id="{{ booking.id }}"
+                                                                data-booking-ref="{{ booking.booking_ref }}">
+                                                            <i class="fa fa-times"></i>
+                                                        </button>
+
+                                                    {% elif request.user.user_type == 3 and perms.admin_panel.delete_booking %}
+                                                        {% if booking.status == 'PENDING' %}
+                                                            <button type="button" 
+                                                                    class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#seatCancelModal"
+                                                                    data-booking-id="{{ booking.id }}"
+                                                                    data-booking-ref="{{ booking.booking_ref }}">
+                                                                <i class="fa fa-times"></i>
+                                                            </button>
+                                                        {% endif %}
+
+                                                    {% elif request.user.user_type == 4 and perms.admin_panel.delete_booking %}
+                                                        {% if booking.issued_by %}
+                                                            {% if booking.issued_by == request.user %}
+                                                                <button type="button" 
+                                                                        class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                                        data-bs-toggle="modal" 
+                                                                        data-bs-target="#seatCancelModal"
+                                                                        data-booking-id="{{ booking.id }}"
+                                                                        data-booking-ref="{{ booking.booking_ref }}">
+                                                                    <i class="fa fa-times"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            {% if booking.booked_by == request.user %}
+                                                                <button type="button" 
+                                                                        class="btn btn-xs btn-danger px-2 btn-cancel-trigger" 
+                                                                        data-bs-toggle="modal" 
+                                                                        data-bs-target="#seatCancelModal"
+                                                                        data-booking-id="{{ booking.id }}"
+                                                                        data-booking-ref="{{ booking.booking_ref }}">
+                                                                    <i class="fa fa-times"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -392,13 +675,36 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- NEW: quick confirm option for Paid or Unpaid while keeping booking confirmed -->
-                <p class="mb-3">Choose how you want to confirm this booking.</p>
-                <label for="confirmPaymentStatus" class="form-label">Payment Option</label>
-                <select id="confirmPaymentStatus" class="form-select">
-                    <option value="PAID" selected>Paid and Confirmed</option>
-                    <option value="UNPAID">Unpaid but Confirmed</option>
-                </select>
+                <p class="mb-3">Confirm payment details for this booking.</p>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted">Total Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">৳</span>
+                        <input type="text" id="confirmTotalAmount" class="form-control bg-secondary-subtle text-dark border" disabled>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirmPaidAmount" class="form-label d-flex justify-content-between w-100">
+                        <span>Paid Amount</span>
+                        <a href="javascript:void(0);" id="btnFullPaid" class="text-success text-decoration-none fw-bold" style="cursor: pointer;">
+                            <small>Set Full Paid</small>
+                        </a>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" id="confirmPaidAmount" class="form-control" step="0.01" min="0">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted">Due Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">৳</span>
+                        <input type="text" id="confirmDueAmount" class="form-control bg-light text-danger fw-bold" readonly>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -407,6 +713,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Cancel Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
@@ -428,34 +735,37 @@
     </div>
 </div>
 
+
 <!-- Seat Cancel Modal -->
 <div class="modal fade" id="seatCancelModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content ocean-modal-content">
             <form action="{% url 'admin_cancel_seats' %}" method="POST" id="seatCancelForm">
                 {% csrf_token %}
                 <input type="hidden" name="booking_id" id="modalBookingId">
                 
-                <div class="modal-header bg-danger text-white">
+                <div class="modal-header ocean-modal-header">
                     <h5 class="modal-title">Cancel Seats</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="ocean-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
-                <div class="modal-body">
-                    <p class="fw-bold mb-2">Booking Ref: <span id="modalBookingRef"></span></p>
-                    <p class="text-muted small">Select the seats you want to <span class="text-danger fw-bold">CANCEL</span>:</p>
+                <div class="modal-body ocean-modal-body">
+                    <p class="fw-bold mb-2 fs-5">Booking Ref: <span id="modalBookingRef" class="text-primary"></span></p>
+                    <p class="text-muted mb-3">Select the seats you want to <span class="text-danger fw-bold">CANCEL</span>:</p>
                     
-                    <div class="p-3 bg-light border rounded" id="ticketListContainer" style="background-color: #ebacac !important;"></div>
+                    <div class="ocean-ticket-container" id="ticketListContainer"></div>
 
-                    <div class="mt-3 alert alert-warning small">
-                        <i class="fa fa-info-circle"></i> 
-                        If you select all seats, the booking status will update to <strong>CANCELLED</strong>.
+                    <div class="mt-4 alert ocean-alert small d-flex align-items-center">
+                        <i class="fa fa-info-circle fs-5 me-3"></i> 
+                        <div>
+                            If you select all seats, the booking status will update to <strong>CANCELLED</strong>.
+                        </div>
                     </div>
                 </div>
                 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn ocean-btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger ocean-btn-danger">Confirm Cancellation</button>
                 </div>
             </form>
         </div>
@@ -465,31 +775,39 @@
 <!-- Extend Time Modal -->
 <div class="modal fade" id="extendTimeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white py-2">
-                <h6 class="modal-title fs-6">Extend Booking Time</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content ocean-modal-content">
+            
+            <div class="modal-header ocean-modal-header">
+                <h5 class="modal-title">Extend Time</h5>
+                <button type="button" class="ocean-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            
+            <div class="modal-body ocean-modal-body">
                 <form id="extendTimeForm">
                     <input type="hidden" id="extendBookingId" name="booking_id">
                     
-                    <label class="form-label small text-muted">Add time (minutes):</label>
-                    <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-primary btn-sm w-100 quick-add" data-val="30">+30m</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm w-100 quick-add" data-val="60">+1h</button>
+                    <label class="form-label text-muted fw-bold mb-2" style="font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                        Quick Add
+                    </label>
+                    <div class="d-flex gap-2 mb-4">
+                        <button type="button" class="btn ocean-btn-outline w-100 quick-add" data-val="30">+30m</button>
+                        <button type="button" class="btn ocean-btn-outline w-100 quick-add" data-val="60">+1h</button>
                     </div>
 
-                    <div class="input-group input-group-sm mb-3">
-                        <input type="number" class="form-control" id="extendMinutes" name="minutes" placeholder="Custom" value="30">
-                        <span class="input-group-text">mins</span>
+                    <label class="form-label text-muted fw-bold mb-2" style="font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                        Custom Time
+                    </label>
+                    <div class="ocean-input-group mb-4">
+                        <input type="number" class="ocean-input-control" id="extendMinutes" name="minutes" placeholder="Custom" value="30">
+                        <span class="ocean-input-text">mins</span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-sm w-100" id="btnSaveExtension">
+                    <button type="submit" class="btn w-100 ocean-btn-primary" id="btnSaveExtension">
                         Confirm Extension
                     </button>
                 </form>
             </div>
+            
         </div>
     </div>
 </div>
@@ -502,25 +820,52 @@
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
 
 <script>
-    // UPDATED: pass selected payment option with the existing confirm action
-    var confirmStatusModal = document.getElementById('confirmStatusModal');
-    if(confirmStatusModal){
-        confirmStatusModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var baseUrl = button.getAttribute('data-href');
-            var confirmBtn = confirmStatusModal.querySelector('#btnConfirmStatus');
-            var paymentSelect = confirmStatusModal.querySelector('#confirmPaymentStatus');
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('confirmStatusModal');
+        const totalInput = document.getElementById('confirmTotalAmount');
+        const paidInput = document.getElementById('confirmPaidAmount');
+        const dueInput = document.getElementById('confirmDueAmount');
+        const confirmBtn = document.getElementById('btnConfirmStatus');
+        const fullPaidBtn = document.getElementById('btnFullPaid');
 
-            function updateConfirmUrl() {
-                var paymentStatus = paymentSelect.value || 'PAID';
-                confirmBtn.setAttribute('href', baseUrl + '?payment_status=' + encodeURIComponent(paymentStatus));
-            }
+        // 1. Populate Modal on Show
+        modal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // Button that triggered the modal
+            
+            // Extract info from data-* attributes
+            const total = button.getAttribute('data-total');
+            const paid = button.getAttribute('data-paid');
+            const due = button.getAttribute('data-due');
+            const actionUrl = button.getAttribute('data-href');
 
-            paymentSelect.value = 'PAID';
-            updateConfirmUrl();
-            paymentSelect.onchange = updateConfirmUrl;
+            // Update modal inputs
+            totalInput.value = total;
+            paidInput.value = paid;
+            dueInput.value = due;
+            
+            // Update the Confirm button link
+            confirmBtn.setAttribute('href', actionUrl + '?paid_amount=' + paid);
         });
-    }
+
+        // 2. Real-time Due Calculation
+        paidInput.addEventListener('input', function() {
+            const total = parseFloat(totalInput.value) || 0;
+            const paid = parseFloat(this.value) || 0;
+            const due = total - paid;
+            
+            dueInput.value = due.toFixed(2);
+
+            // Update the href dynamically so the backend gets the new amount
+            const baseUrl = confirmBtn.getAttribute('href').split('?')[0];
+            confirmBtn.setAttribute('href', baseUrl + '?paid_amount=' + encodeURIComponent(paid));
+        });
+
+        // 3. Set Full Paid Shortcut
+        fullPaidBtn.addEventListener('click', function() {
+            paidInput.value = totalInput.value;
+            paidInput.dispatchEvent(new Event('input')); // Trigger calculation
+        });
+    });
 </script>
 
 <script>
@@ -786,6 +1131,33 @@
                 button.disabled = false;
             }
         });
+    }
+</script>
+
+
+<script>
+    function printInvoice(url) {
+        // 1. Look for an existing hidden iframe, or create a new one
+        let printFrame = document.getElementById('hidden-print-frame');
+        if (!printFrame) {
+            printFrame = document.createElement('iframe');
+            printFrame.id = 'hidden-print-frame';
+            // Hide the iframe completely so it doesn't mess up your layout
+            printFrame.style.position = 'absolute';
+            printFrame.style.width = '0px';
+            printFrame.style.height = '0px';
+            printFrame.style.border = 'none';
+            document.body.appendChild(printFrame);
+        }
+
+        // 2. When the iframe finishes loading the URL, trigger the print dialog
+        printFrame.onload = function() {
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+        };
+
+        // 3. Set the source URL to start the loading process
+        printFrame.src = url;
     }
 </script>
 <!-- ===== END NEW FUNCTIONS ===== -->

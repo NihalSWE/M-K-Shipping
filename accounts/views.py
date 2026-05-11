@@ -170,7 +170,7 @@ def verify_login_otp_view(request):
         cache.delete(_login_otp_cache_key(phone_norm))
 
         # Redirect target
-        if user.user_type in [0, 2]:
+        if user.user_type in [0, 2, 3, 4]:
             redirect_url = reverse("admin_dashboard")
         else:
             redirect_url = reverse("home")
@@ -187,7 +187,7 @@ def verify_login_otp_view(request):
 
 def signin(request):
     if request.user.is_authenticated:
-        if request.user.user_type in [0, 2]:
+        if request.user.user_type in [0, 2, 3, 4]:
             return redirect('admin_dashboard')
         return redirect('home')
 
@@ -218,7 +218,7 @@ def signin(request):
                     if next_url:
                         return redirect(next_url)
 
-                    if user.user_type in [0, 2]:
+                    if user.user_type in [0, 2, 3, 4]:
                         return redirect('admin_dashboard')
                     return redirect('home')
                 else:
@@ -299,7 +299,7 @@ def signin(request):
             if next_url:
                 return redirect(next_url)
 
-            if user.user_type in [0, 2]:
+            if user.user_type in [0, 2, 3, 4]:
                 return redirect('admin_dashboard')
             return redirect('home')
 

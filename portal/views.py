@@ -552,16 +552,16 @@ def get_seat_layout(request, trip_id):
     # ✅ SAME FILTER AS YOUR CORE LOGIC (for genders only)
     occupied_tickets = Ticket.objects.filter(
         trip=trip,
-        status__in=['BOOKED', 'LOCKED']
+        status__in=['BOOKED', 'LOCKED', 'PENDING'] # <-- 1. ADDED PENDING
     ).filter(
         Q(from_stop__stop_order__lt=stop_to.stop_order) &
         Q(to_stop__stop_order__gt=stop_from.stop_order)
-    ).select_related('passenger').only('seat_object_id', 'passenger__gender')
+    ).select_related('passenger').only('seat_object_id', 'passenger__gender', 'status') # <-- 2. ADDED 'status'
 
     # Core logic: Find seats already booked for any part of this journey
     occupied_seat_ids = list(Ticket.objects.filter(
         trip=trip,
-        status__in=['BOOKED', 'LOCKED']
+        status__in=['BOOKED', 'LOCKED', 'PENDING']
     ).filter(
         Q(from_stop__stop_order__lt=stop_to.stop_order) & 
         Q(to_stop__stop_order__gt=stop_from.stop_order)
@@ -571,8 +571,12 @@ def get_seat_layout(request, trip_id):
     occupied_seat_genders = {}
     for t in occupied_tickets:
         if t.seat_object_id not in occupied_seat_genders:
-            g = t.passenger.gender if t.passenger else None
-            occupied_seat_genders[t.seat_object_id] = str(g) if g is not None else None
+            # 4. NEW LOGIC: If pending, force fallback class. Otherwise, use gender.
+            if t.status == 'PENDING':
+                occupied_seat_genders[t.seat_object_id] = None 
+            else:
+                g = t.passenger.gender if t.passenger else None
+                occupied_seat_genders[t.seat_object_id] = str(g) if g is not None else None
             
     # 1) DB holds (fallback + admin visibility)
     active_holds = SeatHold.objects.filter(
@@ -593,34 +597,12 @@ def get_seat_layout(request, trip_id):
         db_held_holder_ids[sid] = h['holder_id']
         db_held_expires[sid] = h['expires_at'].isoformat()
 
-    # 2) Redis holds (primary)
-    redis_held_seats = set()
-    redis_held_holder_ids = {}  # seat_id -> holder_id
-    redis_held_expires = {}      # seat_id -> iso string (optional)
-
-    seat_ids = list(
-        LayoutObject.objects.filter(deck__ship=trip.ship).values_list("id", flat=True)
-    )
-
-    for seat_id in seat_ids:
-        key = seat_hold_key(trip.id, from_stop_id, to_stop_id, seat_id)
-        payload = cache.get(key)  # expected dict like {"holder_id": "...", "expires_at": "..."}
-        if payload:
-            redis_held_seats.add(seat_id)
-            if isinstance(payload, dict):
-                redis_held_holder_ids[seat_id] = payload.get("holder_id")
-                redis_held_expires[seat_id] = payload.get("expires_at")
-
-    # 3) Merge: show hold if either has it
-    held_seats = db_held_seats | redis_held_seats
-
-    # holder_id preference: Redis first, else DB
-    held_holder_ids = {}
-    held_expires = {}
-
-    for sid in held_seats:
-        held_holder_ids[sid] = redis_held_holder_ids.get(sid) or db_held_holder_ids.get(sid)
-        held_expires[sid] = redis_held_expires.get(sid) or db_held_expires.get(sid)
+    # 2) REDIS REMOVED: Redis keys are blind to overlaps. 
+    # The database query above perfectly calculates stop_order overlaps. 
+    # We map the frontend context directly to the DB results.
+    held_seats = db_held_seats
+    held_holder_ids = db_held_holder_ids
+    held_expires = db_held_expires
     
     # Optional: Keep this here for 1 day to verify in your terminal that IDs are found
     print(f"DEBUG: Trip {trip_id} has occupied seats: {occupied_seat_ids}")
@@ -774,12 +756,14 @@ def save_booking_view(request):
             )
             
             channel_layer = get_channel_layer()
-            group = f"seats_{trip.id}_{from_stop.id}_{to_stop.id}"
+            # group = f"seats_{trip.id}_{from_stop.id}_{to_stop.id}"
+            group = f"seats_{trip_id}"
             
             updated_user_phones = set()
 
             for p in passengers_data:
-                seat = LayoutObject.objects.get(id=p['seat_id'])
+                # ADDED: select_for_update() to strictly lock the seat row during checkout
+                seat = LayoutObject.objects.select_for_update().get(id=p['seat_id'])
 
                 # ✅ Seat availability check (kept from original logic)
                 if not trip.is_seat_available(seat, from_stop, to_stop):
@@ -895,12 +879,18 @@ def save_booking_view(request):
                 # ✅ Redis delete kept but disabled for DB-first sync flow
                 cache.delete(seat_hold_key(trip.id, from_stop.id, to_stop.id, seat.id))
 
-                # ✅ now broadcast booked
+                # ✅ FIX: include start_order and end_order in the broadcast
                 async_to_sync(channel_layer.group_send)(group, {
                     "type": "seat_event",
                     "action": "booked",
                     "seat_id": int(seat.id),
+                    "start_order": from_stop.stop_order,
+                    "end_order": to_stop.stop_order,
+                    "gender": p_gender,
                 })
+                
+                logger.info(f"p_gender: {p_gender}")
+                print(f"print p_gender: {p_gender}")
 
             booking.total_amount = total_amount
             booking.payment_status = 'PAID'
@@ -1267,7 +1257,8 @@ def hold_seats_view(request):
     expires_at = timezone.now() + timedelta(seconds=getattr(settings, 'SEAT_HOLD_SECONDS', 300))
 
     # group name for websocket broadcasts
-    group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    # group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    group = f"seats_{trip_id}"
     channel_layer = get_channel_layer()
 
     # cleanup expired holds for this segment
@@ -1279,21 +1270,19 @@ def hold_seats_view(request):
     held = []
     rejected = []
 
-    for seat_id in seat_ids:
-        seat = get_object_or_404(LayoutObject, id=seat_id)
-        
-        # --- REDIS: if someone else already holds it, reject ---
-        r_key = seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id)
-        r_payload = cache.get(r_key)
+    # 1. NEW: Wrap the entire hold process in an atomic transaction
+    from django.db import transaction # (Make sure this is imported at the top of your file)
+    with transaction.atomic():
+        # 2. NEW: Lock the layout objects so no one else can hold/book them right now
+        locked_seats = LayoutObject.objects.filter(id__in=seat_ids).select_for_update()
+        locked_seat_map = {seat.id: seat for seat in locked_seats}
 
-        if isinstance(r_payload, dict):
-            existing_holder = r_payload.get("holder_id")
-            if existing_holder and existing_holder != holder_id:
-                rejected.append({'seat_id': seat_id, 'reason': 'held'})
+        for seat_id in seat_ids:
+            if seat_id not in locked_seat_map:
+                rejected.append({'seat_id': seat_id, 'reason': 'invalid_seat'})
                 continue
-        # --------------------
-        else:
-            # --- DB FALLBACK (secondary): if Redis missed, check SeatHold table ---
+            
+            # 3. CHANGED: Database is now the PRIMARY source of truth for holds because Redis cannot calculate overlapping segments.
             db_hold = SeatHold.objects.filter(
                 trip=trip,
                 seat_object_id=seat_id,
@@ -1306,21 +1295,19 @@ def hold_seats_view(request):
             if db_hold:
                 rejected.append({'seat_id': seat_id, 'reason': 'held'})
                 continue
-        # --------------------------
 
-        # HARD BLOCK: if seat is already booked for overlapping segment, reject
-        if Ticket.objects.filter(
-            trip=trip,
-            status__in=['BOOKED']
-        ).filter(
-            Q(from_stop__stop_order__lt=to_stop.stop_order) &
-            Q(to_stop__stop_order__gt=from_stop.stop_order)
-        ).filter(seat_object_id=seat_id).exists():
-            rejected.append({'seat_id': seat_id, 'reason': 'booked'})
-            continue
+            # 4. CHANGED: Included 'LOCKED' and 'PENDING' statuses to match your get_seat_layout logic
+            if Ticket.objects.filter(
+                trip=trip,
+                status__in=['BOOKED', 'LOCKED', 'PENDING'] 
+            ).filter(
+                Q(from_stop__stop_order__lt=to_stop.stop_order) &
+                Q(to_stop__stop_order__gt=from_stop.stop_order)
+            ).filter(seat_object_id=seat_id).exists():
+                rejected.append({'seat_id': seat_id, 'reason': 'booked'})
+                continue
 
-        try:
-            # create or refresh hold (same holder can refresh)
+            # Create or refresh hold
             obj, created = SeatHold.objects.update_or_create(
                 trip=trip,
                 from_stop=from_stop,
@@ -1334,7 +1321,7 @@ def hold_seats_view(request):
 
             held.append(seat_id)
             
-            # --- REDIS WRITE (primary) ---
+            # Still write to Redis so you can clear it quickly later if needed, but we don't rely on it for overlaps
             cache.set(
                 seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id),
                 {"holder_id": holder_id, "expires_at": expires_at.isoformat()},
@@ -1348,11 +1335,9 @@ def hold_seats_view(request):
                 "seat_id": seat_id,
                 "holder_id": holder_id,
                 "expires_at": expires_at.isoformat(),
+                "start_order": from_stop.stop_order,
+                "end_order": to_stop.stop_order,
             })
-
-        except IntegrityError:
-            # someone else holds it
-            rejected.append({'seat_id': seat_id, 'reason': 'held'})
 
     return JsonResponse({'success': True, 'held': held, 'rejected': rejected})
 
@@ -1377,7 +1362,8 @@ def release_seats_view(request):
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
 
-    group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    # group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
+    group = f"seats_{trip_id}"
     channel_layer = get_channel_layer()
 
     deleted = []
@@ -1396,10 +1382,13 @@ def release_seats_view(request):
     for seat_id in deleted:
         cache.delete(seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id))
         
+        # ✅ FIX: include start_order and end_order in the broadcast
         async_to_sync(channel_layer.group_send)(group, {
             "type": "seat_event",
             "action": "release",
             "seat_id": seat_id,
+            "start_order": from_stop.stop_order,
+            "end_order": to_stop.stop_order,
         })
 
     return JsonResponse({'success': True, 'released': deleted})

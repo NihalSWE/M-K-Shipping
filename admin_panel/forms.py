@@ -60,55 +60,56 @@ class AdminUserAddForm(forms.ModelForm):
         'class': 'form-control', 
         'placeholder': 'Confirm Password'
     }))
+    
+    # 1. Explicitly make last_name optional
+    last_name = forms.CharField(
+        required=False, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name (Optional)'})
+    )
 
     class Meta:
         model = User
-        # Added 'phone_number' to this list
         fields = ['first_name', 'last_name', 'email', 'phone_number', 'user_type', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
-            # Added widget for phone number
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
             'user_type': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    # 2. Ensure empty last_name is saved as "" instead of None
+    def clean_last_name(self):
+        last_name = self.cleaned_data.get('last_name')
+        return last_name.strip() if last_name else ""
+
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
             raise forms.ValidationError("Email address is required.")
-
-        # Keep email unique with a friendly form error before hitting the database.
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("This email already exists. Please use a different email.")
-
+            raise forms.ValidationError("This email already exists.")
         return email
 
     def clean_phone_number(self):
         phone_number = (self.cleaned_data.get('phone_number') or '').strip()
         if not phone_number:
             raise forms.ValidationError("Phone number is required.")
-
-        # Keep phone number unique with a friendly form error before hitting the database.
         if User.objects.filter(phone_number=phone_number).exists():
-            raise forms.ValidationError("This phone number already exists. Please use a different phone number.")
-
+            raise forms.ValidationError("This phone number already exists.")
         return phone_number
 
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
-
         if password != confirm_password:
-            raise forms.ValidationError("Passwords do not match. Please enter the same password in both fields.")
+            raise forms.ValidationError("Passwords do not match.")
         return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"]) # Hashes the password
+        user.set_password(self.cleaned_data["password"])
         if commit:
             user.save()
         return user

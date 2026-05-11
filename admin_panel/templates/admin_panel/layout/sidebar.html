@@ -125,7 +125,7 @@
                     <!-- Users -->
 
                     <!-- Tickets Booking -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.add_booking or perms.admin_panel.view_booking or perms.admin_panel.change_booking or perms.admin_panel.delete_booking %}
+                    {% if request.user.user_type == 0 or perms.admin_panel.add_booking or perms.admin_panel.view_booking or perms.admin_panel.change_booking or perms.admin_panel.delete_booking or perms.admin_panel.can_view_trip_sheet %}
                         <li class="sidebar-list">
                             <a class="sidebar-link sidebar-title" href="#">
                                 <span class="iconify" data-icon="mdi:ticket-confirmation-outline"></span>
@@ -133,23 +133,23 @@
                             </a>
                             <ul class="sidebar-submenu">
                                 {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
-                                <li><a href="{% url 'tcktbook' %}">Booking</a></li>
+                                    <li><a href="{% url 'tcktbook' %}">Booking</a></li>
                                 {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
-                                <li><a href="{% url 'booking_pending_list' %}">Booked Ticket</a></li>
+                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking or perms.admin_panel.change_booking %}
+                                    <li><a href="{% url 'booking_pending_list' %}">Booked Ticket</a></li>
                                 {% endif %}
                                 {% if request.user.user_type == 0 or perms.admin_panel.change_booking %}
-                                <li><a href="{% url 'booking_issue_list' %}">Issued Ticket</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.delete_booking %}
-                                <li><a href="{% url 'booking_cancel_list' %}">Cancelled Ticket</a></li>
+                                    <li><a href="{% url 'booking_issue_list' %}">Issued Ticket</a></li>
                                 {% endif %}
                                 {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
-                                <li><a href="{% url 'trip_report_list' %}">Trip Sheet</a></li>
+                                    <li><a href="{% url 'booking_cancel_list' %}">Cancelled Ticket</a></li>
+                                {% endif %}
+                                {% if request.user.user_type == 0 or perms.admin_panel.can_view_trip_sheet %}
+                                    <li><a href="{% url 'trip_report_list' %}">Trip Sheet</a></li>
                                 {% endif %}
                                 {% if request.user.user_type == 0 %}
-                                <li><a href="{% url 'passenger_list' %}">Passenger List</a></li>
-                                <li><a href="{% url 'booking_expired_list' %}">Expired Ticket</a></li>
+                                    <li><a href="{% url 'passenger_list' %}">Passenger List</a></li>
+                                    <li><a href="{% url 'booking_expired_list' %}">Expired Ticket</a></li>
                                 {% endif %}
                             </ul>
                         </li>

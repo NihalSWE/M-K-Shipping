@@ -2,6 +2,7 @@
 {% load trip_extras %}
 
 <div class="deck-selection-container">
+    <input type="hidden" id="current-segment-orders" data-start-order="{{ from_stop.stop_order }}" data-end-order="{{ to_stop.stop_order }}">
     {% comment %} <h3 class="deck-header text-center">Deck Selection</h3> {% endcomment %}
         {% if not is_bookable %}
         <div class="alert alert-warning m-3 text-center shadow-sm" style="border-radius: 8px; background-color: #fff3cd; color: #856404; border-color: #ffeeba;">

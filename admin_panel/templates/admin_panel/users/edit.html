@@ -93,7 +93,7 @@
                         <h6 class="text-primary mb-3 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Personal Information</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
                                 <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default:'' }}">
                             </div>
                             <div class="col-md-6">
@@ -101,11 +101,11 @@
                                 <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default:'' }}">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email Address</label>
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
                                 <input type="email" name="email" class="form-control" value="{{ form.email.value|default:'' }}">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Phone Number</label>
+                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
                                 <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number.value|default:'' }}">
                             </div>
                         </div>
@@ -115,11 +115,11 @@
                         <h6 class="text-primary mb-3 mt-4 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Role & Status</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
-                                <label class="form-label">User Type</label>
+                                <label class="form-label">User Type <span class="text-danger">*</span></label>
                                 {{ form.user_type }} 
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">User Status</label>
+                                <label class="form-label">User Status <span class="text-danger">*</span></label>
                                 {{ form.user_status }}
                             </div>
                             <div class="col-md-4 d-flex align-items-center pt-4">
@@ -135,11 +135,11 @@
                         <h6 class="text-primary mb-3 mt-4 text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 1px;">Financial Settings</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label">Wallet Balance ($)</label>
+                                <label class="form-label">Wallet Balance ($) <span class="text-danger">*</span></label>
                                 <input type="number" step="0.01" name="balance" class="form-control" value="{{ form.balance.value|default:'0.00' }}">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Credit Limit ($)</label>
+                                <label class="form-label">Credit Limit ($) <span class="text-danger">*</span></label>
                                 <input type="number" step="0.01" name="credit_limit" class="form-control" value="{{ form.credit_limit.value|default:'0.00' }}">
                             </div>
                         </div>
@@ -147,10 +147,10 @@
                         <div class="card mt-5 border shadow-sm">
                             
                             <div class="card-header bg-white py-3 perm-toggle-header" 
-                                 data-bs-toggle="collapse" 
-                                 data-bs-target="#permissionCollapse" 
-                                 aria-expanded="false" 
-                                 aria-controls="permissionCollapse">
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#permissionCollapse" 
+                                aria-expanded="false" 
+                                aria-controls="permissionCollapse">
                                 
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center">
@@ -184,11 +184,11 @@
                                                                 <div class="col-12">
                                                                     <div class="form-check">
                                                                         <input type="checkbox" 
-                                                                               class="form-check-input" 
-                                                                               id="perm_{{ perm.id }}" 
-                                                                               name="permissions[]" 
-                                                                               value="{{ perm.id }}"
-                                                                               {% if perm.id in perm_form.current_permissions %}checked{% endif %}>
+                                                                            class="form-check-input" 
+                                                                            id="perm_{{ perm.id }}" 
+                                                                            name="permissions[]" 
+                                                                            value="{{ perm.id }}"
+                                                                            {% if perm.id in perm_form.current_permissions %}checked{% endif %}>
                                                                         
                                                                         <label class="form-check-label small text-secondary" for="perm_{{ perm.id }}" style="cursor: pointer;">
                                                                             {{ perm.display_label }}

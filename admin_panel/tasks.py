@@ -1,8 +1,20 @@
 from celery import shared_task
 from django.utils import timezone
-from .models import Booking, Ticket
+from .models import Booking, Ticket, SeatHold
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 # Import the SMS helper
-from .utils import send_booking_sms 
+from django.core.cache import cache
+from .utils import send_booking_sms
+from portal.utils import seat_hold_key
+
+
+
+
+
+
+
+
 
 @shared_task
 def send_sms_task(phone_number, message):
@@ -12,6 +24,7 @@ def send_sms_task(phone_number, message):
     """
     from .utils import send_sms_task as utils_send_sms
     utils_send_sms(phone_number, message)
+    
 
 @shared_task
 def auto_cancel_booking(booking_id):
@@ -47,10 +60,26 @@ def auto_cancel_booking(booking_id):
             # Get the correct Price
             saved_price = booking.total_amount 
 
-            # 2. NOW DELETE TICKETS (Release Seats)
+            # 2. BROADCAST WEBSOCKET RELEASES BEFORE DELETING TICKETS
+            channel_layer = get_channel_layer()
+            group_name = f"seats_{booking.trip_id}"
+            
+            for ticket in seats:
+                async_to_sync(channel_layer.group_send)(
+                    group_name,
+                    {
+                        "type": "seat_event",
+                        "action": "release",
+                        "seat_id": ticket.seat_object_id,
+                        "start_order": ticket.from_stop.stop_order if ticket.from_stop else None,
+                        "end_order": ticket.to_stop.stop_order if ticket.to_stop else None,
+                    }
+                )
+
+            # 3. NOW DELETE TICKETS (Release Seats from DB)
             seats.delete()
 
-            # 3. UPDATE STATUS
+            # 4. UPDATE STATUS
             # Use update() so we don't trigger a .save() that might recalculate price to 0
             Booking.objects.filter(id=booking.id).update(status='EXPIRED')
             
@@ -70,4 +99,53 @@ def auto_cancel_booking(booking_id):
     except Booking.DoesNotExist:
         return "Booking not found"
     
+    
+@shared_task
+def cleanup_expired_seat_holds():
+    """
+    Finds all expired SeatHold instances, broadcasts a release event 
+    via WebSockets to update the UI, clears Redis cache, and deletes them.
+    """
+    now = timezone.now()
+    
+    # 1. Get all expired holds (using select_related to speed up stop_order lookups)
+    expired_holds = SeatHold.objects.filter(expires_at__lte=now).select_related('from_stop', 'to_stop')
+
+    if not expired_holds.exists():
+        return "No expired holds to clean up."
+
+    channel_layer = get_channel_layer()
+    count = 0
+
+    # 2. Iterate through them to broadcast the release and clear cache
+    for hold in expired_holds:
+        trip_id = hold.trip_id
+        seat_id = hold.seat_object_id
+        
+        # We need from_stop and to_stop to clear the exact Redis cache key
+        from_stop_id = hold.from_stop_id if hasattr(hold, 'from_stop_id') else None
+        to_stop_id = hold.to_stop_id if hasattr(hold, 'to_stop_id') else None
+
+        # Clear Redis cache explicitly
+        if from_stop_id and to_stop_id:
+            cache.delete(seat_hold_key(trip_id, from_stop_id, to_stop_id, seat_id))
+
+        # Broadcast the release event so the UI updates for ALL users
+        group_name = f"seats_{trip_id}"
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "seat_event",
+                "action": "release",
+                "seat_id": seat_id,
+                "start_order": hold.from_stop.stop_order if hold.from_stop else None,
+                "end_order": hold.to_stop.stop_order if hold.to_stop else None,
+            }
+        )
+        count += 1
+
+    # 3. Delete them from the database
+    expired_holds.delete()
+
+    return f"Cleaned up and released {count} expired seat holds."
     

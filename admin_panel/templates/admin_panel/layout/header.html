@@ -58,6 +58,7 @@
             <li><a href="/edit_profile"><i data-feather="settings"></i><span>Settings</span></a></li> {% endcomment %}
             <li>
                 <form method="post" action="{% url 'admin_logout' %}" style="display:inline;">
+                    <a href="{% url 'admin_profile' %}">Profile</a>
                     {% csrf_token %}
                     <button type="submit" class="btn btn-link p-0 m-0 text-start" style="text-decoration:none;">
                         <i data-feather="log-out"></i>
