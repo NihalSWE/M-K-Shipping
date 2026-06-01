@@ -30,6 +30,7 @@ urlpatterns = [
     path('booking/save/', views.save_booking_view, name='save_booking'),
     path("booking/send-otp/", views.send_booking_otp_view, name="send_booking_otp"),
     path("booking/verify-otp/", views.verify_booking_otp_view, name="verify_booking_otp"),
+    path('booking/pre-validate/', views.pre_validate_booking_view, name='pre_validate_booking'),
     # path("booking/otp/verify-login/", views.verify_booking_otp_login_view, name="verify_booking_otp_login"),
     path('booking/success/<str:booking_ref>/', views.booking_success, name='booking_success'),
     path("seats/hold/", views.hold_seats_view, name="hold_seats"),

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seats Unavailable | Marine Travel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --ocean-deep: #003049;
+            --ocean-blue: #0077B6;
+            --warning-amber: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.15);
+            --foam: #CAF0F8;
+        }
+ 
+        body, html {
+            min-height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0077B6 0%, #003049 100%);
+            overflow-x: hidden;
+        }
+ 
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem 8rem;
+        }
+ 
+        .glass-card {
+            background: rgba(255, 255, 255, 0.10);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 3rem 2rem;
+            width: 100%;
+            max-width: 480px;
+        }
+ 
+        .status-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--warning-bg);
+            border-radius: 50%;
+            border: 2px solid var(--warning-amber);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            flex-shrink: 0;
+        }
+ 
+        .status-icon svg { fill: var(--warning-amber); }
+ 
+        h2 {
+            color: #fff;
+            font-weight: 700;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+        }
+ 
+        .subtitle {
+            color: var(--foam);
+            opacity: 0.82;
+            font-size: 0.93rem;
+            line-height: 1.65;
+        }
+ 
+        .info-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+        }
+ 
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 1rem;
+        }
+ 
+        .info-row:last-child { border-bottom: none; }
+ 
+        .info-label {
+            color: var(--foam);
+            opacity: 0.70;
+            font-size: 0.87rem;
+            white-space: nowrap;
+        }
+ 
+        .info-value {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: right;
+            word-break: break-all;
+        }
+ 
+        .info-value.ref {
+            font-family: monospace;
+            letter-spacing: 0.05em;
+            color: #fde68a;
+        }
+ 
+        .info-value.pending { color: #fde68a; }
+ 
+        .contact-note {
+            color: var(--foam);
+            opacity: 0.78;
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+ 
+        .contact-note strong { color: #fff; }
+ 
+        .contact-phone {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.02em;
+        }
+ 
+        .btn-home {
+            display: inline-block;
+            background: #fff;
+            color: var(--ocean-deep);
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.3s ease;
+            border: none;
+        }
+ 
+        .btn-home:hover {
+            transform: translateY(-2px);
+            background: var(--foam);
+            color: var(--ocean-deep);
+        }
+ 
+        .waves {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 12vh;
+            min-height: 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+ 
+        .parallax > use {
+            animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+        }
+ 
+        .parallax > use:nth-child(1) { animation-delay: -2s; fill: rgba(255,255,255,0.30); }
+        .parallax > use:nth-child(2) { animation-delay: -3s; fill: rgba(255,255,255,0.10); }
+ 
+        @keyframes move-forever {
+            0%   { transform: translate3d(-90px, 0, 0); }
+            100% { transform: translate3d(85px,  0, 0); }
+        }
+ 
+        @media (max-width: 480px) {
+            .glass-card {
+                padding: 2rem 1.25rem;
+                border-radius: 18px;
+            }
+            .status-icon { width: 60px; height: 60px; }
+            .status-icon svg { width: 28px; height: 28px; }
+        }
+    </style>
+</head>
+<body>
+ 
+<div class="page-wrapper">
+    <div class="glass-card text-center">
+ 
+        <div class="status-icon">
+            <svg width="35" height="35" viewBox="0 0 24 24">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+            </svg>
+        </div>
+ 
+        <h2 class="mb-2">Payment Received — Seats Expired</h2>
+        <p class="subtitle mb-4">
+            Your payment was successfully processed, but your seat reservation expired while you were completing the transaction.
+        </p>
+ 
+        <div class="info-card mb-4">
+            <div class="info-row">
+                <span class="info-label">Booking Ref</span>
+                <span class="info-value ref">{{ booking.booking_ref }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Amount Paid</span>
+                <span class="info-value">৳{{ booking.paid_amount|floatformat:0 }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date</span>
+                <span class="info-value">{{ booking.payment_date|date:"d M Y, h:i A" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status</span>
+                <span class="info-value pending">Pending Admin Review</span>
+            </div>
+        </div>
+ 
+        <p class="contact-note mb-1">
+            Please contact us with your booking reference.<br>
+            We will arrange a <strong>full refund or alternative booking</strong> as soon as possible.
+        </p>
+        <p class="contact-phone mb-4">📞 +880 1713 428 523</p>
+ 
+        <a href="{% url 'home' %}" class="btn-home">Return to Home</a>
+ 
+    </div>
+</div>
+ 
+<svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+    <defs>
+        <path id="w" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
+    </defs>
+    <g class="parallax">
+        <use href="#w" x="48" y="0"/>
+        <use href="#w" x="48" y="5"/>
+    </g>
+</svg>
+ 
+</body>
+</html>

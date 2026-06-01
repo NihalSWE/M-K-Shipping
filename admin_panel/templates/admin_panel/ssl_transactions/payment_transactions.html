@@ -1,0 +1,229 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<style>
+    .view-icon, .delete-icon { cursor: pointer; font-size: 18px; transition: 0.3s; }
+    .view-icon:hover { color: #5c61f2; transform: scale(1.1); }
+    .delete-icon:hover { color: #dc3545; transform: scale(1.1); }
+
+    /* Modern Detail Modal */
+    .detail-row { border-bottom: 1px solid #f0f0f0; padding: 10px 0; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-weight: 600; color: #444; width: 150px; display: inline-block; }
+    .detail-value { color: #666; }
+    
+    .status-badge { font-weight: 600; text-transform: uppercase; font-size: 11px; }
+    
+    pre.json-viewer {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                    <h1>Payment Transactions</h1>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="display table table-striped border" id="tx-table">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Tran ID</th>
+                                    <th>Booking</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in transactions %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><code>{{ tx.tran_id }}</code></td>
+                                    <td>{{ tx.booking.booking_ref|default:"N/A" }}</td>
+                                    <td><strong>{{ tx.amount }} {{ tx.currency }}</strong></td>
+                                    <td>
+                                        {% if tx.status == 'VALID' %}
+                                            <span class="badge rounded-pill bg-success status-badge">Valid</span>
+                                        {% elif tx.status == 'PENDING' %}
+                                            <span class="badge rounded-pill bg-warning text-dark status-badge">Pending</span>
+                                        {% elif tx.status == 'FAILED' or tx.status == 'CANCELLED' %}
+                                            <span class="badge rounded-pill bg-danger status-badge">{{ tx.status }}</span>
+                                        {% else %}
+                                            <span class="badge rounded-pill bg-secondary status-badge">{{ tx.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ tx.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <ul class="action d-flex list-unstyled gap-3 mb-0">
+                                            <li>
+                                                <i class="fa-regular fa-eye view-icon" onclick="openViewModal('{{ tx.id }}')"></i>
+                                            </li>
+                                            <li>
+                                                <i class="fa-solid fa-trash-can delete-icon" 
+                                                   data-id="{{ tx.id }}" data-bs-toggle="modal" 
+                                                   data-bs-target="#deleteConfirmationModal"></i>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modal-content-area">
+                <div class="text-center py-5" id="loader">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                
+                <div id="tx-details" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-row"><span class="detail-label">Tran ID:</span><span class="detail-value" id="val-tran-id"></span></div>
+                            <div class="detail-row"><span class="detail-label">Val ID:</span><span class="detail-value" id="val-val-id"></span></div>
+                            <div class="detail-row"><span class="detail-label">Bank Tran:</span><span class="detail-value" id="val-bank-id"></span></div>
+                            <div class="detail-row"><span class="detail-label">Booking:</span><span class="detail-value" id="val-booking"></span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-row"><span class="detail-label">Amount:</span><span class="detail-value text-primary font-weight-bold" id="val-amount"></span></div>
+                            <div class="detail-row"><span class="detail-label">Status:</span><span id="val-status"></span></div>
+                            <div class="detail-row"><span class="detail-label">Gateway:</span><span class="detail-value" id="val-gateway"></span></div>
+                            <div class="detail-row"><span class="detail-label">Method:</span><span class="detail-value" id="val-card"></span></div>
+                        </div>
+                    </div>
+                    
+                    {% comment %} <div class="mt-4">
+                        <h6 class="mb-3">Raw Gateway Response</h6>
+                        <pre class="json-viewer" id="val-raw"></pre>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4">
+            <div class="text-danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation fa-4x"></i>
+            </div>
+            <h4>Are you sure?</h4>
+            <p class="text-muted">This transaction record will be permanently deleted.</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button id="confirm-delete" class="btn btn-danger px-4">Delete</button>
+                <button class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" style="width: 120px; margin: 0 auto;">
+            <h5 class="mt-3">Deleted!</h5>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#tx-table').DataTable({
+            "order": [[ 5, "desc" ]] // Sort by date by default
+        });
+    });
+
+    function openViewModal(id) {
+        const modal = new bootstrap.Modal(document.getElementById('viewModal'));
+        const loader = document.getElementById('loader');
+        const details = document.getElementById('tx-details');
+        
+        loader.style.display = 'block';
+        details.style.display = 'none';
+        modal.show();
+
+        fetch(`/dashboard/payments/transactions/${id}/json/`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('val-tran-id').innerText = data.tran_id;
+                document.getElementById('val-val-id').innerText = data.val_id;
+                document.getElementById('val-bank-id').innerText = data.bank_tran_id;
+                document.getElementById('val-booking').innerText = data.booking_ref;
+                document.getElementById('val-amount').innerText = data.amount;
+                document.getElementById('val-gateway').innerText = `${data.gateway_name} (${data.store_name})`;
+                document.getElementById('val-card').innerText = `${data.card_brand} - ${data.card_type}`;
+                // document.getElementById('val-raw').innerText = JSON.stringify(data.raw_response, null, 2);
+                
+                // Set Status Badge
+                const statusBadge = document.getElementById('val-status');
+                statusBadge.className = `badge bg-${data.status === 'VALID' ? 'success' : (data.status === 'PENDING' ? 'warning text-dark' : 'danger')}`;
+                statusBadge.innerText = data.status;
+
+                loader.style.display = 'none';
+                details.style.display = 'block';
+            });
+    }
+
+    // DELETE Logic
+    let pendingDeleteId = null;
+    $(document).on("click", ".delete-icon", function() {
+        pendingDeleteId = this.dataset.id;
+    });
+
+    $("#confirm-delete").on("click", function() {
+        fetch("{% url 'payment_transactions' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ action: "delete", id: pendingDeleteId })
+        })
+        .then(r => r.json())
+        .then(d => {
+            bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
+            if(d.status === 'success') {
+                const successModal = new bootstrap.Modal($("#deleteSuccessModal")[0]);
+                successModal.show();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                alert(d.message);
+            }
+        });
+    });
+</script>
+{% endblock %}

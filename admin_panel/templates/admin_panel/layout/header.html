@@ -1,84 +1,146 @@
 {% load static %}
-{% load sass_tags %}
 
-<!-- Page Header Start-->
-<div class="page-header">
-  <div class="header-wrapper row m-0">
-    <form class="form-inline search-full col" action="#" method="get">
-      <div class="form-group w-100">
-        <div class="Typeahead Typeahead--twitterUsers">
-          <div class="u-posRelative">
-            <input class="demo-input Typeahead-input form-control-plaintext w-100" type="text" placeholder="Search Anything Here..." name="q" title="" autofocus>
-            <div class="spinner-border Typeahead-spinner" role="status"><span class="sr-only">Loading...</span></div><i class="close-search" data-feather="x"></i>
-          </div>
-          <div class="Typeahead-menu"></div>
-        </div>
-      </div>
-    </form>
-    <div class="header-logo-wrapper col-auto p-0">
-      <div class="logo-wrapper"><a href="/index"><img class="img-fluid for-light" src="{% static 'assets/images/logo/logo.png' %}" alt=""><img class="img-fluid for-dark" src="{% static 'assets/images/logo/logo_dark.png' %}" alt=""></a></div>
-      <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
-    </div>
-    <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
-      <div class="notification-slider">
-        <div class="d-flex h-100"> 
-        </div>
-        <div class="d-flex h-100">
-        </div>
-      </div>
-    </div>
-    <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
-      <ul class="nav-menus">
+<!-- ============================================================
+     NVX Topbar — minimal, modern, sticky
+     ============================================================ -->
+<header class="nvx-topbar" id="nvxTopbar">
+    <div class="nvx-topbar-inner">
 
-        {% comment %} <li class="fullscreen-body">                       <span>
-            <svg id="maximize-screen">
-              <use href="{% static 'assets/svg/icon-sprite.svg' %}#full-screen"></use>
-            </svg></span></li>
-        <li>                         <span class="header-search">
-            <svg>
-              <use href="{% static 'assets/svg/icon-sprite.svg' %}#search"></use>
-            </svg></span></li>
-        <li>
-          <div class="mode">
-            <svg>
-              <use href="{% static 'assets/svg/icon-sprite.svg' %}#moon"></use>
-            </svg>
-          </div>
-        </li> {% endcomment %}
-        <li class="profile-nav onhover-dropdown pe-0 py-0">
-          <div class="d-flex profile-media"><img class="b-r-10" src="{% static 'assets/images/dashboard/profile.png' %}" alt="">
-            <div class="flex-grow-1"><span>{{ request.user.get_display_name|default:request.user.phone_number|default:request.user.email|default:"User" }}</span>
-              <p class="mb-0">{% if request.user.user_type == 0 %}Admin{% elif request.user.user_type == 2 %}Staff{% else %}Customer{% endif %} <i class="middle fa-solid fa-angle-down"></i></p>
+        <!-- Left: hamburger (mobile) + page title -->
+        <div class="nvx-topbar-left">
+            <button type="button" class="nvx-mobile-menu-btn" id="nvxMobileMenuBtn" aria-label="Open menu">
+                <span class="iconify" data-icon="mdi:menu"></span>
+            </button>
+
+            <div class="nvx-page-title-wrap">
+                <span class="nvx-page-eyebrow">Admin Panel</span>
+                <h1 class="nvx-page-title">{{ breadcrumb.title|default:"Dashboard" }}</h1>
             </div>
-          </div>
-          <ul class="profile-dropdown onhover-show-div">
-            {% comment %} <li><a href="/signup_home"><i data-feather="user"></i><span>Account </span></a></li>
-            <li><a href="/mail_box"><i data-feather="mail"></i><span>Inbox</span></a></li>
-            <li><a href="/task"><i data-feather="file-text"></i><span>Taskboard</span></a></li>
-            <li><a href="/edit_profile"><i data-feather="settings"></i><span>Settings</span></a></li> {% endcomment %}
-            <li>
-                <form method="post" action="{% url 'admin_logout' %}" style="display:inline;">
-                    <a href="{% url 'admin_profile' %}">Profile</a>
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-link p-0 m-0 text-start" style="text-decoration:none;">
-                        <i data-feather="log-out"></i>
-                        <span>Log out</span>
-                    </button>
-                </form>
-            </li>
-          </ul>
-        </li>
-      </ul>
+        </div>
+
+        <!-- Right: profile dropdown -->
+        <div class="nvx-topbar-right">
+            <div class="nvx-profile-wrapper" id="nvxProfileWrapper">
+                <button type="button" class="nvx-profile-btn" id="nvxProfileBtn" aria-haspopup="true" aria-expanded="false">
+                    <div class="nvx-profile-avatar">
+                        <img src="{% static 'assets/images/dashboard/profile.png' %}" alt="Profile" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <span class="iconify" data-icon="mdi:account" style="display:none;"></span>
+                        <span class="nvx-status-dot"></span>
+                    </div>
+                    <div class="nvx-profile-meta">
+                        <span class="nvx-profile-name">
+                            {% if request.user.is_authenticated %}
+                                {{ request.user.get_display_name|default:request.user.phone_number|default:request.user.email|default:"User" }}
+                            {% else %}
+                                Guest
+                            {% endif %}
+                        </span>
+                        <span class="nvx-profile-role">
+                            {% if request.user.is_authenticated %}
+                                {% if request.user.user_type == 0 %}Admin{% elif request.user.user_type == 2 %}Staff{% else %}Customer{% endif %}
+                            {% else %}
+                                Visitor
+                            {% endif %}
+                        </span>
+                    </div>
+                    <span class="iconify nvx-profile-chevron" data-icon="mdi:chevron-down"></span>
+                </button>
+
+                <div class="nvx-profile-menu" id="nvxProfileMenu" role="menu">
+                    <div class="nvx-profile-menu-header">
+                        <span class="nvx-pm-name">
+                            {% if request.user.is_authenticated %}
+                                {{ request.user.get_display_name|default:request.user.phone_number|default:request.user.email|default:"User" }}
+                            {% else %}
+                                Guest
+                            {% endif %}
+                        </span>
+                        {% if request.user.is_authenticated and request.user.email %}
+                            <span class="nvx-pm-email">{{ request.user.email }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="nvx-profile-menu-divider"></div>
+
+                    <a href="{% url 'admin_profile' %}" class="nvx-profile-menu-item" role="menuitem">
+                        <span class="iconify" data-icon="mdi:account-circle-outline"></span>
+                        <span>My Profile</span>
+                    </a>
+
+                    <div class="nvx-profile-menu-divider"></div>
+
+                    <form method="post" action="{% url 'admin_logout' %}" class="nvx-logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="nvx-profile-menu-item nvx-logout-btn" role="menuitem">
+                            <span class="iconify" data-icon="mdi:logout"></span>
+                            <span>Log out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <script class="result-template" type="text/x-handlebars-template">
-      <div class="ProfileCard u-cf">                        
-      <div class="ProfileCard-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-airplay m-0"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"></path><polygon points="12 15 17 21 7 21 12 15"></polygon></svg></div>
-      <div class="ProfileCard-details">
-      <div class="ProfileCard-realName">{{name}}</div>
-      </div>
-      </div>
-    </script>
-    <script class="empty-template" type="text/x-handlebars-template"><div class="EmptyMessage">Your search turned up 0 results. This most likely means the backend is down, yikes!</div></script>
-  </div>
-</div>
-<!-- Page Header Ends-->
+</header>
+
+<!-- Mobile overlay backdrop (closes the sidebar when tapped) -->
+<div class="nvx-mobile-overlay" id="nvxMobileOverlay"></div>
+
+<script>
+    (function () {
+        document.addEventListener("DOMContentLoaded", function () {
+
+            /* -----------------------------
+             * Profile dropdown
+             * ----------------------------- */
+            var wrapper = document.getElementById("nvxProfileWrapper");
+            var btn = document.getElementById("nvxProfileBtn");
+
+            if (btn && wrapper) {
+                btn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    wrapper.classList.toggle("nvx-open");
+                    btn.setAttribute("aria-expanded", wrapper.classList.contains("nvx-open"));
+                });
+
+                // Click outside closes it
+                document.addEventListener("click", function (e) {
+                    if (!wrapper.contains(e.target)) {
+                        wrapper.classList.remove("nvx-open");
+                        btn.setAttribute("aria-expanded", "false");
+                    }
+                });
+
+                // ESC closes it
+                document.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape") {
+                        wrapper.classList.remove("nvx-open");
+                        btn.setAttribute("aria-expanded", "false");
+                    }
+                });
+            }
+
+            /* -----------------------------
+             * Mobile sidebar trigger + overlay
+             * ----------------------------- */
+            var hamburger = document.getElementById("nvxMobileMenuBtn");
+            var overlay = document.getElementById("nvxMobileOverlay");
+            var sidebar = document.getElementById("nvx-sidebar-container");
+
+            function openSidebar() {
+                if (sidebar) sidebar.classList.add("nvx-mobile-open");
+                if (overlay) overlay.classList.add("nvx-active");
+            }
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove("nvx-mobile-open");
+                if (overlay) overlay.classList.remove("nvx-active");
+            }
+
+            if (hamburger) hamburger.addEventListener("click", openSidebar);
+            if (overlay) overlay.addEventListener("click", closeSidebar);
+
+            // Close on viewport resize back to desktop
+            window.addEventListener("resize", function () {
+                if (window.innerWidth > 991.98) closeSidebar();
+            });
+        });
+    })();
+</script>

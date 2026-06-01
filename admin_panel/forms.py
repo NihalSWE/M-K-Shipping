@@ -246,8 +246,18 @@ class AdminUserPermissionsForm(forms.ModelForm):
     def save(self, commit=True):
         # We handle saving manually in the view for maximum control, 
         # or we can do it here. Let's do it in the view to keep this simple.
-        pass        
-            
+        pass
+    
+    
+  
+class TicketSettingForm(forms.ModelForm):
+    class Meta:
+        model = TicketSetting
+        fields = ['seat_hold_minutes', 'payment_timeout_minutes']
+        widgets = {
+            'seat_hold_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'payment_timeout_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        }
             
             
             

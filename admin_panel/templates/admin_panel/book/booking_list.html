@@ -268,6 +268,32 @@
         color: #ffffff !important;
     }
     /* ===== END NEW STYLES ===== */
+
+    /* Base styles for the message div */
+    .ocean-alert-msg {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 15px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        align-items: center;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    /* Modern Success Theme */
+    .ocean-alert-success {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        border: 1px solid #badbcc;
+    }
+
+    /* Modern Error Theme */
+    .ocean-alert-error {
+        background-color: #f8d7da;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+    }
 </style>
 {% endblock css %}
 
@@ -763,14 +789,19 @@
                     </div>
                 </div>
                 
-                <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn ocean-btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger ocean-btn-danger">Confirm Cancellation</button>
+                <div class="modal-footer border-top-0 pt-0 pb-4 px-4 flex-column align-items-stretch">
+                    <div id="cancelResponseMessage" class="ocean-alert-msg" style="display: none;"></div>
+                    
+                    <div class="d-flex justify-content-end w-100 gap-2">
+                        <button type="button" class="btn ocean-btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger ocean-btn-danger">Confirm Cancellation</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 
 <!-- Extend Time Modal -->
 <div class="modal fade" id="extendTimeModal" tabindex="-1" aria-hidden="true">
@@ -865,6 +896,66 @@
             paidInput.value = totalInput.value;
             paidInput.dispatchEvent(new Event('input')); // Trigger calculation
         });
+
+
+        // --- ADDED FETCH API LOGIC FOR SEAT CANCELLATION ---
+        const cancelForm = document.getElementById('seatCancelForm');
+        const cancelResponseMsg = document.getElementById('cancelResponseMessage');
+
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', function (e) {
+                e.preventDefault(); // Stop normal form submission
+
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                
+                // Show loading state
+                submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Processing...';
+                submitBtn.disabled = true;
+                
+                // Hide message box temporarily before sending new request
+                cancelResponseMsg.style.display = 'none';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    cancelResponseMsg.style.display = 'flex'; // Make the div visible
+
+                    if (data.success) {
+                        cancelResponseMsg.className = 'ocean-alert-msg ocean-alert-success';
+                        cancelResponseMsg.innerHTML = `<i class="fa fa-check-circle me-2 fs-5 align-middle"></i> <span>${data.message}</span>`;
+                        
+                        // Reload page after 1.5 seconds
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        cancelResponseMsg.className = 'ocean-alert-msg ocean-alert-error';
+                        cancelResponseMsg.innerHTML = `<i class="fa fa-exclamation-circle me-2 fs-5 align-middle"></i> <span>${data.message}</span>`;
+                        
+                        // Re-enable button
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    cancelResponseMsg.style.display = 'flex';
+                    cancelResponseMsg.className = 'ocean-alert-msg ocean-alert-error';
+                    cancelResponseMsg.innerHTML = `<i class="fa fa-wifi me-2 fs-5 align-middle"></i> <span>Network error. Please try again.</span>`;
+                    
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                });
+            });
+        }
     });
 </script>
 

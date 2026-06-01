@@ -1,0 +1,294 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/jquery.dataTables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/dataTables.bootstrap5.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<style>
+    .custom-large-btn:hover { background-color: #4a3dd9 !important; }
+    .edit-icon, .delete-icon { cursor: pointer; font-size: 20px; transition: 0.3s; }
+    .edit-icon:hover { color: #5c61f2; transform: scale(1.1); }
+    .delete-icon:hover { color: #dc3545; transform: scale(1.1); }
+
+    .error-success-div {
+        max-height: 0; opacity: 0; padding: 0 20px; border-radius: 10px;
+        overflow: hidden; transition: all 0.3s ease;
+    }
+    .error-success-div.show { max-height: 100px; opacity: 1; padding: 10px 20px; margin-top: 10px; }
+    .success-message { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    .error-message { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+    .form-switch .form-check-input { width: 3em; height: 1.5em; cursor: pointer; }
+    .modal-content { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .modal-header { border-bottom: 1px solid #eee; }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                    <h1>Payment Gateways</h1>
+                    {% if available_choices %}
+                        <button class="btn btn-pill btn-primary btn-lg custom-large-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+                            <i class="fa-solid fa-plus me-2"></i> Add New Gateway
+                        </button>
+                    {% else %}
+                        <button class="btn btn-pill btn-secondary btn-lg" disabled title="All gateway types are already configured">
+                            <i class="fa-solid fa-check me-2"></i> All Gateways Configured
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="display table table-striped border" id="basic-1">
+                            <thead>
+                                <tr>
+                                    <th>S/L</th>
+                                    <th>Name</th>
+                                    <th>Gateway Type</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for gateway in gateways %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ gateway.name }}</strong></td>
+                                    <td><span class="badge rounded-pill bg-primary">{{ gateway.get_gateway_type_display }}</span></td>
+                                    <td>
+                                        {% if gateway.is_active %}
+                                        <span class="text-success"><i class="fa-solid fa-circle-check"></i> Active</span>
+                                        {% else %}
+                                        <span class="text-muted"><i class="fa-solid fa-circle-xmark"></i> Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ gateway.created_at|date:"d M Y" }}</td>
+                                    <td>
+                                        <ul class="action d-flex list-unstyled gap-3 mb-0">
+                                            <li class="edit">
+                                                <i class="fa-regular fa-pen-to-square edit-icon"
+                                                   data-bs-toggle="modal" data-bs-target="#editModal"
+                                                   data-id="{{ gateway.id }}"
+                                                   data-name="{{ gateway.name }}"
+                                                   data-type="{{ gateway.gateway_type }}"
+                                                   data-active="{{ gateway.is_active|yesno:'true,false' }}"></i>
+                                            </li>
+                                            <li class="delete">
+                                                <i class="fa-solid fa-trash-can delete-icon"
+                                                   data-id="{{ gateway.id }}"
+                                                   data-bs-toggle="modal"
+                                                   data-bs-target="#deleteConfirmationModal"></i>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <h3 class="text-center mb-4">New Payment Gateway</h3>
+                <form id="addGatewayForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Gateway Name</label>
+                        <input type="text" class="form-control btn-pill" id="add_name" required placeholder="e.g. Primary SSLCommerz">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gateway Type</label>
+                        <select class="form-select btn-pill" id="add_gateway_type" required>
+                            <option value="" disabled selected>Select type</option>
+                            {% for value, label in available_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-around bg-light p-3 rounded-3 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="add_is_active" checked>
+                            <label class="form-check-label text-dark" for="add_is_active">Active</label>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div"></div>
+
+                    <div class="text-end mt-4">
+                        <button class="btn btn-primary px-4" type="submit">Save Gateway</button>
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <h3 class="text-center mb-4">Update Gateway</h3>
+                <form id="editGatewayForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit_id">
+                    <div class="mb-3">
+                        <label class="form-label">Gateway Name</label>
+                        <input type="text" class="form-control btn-pill" id="edit_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gateway Type</label>
+                        <select class="form-select btn-pill" id="edit_gateway_type" required>
+                            <option value="SSLCOMMERZ">SSLCommerz</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-around bg-light p-3 rounded-3 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active">
+                            <label class="form-check-label text-dark" for="edit_is_active">Active</label>
+                        </div>
+                    </div>
+
+                    <div class="error-success-div"></div>
+
+                    <div class="text-end mt-4">
+                        <button class="btn btn-primary px-4" type="submit">Update Changes</button>
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE Confirm Modal -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4">
+            <div class="text-danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation fa-4x"></i>
+            </div>
+            <h4>Are you sure?</h4>
+            <p class="text-muted">This will also remove all linked SSLCommerz stores.</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button id="confirm-delete" class="btn btn-danger px-4">Delete</button>
+                <button class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE Success Modal -->
+<div class="modal fade" id="deleteSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 text-center p-4">
+            <img src="{% static 'assets/images/tick_anim.gif' %}" alt="Success" style="width: 120px; margin: 0 auto;">
+            <h5 class="mt-3">Done!</h5>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#basic-1').DataTable();
+    });
+
+    function showMessage(modalSelector, type, message) {
+        const div = $(modalSelector + " .error-success-div");
+        div.removeClass("error-message success-message show")
+           .addClass(type + "-message")
+           .text(message);
+        requestAnimationFrame(() => div.addClass("show"));
+        if (type === "success") setTimeout(() => location.reload(), 1500);
+    }
+
+    // ADD
+    $("#addGatewayForm").on("submit", function (e) {
+        e.preventDefault();
+        const payload = {
+            action: "add",
+            name: $("#add_name").val(),
+            gateway_type: $("#add_gateway_type").val(),
+            is_active: $("#add_is_active").is(":checked")
+        };
+        fetch("{% url 'payment_gateways' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(d => showMessage("#addModal", d.status, d.message));
+    });
+
+    // EDIT — populate modal
+    $(document).on("click", ".edit-icon", function () {
+        const d = this.dataset;
+        $("#edit_id").val(d.id);
+        $("#edit_name").val(d.name);
+        $("#edit_gateway_type").val(d.type);
+        $("#edit_is_active").prop("checked", d.active === "true");
+    });
+
+    // EDIT — submit
+    $("#editGatewayForm").on("submit", function (e) {
+        e.preventDefault();
+        const payload = {
+            action: "edit",
+            id: $("#edit_id").val(),
+            name: $("#edit_name").val(),
+            gateway_type: $("#edit_gateway_type").val(),
+            is_active: $("#edit_is_active").is(":checked")
+        };
+        fetch("{% url 'payment_gateways' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(d => showMessage("#editModal", d.status, d.message));
+    });
+
+    // DELETE
+    let pendingDeleteId = null;
+    $(document).on("click", ".delete-icon", function () {
+        pendingDeleteId = this.dataset.id;
+    });
+
+    $("#confirm-delete").on("click", function () {
+        fetch("{% url 'payment_gateways' %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ action: "delete", id: pendingDeleteId })
+        })
+        .then(r => r.json())
+        .then(() => {
+            bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
+            const successModal = new bootstrap.Modal($("#deleteSuccessModal")[0]);
+            successModal.show();
+            setTimeout(() => location.reload(), 1500);
+        });
+    });
+</script>
+{% endblock %}

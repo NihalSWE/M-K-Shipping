@@ -187,7 +187,9 @@ def verify_login_otp_view(request):
 
 def signin(request):
     if request.user.is_authenticated:
-        if request.user.user_type in [0, 2, 3, 4]:
+        if request.user.user_type == 3:
+            return redirect('tcktbook')
+        elif request.user.user_type in [0, 2, 4]:
             return redirect('admin_dashboard')
         return redirect('home')
 
@@ -218,7 +220,9 @@ def signin(request):
                     if next_url:
                         return redirect(next_url)
 
-                    if user.user_type in [0, 2, 3, 4]:
+                    if user.user_type == 3:
+                        return redirect('tcktbook')
+                    elif user.user_type in [0, 2, 4]:
                         return redirect('admin_dashboard')
                     return redirect('home')
                 else:
@@ -299,7 +303,9 @@ def signin(request):
             if next_url:
                 return redirect(next_url)
 
-            if user.user_type in [0, 2, 3, 4]:
+            if user.user_type == 3:
+                return redirect('tcktbook')
+            elif user.user_type in [0, 2, 4]:
                 return redirect('admin_dashboard')
             return redirect('home')
 
@@ -310,6 +316,8 @@ def signin(request):
         form = CustomSignInForm()
 
     return render(request, 'accounts/auth/signin.html', {'form': form})
+
+
 
 def signup(request):
     if request.user.is_authenticated:

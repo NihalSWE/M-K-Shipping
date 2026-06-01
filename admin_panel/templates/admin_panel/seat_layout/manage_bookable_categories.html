@@ -79,63 +79,72 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive custom-scrollbar">
-                    <table class="display table-striped border" id="basic-1">
-                        <thead>
-                        <tr>
-                            <th># S/L</th>
-                            <th>Preview</th>
-                            <th>Name</th>
-                            <th>Capacity</th>
-                            <th>Description</th>
-                            <th>Icon</th>
-                            <th>Action</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                            {% for cat in categories %}
-                                <tr data-id="{{ cat.id }}">
-                                    <td>{{ forloop.counter }}</td>
-                                    <td class="text-center">
-                                        <span class="color-badge" style="background-color: {{ cat.color_code }};" title="{{ cat.color_code }}"></span>
-                                    </td>
-                                    
-                                    <td>{{ cat.name }}</td>
-                                    <td>
-                                        <span class="badge badge-light-primary text-dark" style="font-size: 14px;">
-                                            <i class="fa-solid fa-user-group me-1"></i> {{ cat.capacity }}
-                                        </span>
-                                    </td>
-                                    <td>{{ cat.description|truncatechars:40 }}</td>
-                                    
-                                    <td>
-                                        {% if cat.icon %}
-                                            <iconify-icon icon="{{ cat.icon.iconify_code }}" style="font-size: 24px; vertical-align: middle;"></iconify-icon>
-                                        {% else %} - {% endif %}
-                                    </td>
+                        <table class="display table-striped border" id="basic-1">
+                            <thead>
+                            <tr>
+                                <th># S/L</th>
+                                <th>Preview</th>
+                                <th>Name</th>
+                                <th>Capacity</th>
+                                <th>Description</th>
+                                <th>Icon</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in categories %}
+                                    <tr data-id="{{ cat.id }}">
+                                        <td>{{ forloop.counter }}</td>
+                                        <td class="text-center">
+                                            <span class="color-badge" style="background-color: {{ cat.color_code }};" title="{{ cat.color_code }}"></span>
+                                        </td>
+                                        
+                                        <td>{{ cat.name }}</td>
+                                        <td>
+                                            <span class="badge badge-light-primary text-dark" style="font-size: 14px;">
+                                                <i class="fa-solid fa-user-group me-1"></i> {{ cat.capacity }}
+                                            </span>
+                                        </td>
+                                        <td>{{ cat.description|truncatechars:40 }}</td>
 
-                                    <td> 
-                                        <div class="d-flex">
-                                            <i class="fa-regular fa-pen-to-square edit-icon"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#editModal"
-                                               data-id="{{ cat.id }}"
-                                               data-name="{{ cat.name }}"
-                                               data-capacity="{{ cat.capacity }}"
-                                               data-desc="{{ cat.description }}"
-                                               data-color="{{ cat.color_code }}"
-                                               data-icon-id="{{ cat.icon.id }}"
-                                            ></i>
-                                            <i class="fa-solid fa-trash-can delete-icon" 
-                                               data-id="{{ cat.id }}" 
-                                               data-bs-toggle="modal" 
-                                               data-bs-target="#deleteConfirmationModal"
-                                            ></i>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                        <td>
+                                            {% if cat.icon %}
+                                                <iconify-icon icon="{{ cat.icon.iconify_code }}" style="font-size: 24px; vertical-align: middle;"></iconify-icon>
+                                            {% else %} - {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {% if cat.is_vehicle %}
+                                                <span class="badge badge-light-danger text-danger">Vehicle</span>
+                                            {% else %}
+                                                <span class="badge badge-light-success text-success">Passenger</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td> 
+                                            <div class="d-flex">
+                                                <i class="fa-regular fa-pen-to-square edit-icon"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editModal"
+                                                data-id="{{ cat.id }}"
+                                                data-name="{{ cat.name }}"
+                                                data-capacity="{{ cat.capacity }}"
+                                                data-desc="{{ cat.description }}"
+                                                data-color="{{ cat.color_code }}"
+                                                data-icon-id="{{ cat.icon.id }}"
+                                                data-is-vehicle="{{ cat.is_vehicle|yesno:'true,false' }}" ></i>
+                                                <i class="fa-solid fa-trash-can delete-icon" 
+                                                data-id="{{ cat.id }}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteConfirmationModal"
+                                                ></i>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -152,12 +161,16 @@
                 <form class="form theme-form">
                     {% csrf_token %}
                     
-                    <div class="d-flex justify-content-center mb-4">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="add-bookable" checked disabled>
-                            <label class="form-check-label switch-label" for="add-bookable">Item is Bookable</label>
-                        </div>
+                    <div class="d-flex justify-content-center gap-4 mb-4"> <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="add-bookable" checked disabled>
+                        <label class="form-check-label switch-label" for="add-bookable">Item is Bookable</label>
                     </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="add-is-vehicle">
+                        <label class="form-check-label switch-label" for="add-is-vehicle">Is Vehicle Space</label>
+                    </div>
+                </div>
 
                     <div class="row">
                         <div class="col-md-8">
@@ -220,10 +233,14 @@
                 <form class="form theme-form">
                     {% csrf_token %}
                     
-                     <div class="d-flex justify-content-center mb-4">
-                        <div class="form-check form-switch">
+                    <div class="d-flex justify-content-center gap-4 mb-4"> <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" checked disabled>
                             <label class="form-check-label switch-label">Item is Bookable</label>
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit-is-vehicle">
+                            <label class="form-check-label switch-label" for="edit-is-vehicle">Is Vehicle Space</label>
                         </div>
                     </div>
 
@@ -358,7 +375,8 @@
             capacity: $("#add-capacity").val(),
             description: $("#add-desc").val(),
             color_code: $("#add-color").val(),
-            icon_id: $("#add-icon").val() // CHANGED: matches view
+            icon_id: $("#add-icon").val(),
+            is_vehicle: $("#add-is-vehicle").is(":checked") // <--- ADD THIS LINE
         };
 
         fetch("{% url 'manage_bookable_categories' %}", {
@@ -379,7 +397,10 @@
         $("#edit-capacity").val(ds.capacity);
         $("#edit-desc").val(ds.desc);
         $("#edit-color").val(ds.color);
-        
+
+        // Check or uncheck the vehicle switch based on dataset value
+        $("#edit-is-vehicle").prop('checked', ds.isVehicle === 'true'); // <--- ADD THIS LINE
+
         // Sets the select value and tells Select2 to refresh the UI
         if (ds.iconId) {
             $("#edit-icon").val(ds.iconId).trigger('change');
@@ -397,7 +418,8 @@
             capacity: $("#edit-capacity").val(),
             description: $("#edit-desc").val(),
             color_code: $("#edit-color").val(),
-            icon_id: $("#edit-icon").val() 
+            icon_id: $("#edit-icon").val(),
+            is_vehicle: $("#edit-is-vehicle").is(":checked") // <--- ADD THIS LINE
         };
 
         fetch("{% url 'manage_bookable_categories' %}", {

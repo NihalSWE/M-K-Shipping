@@ -1,353 +1,329 @@
 {% load static %}
-{% load sass_tags %}
 
-<div class="sidebar-wrapper" data-sidebar-layout="stroke-svg">
-    <div>
-        <div class="logo-wrapper"><a href="{% url 'admin_dashboard' %}"><img class="img-fluid for-light"
-                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt="" style="width: 40%;"><img class="img-fluid for-dark"
-                    src="{% static 'assets/images/logo/logo5.jpg' %}" alt="" style="width: 40%;"></a>
-            <div class="back-btn"><i class="fa-solid fa-angle-left"></i></div>
-            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
-        </div>
-        <div class="logo-icon-wrapper"><a href="/index"><img class="img-fluid"
-                    src="{% static 'assets/images/logo/logo-icon.png' %}" alt=""></a></div>
-        <nav class="sidebar-main">
-            <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
-            <div id="sidebar-menu">
-                <ul class="sidebar-links" id="simple-bar">
-                    <li class="back-btn"><a href="/index"><img class="img-fluid"
-                                src="{% static 'assets/images/logo/logo-icon.png' %}" alt=""></a>
-                        <div class="mobile-back text-end"><span>Back</span><i class="fa-solid fa-angle-right ps-2"
-                                aria-hidden="true"></i></div>
-                    </li>
-                    <li class="pin-title sidebar-main-title">
-                        <div>
-                            <h6>Pinned</h6>
-                        </div>
-                    </li>
-                    
-                    <!-- SOFTWARE SECTION -->
-                    <li class="sidebar-main-title">
-                        <div>
-                            <h6 >SOFTWARE</h6>
-                        </div>
-                    </li>
-                    
-                    <!-- Dashboard -->
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="{% url 'admin_dashboard' %}">
-                            <span class="iconify" data-icon="mdi:view-dashboard-outline"></span>
-                            <span class="lan-3">Dashboard</span>
-                        </a>
-                    </li>
-                    <!-- Dashboard -->
+<aside class="nvx-sidebar" id="nvx-sidebar-container">
 
+    <!-- Brand / Header -->
+    <div class="nvx-sidebar-header">
+        <a href="{% url 'admin_dashboard' %}" class="nvx-brand-logo">
+            <img class="nvx-logo-img nvx-logo-light" src="{% static 'assets/images/logo/logo5.jpg' %}" alt="Logo">
+            <img class="nvx-logo-img nvx-logo-dark" src="{% static 'assets/images/logo/logo5.jpg' %}" alt="Logo">
+        </a>
 
-                    <!-- Ships -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title link-nav" href="{% url 'ships' %}">
-                                <span class="iconify" data-icon="mdi:ferry"></span>
-                                <span>Ships</span>
-                            </a>
-                        </li>
-                    {% endif %}
-                    <!-- Ships -->
-                    
-                    <!-- Seat Layout -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:seat-outline"></span>
-                                <span>Seat Layout</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                <li><a href="{% url 'seat_icon_management' %}">Icons</a></li>
-                                <li><a href="{% url 'manage_structures' %}">Structures & Labels</a></li>
-                                <li><a href="{% url 'manage_bookable_categories' %}">Cabin/Seat Categories</a></li>
-                                <li><a href="{% url 'manage_seat_features' %}">Features</a></li>
-                                <li><a href="{% url 'ships' %}">Add/Edit Layout</a></li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                    <!-- Seat Layout -->
+        <!-- Reserved for future desktop collapse feature -->
+        <button type="button" class="nvx-toggle-desktop" id="nvx-toggle-desktop-btn" aria-label="Toggle sidebar">
+            <span class="iconify" data-icon="mdi:menu-open"></span>
+        </button>
 
-                    <!-- Route Management -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_route or perms.admin_panel.view_location %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:map-marker-path"></span>
-                                <span>Route Management</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_location %}
-                                <li><a href="{% url 'locations' %}">Locations</a></li>
-                                {% endif %}
-                                
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_counter %}
-                                <li><a href="{% url 'counters' %}">Counters</a></li>
-                                {% endif %}
-                                
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_route %}
-                                <li><a href="{% url 'routes' %}">Route List</a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-                    <!-- Route Management -->
+        <!-- Close button (mobile only) -->
+        <button type="button" class="nvx-close-mobile" id="nvx-close-mobile-btn" aria-label="Close menu">
+            <span class="iconify" data-icon="mdi:close"></span>
+        </button>
+    </div>
 
-                    <!-- Trips & Schedules -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_trip %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:calendar-clock-outline"></span>
-                                <span>Trips & Schedules</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                <li><a href="{% url 'trip_list' %}">Trips</a></li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                    <!-- Trips & Schedules -->
+    <!-- Scrollable nav area -->
+    <div class="nvx-sidebar-body" id="nvx-sidebar-scroll">
+        <nav class="nvx-nav-menu">
+            <ul class="nvx-nav-list">
 
-                    <!-- Users -->
-                        {% if request.user.user_type == 0 or perms.accounts.view_user %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:account-group-outline"></span>
-                                <span>Users</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                <li><a href="{% url 'admin_user_list' %}">Users</a></li>
-                            </ul>
-                        </li>
+                <li class="nvx-nav-title"><span>SOFTWARE</span></li>
+
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'admin_dashboard' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:view-dashboard-outline"></span>
+                        <span class="nvx-nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'payment_gateways' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:credit-card-outline"></span>
+                        <span class="nvx-nav-text">Payment Gateways</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'ssl_commerz_stores' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:storefront-outline"></span>
+                        <span class="nvx-nav-text">SSL Stores</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'ships' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:ferry"></span>
+                        <span class="nvx-nav-text">Ships</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_ship %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:seat-outline"></span>
+                        <span class="nvx-nav-text">Seat Layout</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'seat_icon_management' %}">Icons</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'manage_structures' %}">Structures & Labels</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'manage_bookable_categories' %}">Seat Categories</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'manage_seat_features' %}">Features</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'ships' %}?ref=layout">Add/Edit Layout</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_route or perms.admin_panel.view_location %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:map-marker-path"></span>
+                        <span class="nvx-nav-text">Route Management</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_location %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'locations' %}">Locations</a></li>
                         {% endif %}
-                    <!-- Users -->
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_counter %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'counters' %}">Counters</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_route %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'routes' %}">Route List</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Tickets Booking -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.add_booking or perms.admin_panel.view_booking or perms.admin_panel.change_booking or perms.admin_panel.delete_booking or perms.admin_panel.can_view_trip_sheet %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:ticket-confirmation-outline"></span>
-                                <span>Tickets Booking</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
-                                    <li><a href="{% url 'tcktbook' %}">Booking</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking or perms.admin_panel.change_booking %}
-                                    <li><a href="{% url 'booking_pending_list' %}">Booked Ticket</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.change_booking %}
-                                    <li><a href="{% url 'booking_issue_list' %}">Issued Ticket</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
-                                    <li><a href="{% url 'booking_cancel_list' %}">Cancelled Ticket</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 or perms.admin_panel.can_view_trip_sheet %}
-                                    <li><a href="{% url 'trip_report_list' %}">Trip Sheet</a></li>
-                                {% endif %}
-                                {% if request.user.user_type == 0 %}
-                                    <li><a href="{% url 'passenger_list' %}">Passenger List</a></li>
-                                    <li><a href="{% url 'booking_expired_list' %}">Expired Ticket</a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-                    <!-- Tickets Booking -->
-                    
-                    <!-- POS (TB) -->
-                    {% comment %} {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
-                        <li class="sidebar-list">
-                            <a class="sidebar-link sidebar-title" href="#">
-                                <span class="iconify" data-icon="mdi:cash-register"></span>
-                                <span>POS (TB)</span>
-                            </a>
-                            <ul class="sidebar-submenu">
-                                <li><a href="{% url 'pos_trip_select' %}">Booking</a></li>
-                            </ul>
-                        </li>
-                    {% endif %} {% endcomment %}
-                    <!-- POS (TB) -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_trip %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:calendar-clock-outline"></span>
+                        <span class="nvx-nav-text">Trips & Schedules</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'trip_list' %}">Trips</a></li>
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- WEBSITE SECTION -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory or perms.admin_panel.view_cabinshowcase or perms.admin_panel.view_featuredarticle or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
-                    <li class="sidebar-main-title">
-                        <div>
-                            <h6 >WEBSITE</h6>
-                        </div>
-                    </li>
-                    {% endif %}
+                {% if request.user.user_type == 0 or perms.accounts.view_user %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:account-group-outline"></span>
+                        <span class="nvx-nav-text">Users</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'admin_user_list' %}">Users</a></li>
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Home Menu -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:home-outline"></span>
-                            <span>Home</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {# Show Home only when at least one child page is permitted. #}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity %}
-                            <li><a href="{% url 'site_identity' %}">Add Logo</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_homebanner %}
-                            <li><a href="{% url 'banner' %}">Add Banner</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_companyoverview %}
-                            <li><a href="{% url 'overview' %}">Overview</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Home Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.add_booking or perms.admin_panel.view_booking or perms.admin_panel.change_booking or perms.admin_panel.delete_booking or perms.admin_panel.can_view_trip_sheet %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:ticket-confirmation-outline"></span>
+                        <span class="nvx-nav-text">Tickets Booking</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.add_booking %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'tcktbook' %}">Booking</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_booking or perms.admin_panel.change_booking %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'booking_pending_list' %}">Booked Ticket</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.change_booking %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'booking_issue_list' %}">Issued Ticket</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_booking %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'booking_cancel_list' %}">Cancelled Ticket</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.can_view_trip_sheet %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'trip_report_list' %}">Trip Sheet</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'passenger_list' %}">Passenger List</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'booking_expired_list' %}">Expired Ticket</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- About Menu -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:information-outline"></span>
-                            <span>About</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_teammember %}
-                            <li><a href="{% url 'manage_team' %}">Leader Profile</a></li>
-                            {% endif %}
-                            
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_aboutstory %}
-                            <li><a href="{% url 'about_banner' %}">Add Banner</a></li>
-                            <li><a href="{% url 'about_story' %}">Our Story</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- About Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_paymenttransaction %}
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'payment_transactions' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:receipt-text-outline"></span>
+                        <span class="nvx-nav-text">SSL Transactions</span>
+                    </a>
+                </li>
+                {% endif %}
 
-                    <!-- Vessels Display -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:information-outline"></span>
-                            <span>Vessels Display</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
-                                <li><a href="{% url 'vessel_showcases' %}">Vessels</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Vessels Display -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_ticketsetting %}
+                <li class="nvx-nav-item">
+                    <a class="nvx-nav-link" href="{% url 'manage_ticket_settings' %}">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:timer-outline"></span>
+                        <span class="nvx-nav-text">Ticket Timer</span>
+                    </a>
+                </li>
+                {% endif %}
 
-                    <!-- Cabin Showcase -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:information-outline"></span>
-                            <span>Cabin Display</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
-                                <li><a href="{% url 'cabin_showcases' %}">Cabins/Seats</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Cabin Showcase -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory or perms.admin_panel.view_cabinshowcase or perms.admin_panel.view_featuredarticle or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
+                <li class="nvx-nav-title"><span>WEBSITE</span></li>
+                {% endif %}
 
-                    <!-- Cabin Showcase -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_featuredarticle %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:information-outline"></span>
-                            <span>Featured Articles</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_featuredarticle %}
-                                <li><a href="{% url 'featured_articles' %}">Featured Articles</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Cabin Showcase -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity or perms.admin_panel.view_homebanner or perms.admin_panel.view_companyoverview %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:home-outline"></span>
+                        <span class="nvx-nav-text">Home</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_siteidentity %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'site_identity' %}">Add Logo</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_homebanner %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'banner' %}">Add Banner</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_companyoverview %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'overview' %}">Overview</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Services Menu -->
-                    {# Hidden until at least one permission-based child item is added for this section. #}
-                    <!-- Services Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_teammember or perms.admin_panel.view_aboutstory %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:information-outline"></span>
+                        <span class="nvx-nav-text">About</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_teammember %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'manage_team' %}">Leader Profile</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_aboutstory %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'about_banner' %}">Add Banner</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'about_story' %}">Our Story</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Footer Menu -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:page-layout-footer"></span>
-                            <span>Footer</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent %}
-                            <li><a href="{% url 'footer_management' %}">Footer Management</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_footersocialsettings %}
-                            <li><a href="{% url 'footer_social_links' %}">Social Links</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Footer Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:ship-wheel"></span>
+                        <span class="nvx-nav-text">Vessels Display</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'vessel_showcases' %}">Vessels</a></li>
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Pages Menu -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:file-multiple-outline"></span>
-                            <span>Pages</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage %}
-                            <li><a href="{% url 'gallery_main' %}">Main Gallery</a></li>
-                            <li><a href="{% url 'gallery_seasonal' %}">Gallery with Title</a></li>
-                            {% endif %}
-                            
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
-                            <li><a href="{% url 'admin_blog_banner' %}">Add Banner</a></li>
-                            <li><a href="{% url 'admin_blog_list' %}">Blog List</a></li>
-                            <li><a href="{% url 'admin_comment_list' %}">Blog Comments</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Pages Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_cabinshowcase %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:bed-outline"></span>
+                        <span class="nvx-nav-text">Cabin Display</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'cabin_showcases' %}">Cabins/Seats</a></li>
+                    </ul>
+                </li>
+                {% endif %}
 
-                    <!-- Contact Menu -->
-                    {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
-                    <li class="sidebar-list">
-                        <a class="sidebar-link sidebar-title" href="#">
-                            <span class="iconify" data-icon="mdi:email-outline"></span>
-                            <span>Contact</span>
-                        </a>
-                        <ul class="sidebar-submenu">
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner %}
-                            <li><a href="{% url 'contact_banner' %}">Add Banner</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactmessage %}
-                            <li><a href="{% url 'contact_messages' %}">Messages</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactinfocard %}
-                            <li><a href="{% url 'contact_info_cards' %}">Info. Cards</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactmap %}
-                            <li><a href="{% url 'contact_map' %}">Map</a></li>
-                            {% endif %}
-                            {% if request.user.user_type == 0 or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
-                            <li><a href="{% url 'contact_faq' %}">The Faqs</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                    <!-- Contact Menu -->
+                {% if request.user.user_type == 0 or perms.admin_panel.view_featuredarticle %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:newspaper-variant-outline"></span>
+                        <span class="nvx-nav-text">Featured Articles</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'featured_articles' %}">Featured Articles</a></li>
+                    </ul>
+                </li>
+                {% endif %}
 
-                </ul>
-            </div>
-            <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
+                {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent or perms.admin_panel.view_footersocialsettings %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:page-layout-footer"></span>
+                        <span class="nvx-nav-text">Footer</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_footercolumn or perms.admin_panel.view_footercontent %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'footer_management' %}">Footer Management</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_footersocialsettings %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'footer_social_links' %}">Social Links</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:file-multiple-outline"></span>
+                        <span class="nvx-nav-text">Pages</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_gallerysection or perms.admin_panel.view_galleryimage %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'gallery_main' %}">Main Gallery</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'gallery_seasonal' %}">Gallery with Title</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_blogbanner or perms.admin_panel.view_blogpost or perms.admin_panel.view_blogcomment %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'admin_blog_banner' %}">Add Banner</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'admin_blog_list' %}">Blog List</a></li>
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'admin_comment_list' %}">Blog Comments</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner or perms.admin_panel.view_contactmessage or perms.admin_panel.view_contactinfocard or perms.admin_panel.view_contactmap or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
+                <li class="nvx-nav-item nvx-has-dropdown">
+                    <a class="nvx-nav-link nvx-dropdown-toggle" href="javascript:void(0);">
+                        <span class="iconify nvx-nav-icon" data-icon="mdi:email-outline"></span>
+                        <span class="nvx-nav-text">Contact</span>
+                        <span class="iconify nvx-dropdown-chevron" data-icon="mdi:chevron-right"></span>
+                    </a>
+                    <ul class="nvx-dropdown-menu">
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_contactbanner %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'contact_banner' %}">Add Banner</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_contactmessage %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'contact_messages' %}">Messages</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_contactinfocard %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'contact_info_cards' %}">Info. Cards</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_contactmap %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'contact_map' %}">Map</a></li>
+                        {% endif %}
+                        {% if request.user.user_type == 0 or perms.admin_panel.view_contactfaqsection or perms.admin_panel.view_contactfaqitem %}
+                        <li class="nvx-dropdown-item"><a class="nvx-dropdown-link" href="{% url 'contact_faq' %}">The Faqs</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+            </ul>
         </nav>
     </div>
-</div>
+</aside>

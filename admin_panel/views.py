@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth import update_session_auth_hash
 from django.views.decorators.clickjacking import xframe_options_sameorigin
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+import traceback
 import sys
 import re
 from django.http import JsonResponse
@@ -39,7 +41,7 @@ from django.db import IntegrityError
 from django.contrib.auth import get_user_model, logout
 from .services import sync_route_prices
 from .services import generate_smart_trips
-from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm, AdminUserPermissionsForm
+from .forms import BlogPostForm, BlogBannerForm, AdminUserAddForm, TripSearchForm, AdminUserPermissionsForm, TicketSettingForm
 from accounts.forms import AdminUserEditForm
 from django.urls import reverse
 from .utils import send_booking_sms, get_logged_in_counter
@@ -271,6 +273,28 @@ def dashboard(request):
         expiry_at__isnull=False,
         expiry_at__lt=now
     ).count()
+    
+    # -----------------------------
+    # 10) Visitor Analytics
+    # -----------------------------
+    yesterday = today - timezone.timedelta(days=1)
+    seven_days_ago = today - timezone.timedelta(days=7)
+
+    # Calculate Unique Visitors
+    visitors_today = UniqueVisitor.objects.filter(date=today).count()
+    visitors_yesterday = UniqueVisitor.objects.filter(date=yesterday).count()
+    
+    # Distinct IPs for the rolling week and current month
+    visitors_this_week = UniqueVisitor.objects.filter(date__gte=seven_days_ago).values('ip_address').distinct().count()
+    visitors_this_month = UniqueVisitor.objects.filter(date__gte=first_day_of_month).values('ip_address').distinct().count()
+
+    # Calculate Live Visitors via Redis
+    live_user_keys = cache.keys("live_visitor_*")
+    live_visitors = len(live_user_keys) if live_user_keys else 0
+
+    # Data for the Visitor Comparison Chart
+    visitor_chart_labels = ['Today', 'Yesterday', 'Last 7 Days', 'This Month']
+    visitor_chart_series = [visitors_today, visitors_yesterday, visitors_this_week, visitors_this_month]
 
     context = {
         # KPI
@@ -297,8 +321,21 @@ def dashboard(request):
         'booking_status_series_json': json.dumps(booking_status_series),
         'sales_channel_labels_json': json.dumps(sales_channel_labels),
         'sales_channel_series_json': json.dumps(sales_channel_series),
+        
+        # ---> ADD THIS TO YOUR EXISTING context DICTIONARY <---
+        # Visitor Analytics
+        'live_visitors': live_visitors,
+        'visitors_today': visitors_today,
+        'visitors_yesterday': visitors_yesterday,
+        'visitors_this_week': visitors_this_week,
+        'visitors_this_month': visitors_this_month,
+        
+        # Visitor Chart (JSON)
+        'visitor_chart_labels_json': json.dumps(visitor_chart_labels),
+        'visitor_chart_series_json': json.dumps(visitor_chart_series),
     }
     return render(request, 'admin_panel/dashboard/dashboard.html', context)
+
 
 
 @require_POST
@@ -316,60 +353,66 @@ def ships(request):
         try:
             data = json.loads(request.body)
             action = data.get('action')
-            
+
+            store_id = data.get('store_id')
+            store = SSLCommerzStore.objects.filter(id=store_id).first() if store_id else None
+
             if action == 'add':
-                name = data.get('name')
-                code = data.get('code')
-                total_capacity = data.get('total_capacity', 0)
-                
-                # Create ship
-                ship = Ship.objects.create(name=name, code=code, total_capacity=total_capacity)
-                
-                # Handle base64 image if provided
-                if 'image' in data and data['image']:
-                    # Decode base64 image
-                    format, imgstr = data['image'].split(';base64,') 
-                    ext = format.split('/')[-1] 
+                ship = Ship.objects.create(
+                    name=data.get('name'),
+                    code=data.get('code'),
+                    total_capacity=data.get('total_capacity', 0),
+                    store=store
+                )
+                if data.get('image'):
+                    fmt, imgstr = data['image'].split(';base64,')
+                    ext = fmt.split('/')[-1]
                     image_data = ContentFile(
-                        base64.b64decode(imgstr), 
-                        name=f"{slugify(name)}.{ext}"
-                    )
-                    ship.image.save(f"{slugify(name)}.{ext}", image_data, save=True)
-                
-                return JsonResponse({'status': 'success', 'message': 'Ship added successfully!'})
-            
-            elif action == 'edit':
-                ship_id = data.get('id')
-                ship = get_object_or_404(Ship, id=ship_id)
-                ship.name = data.get('name')
-                ship.code = data.get('code')
-                ship.total_capacity = data.get('total_capacity', 0)
-                
-                # Handle base64 image if provided
-                if 'image' in data and data['image']:
-                    # Decode base64 image
-                    format, imgstr = data['image'].split(';base64,') 
-                    ext = format.split('/')[-1] 
-                    image_data = ContentFile(
-                        base64.b64decode(imgstr), 
+                        base64.b64decode(imgstr),
                         name=f"{slugify(ship.name)}.{ext}"
                     )
                     ship.image.save(f"{slugify(ship.name)}.{ext}", image_data, save=True)
-                
+
+                return JsonResponse({'status': 'success', 'message': 'Ship added successfully!'})
+
+            elif action == 'edit':
+                ship = get_object_or_404(Ship, id=data.get('id'))
+                ship.name = data.get('name')
+                ship.code = data.get('code')
+                ship.total_capacity = data.get('total_capacity', 0)
+
+                if 'store_id' in data:
+                    ship.store = store  # None if blank, which is allowed
+
+                if data.get('image'):
+                    fmt, imgstr = data['image'].split(';base64,')
+                    ext = fmt.split('/')[-1]
+                    image_data = ContentFile(
+                        base64.b64decode(imgstr),
+                        name=f"{slugify(ship.name)}.{ext}"
+                    )
+                    ship.image.save(f"{slugify(ship.name)}.{ext}", image_data, save=True)
+
                 ship.save()
                 return JsonResponse({'status': 'success', 'message': 'Ship updated successfully!'})
-            
+
             elif action == 'delete':
-                ship_id = data.get('id')
-                ship = get_object_or_404(Ship, id=ship_id)
+                ship = get_object_or_404(Ship, id=data.get('id'))
                 ship.delete()
                 return JsonResponse({'status': 'success', 'message': 'Ship deleted successfully!'})
-                
+
         except Exception as e:
+            traceback.print_exc()
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
-    ships = Ship.objects.all().order_by('-id')
-    return render(request, 'admin_panel/ships/ship.html', {'ships': ships})
+    ships = Ship.objects.select_related('store').order_by('-id')
+    stores = SSLCommerzStore.objects.filter(is_active=True)
+    return render(request, 'admin_panel/ships/ship.html', {
+        'ships': ships,
+        'stores': stores,
+    })
+
+
 
 @login_required
 @csrf_exempt
@@ -503,7 +546,8 @@ def manage_bookable_categories(request):
                     color_code=data.get('color_code', '#000000'),
                     icon=icon_obj,
                     capacity=int(data.get('capacity', 1)),
-                    is_bookable=True
+                    is_bookable=True,
+                    is_vehicle=data.get('is_vehicle', False)  # <--- ADD THIS LINE
                 )
                 return JsonResponse({'status': 'success', 'message': 'Category added successfully!'})
 
@@ -514,7 +558,9 @@ def manage_bookable_categories(request):
                 category.color_code = data.get('color_code', '#000000')
                 category.icon = icon_obj
                 category.capacity = int(data.get('capacity', 1))
+                category.is_vehicle = data.get('is_vehicle', False)  # <--- ADD THIS LINE
                 category.save()
+                
                 return JsonResponse({'status': 'success', 'message': 'Category updated successfully!'})
 
             elif action == 'delete':
@@ -534,6 +580,8 @@ def manage_bookable_categories(request):
         'all_icons': all_icons,
     }
     return render(request, 'admin_panel/seat_layout/manage_bookable_categories.html', context)
+
+
 
 @login_required
 def manage_seat_features(request):
@@ -568,6 +616,8 @@ def manage_seat_features(request):
         "features": SeatFeature.objects.all().order_by("-id"),
     }
     return render(request, "admin_panel/seat_layout/manage_seat_features.html", context)
+
+
 
 @login_required
 def seat_icon_management(request):
@@ -708,6 +758,8 @@ def update_deck_rows(request, deck_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error'}, status=400)
+
+
 
 @login_required
 @csrf_exempt
@@ -1251,13 +1303,18 @@ def route_details(request, route_id):
         seat_category__is_bookable=True
     ).exists()
 
-    # If no prices exist but we have stops, run sync once to generate them
-    if not prices_exist and stops.count() >= 2:
+    # Always sync so any newly added seat categories get their pricing rows generated
+    if stops.count() >= 2:
         sync_route_prices(route)
-        has_unset_prices = True 
-        # Refetch to show in modal immediately
+        # Refetch after sync to include newly created rows
         segment_prices = RouteSegmentPricing.objects.filter(route=route)\
-            .select_related('from_stop__location', 'to_stop__location', 'seat_category')
+            .select_related('from_stop__location', 'to_stop__location', 'seat_category')\
+            .order_by('from_stop__stop_order', 'to_stop__stop_order', 'seat_category__name')
+
+        has_unset_prices = segment_prices.filter(
+            price__lte=0,
+            seat_category__is_bookable=True
+        ).exists()
 
     # 2. Organize data for the Modal
     price_matrix = {}
@@ -2925,8 +2982,14 @@ def admin_book_confirm(request):
     from_stop_id = request.POST.get('from_stop_id')
     to_stop_id = request.POST.get('to_stop_id')
     
-    # Payment Amount
+    # Payment Amount & Remarks
     manual_amount_str = request.POST.get('manual_amount')
+    booking_remarks = request.POST.get('booking_remarks', None)
+
+    if booking_remarks:
+        booking_remarks = booking_remarks.strip()
+        if len(booking_remarks) > 30:
+            return JsonResponse({'success': False, 'message': 'Remarks cannot exceed 30 characters.'})
     
     if not seat_ids_str:
         return JsonResponse({'success': False, 'message': 'No seats selected.'})
@@ -2944,10 +3007,50 @@ def admin_book_confirm(request):
         except ValueError:
             paid_amount_input = 0.0
 
-    trip = get_object_or_404(Trip, id=trip_id)
-    seat_ids = seat_ids_str.split(',')
+    trip      = get_object_or_404(Trip, id=trip_id)
+    seat_ids  = [s for s in seat_ids_str.split(',') if s.strip()]
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
-    to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+    to_stop   = get_object_or_404(RouteStop, id=to_stop_id)
+
+    # ── Parse vehicle data ────────────────────────────────────────────────
+    try:
+        vehicles_data_list = json.loads(request.POST.get('vehicles_data', '[]'))
+    except Exception:
+        vehicles_data_list = []
+    vehicle_map = {str(v.get('seat_id', '')): v for v in vehicles_data_list}
+
+    # Every vehicle space must have a license plate
+    for sid in seat_ids:
+        try:
+            lo = LayoutObject.objects.get(id=sid)
+        except LayoutObject.DoesNotExist:
+            continue
+        if lo.category.is_vehicle:
+            plate = (vehicle_map.get(str(sid), {}).get('license_plate') or '').strip().upper()
+            if not plate:
+                return JsonResponse({'success': False, 'message': f'License plate required for vehicle space {lo.label}.'})
+
+    # No duplicate plates within this booking
+    submitted_plates = [
+        (v.get('license_plate') or '').strip().upper()
+        for v in vehicles_data_list
+        if (v.get('license_plate') or '').strip()
+    ]
+    if len(submitted_plates) != len(set(submitted_plates)):
+        return JsonResponse({'success': False, 'message': 'Duplicate license plates found. Each vehicle must have a unique plate.'})
+
+    # No plate already booked on this trip
+    if submitted_plates:
+        existing_plates = set(
+            BookingVehicle.objects.filter(
+                booking__trip=trip,
+                booking__status__in=['CONFIRMED', 'PROCESSING', 'LOCKED', 'BOOKED', 'PENDING']
+            ).values_list('license_plate', flat=True)
+        )
+        for plate in submitted_plates:
+            if plate in existing_plates:
+                return JsonResponse({'success': False, 'message': f'Vehicle with plate "{plate}" is already booked on this trip.'})
+    # ── End vehicle validation ────────────────────────────────────────────
 
     # --- 3. DETERMINE STATUS & EXPIRY BASED ON BUTTON CLICKED ---
     if action_type == 'ISSUE':
@@ -3003,7 +3106,8 @@ def admin_book_confirm(request):
                 issued_by=issued_by_user,
                 booked_by=booked_by_user,
                 total_amount=0,
-                paid_amount=paid_amount
+                paid_amount=paid_amount,
+                remarks=booking_remarks
             )
             
             # Create Passenger
@@ -3039,36 +3143,47 @@ def admin_book_confirm(request):
                 # Determine ticket status based on the final_status of the booking
                 ticket_status = 'BOOKED' if final_status == 'CONFIRMED' else 'PENDING'
 
-                Ticket.objects.create(
+                ticket = Ticket.objects.create(
                     booking=booking,
-                    passenger=passenger,   
+                    passenger=passenger,
                     trip=trip,
                     seat_object=layout_obj,
                     from_stop=from_stop,
                     to_stop=to_stop,
                     passenger_name=c_name if c_name else "Walk-in Guest",
                     fare_amount=price,
-                    status=ticket_status, # <-- Now dynamically assigned
+                    status=ticket_status,
                     lock_expires_at=timezone.now(),
                 )
-                
+
+                # For vehicle spaces, create BookingVehicle and link ticket immediately
+                if layout_obj.category.is_vehicle:
+                    v_info  = vehicle_map.get(str(seat_id), {})
+                    v_plate = (v_info.get('license_plate') or '').strip().upper()
+                    v_model = (v_info.get('model_name')    or '').strip()
+                    BookingVehicle.objects.create(
+                        booking=booking,
+                        ticket=ticket,
+                        license_plate=v_plate,
+                        model_name=v_model or None,
+                    )
+
                 # ---> BROADCAST to CHANNEL <---
                 channel_layer = get_channel_layer()
-                admin_holder_id = get_holder_id(request) # Get the exact holder ID
-                
-                # Determine the correct WebSocket action
+                admin_holder_id = get_holder_id(request)
+
                 ws_action = 'booked' if final_status == 'CONFIRMED' else 'pending'
-                
+
                 async_to_sync(channel_layer.group_send)(
-                    f"seats_{trip_id}",  # 1. FIXED: Group name must match portal
+                    f"seats_{trip_id}",
                     {
-                        'type': 'seat_event', # 2. FIXED: Type must match portal consumer
-                        'action': ws_action,  # <-- CHANGED: Send dynamic action
-                        'seat_id': int(layout_obj.id),
-                        'holder_id': admin_holder_id, # 3. Added for consistency
-                        'start_order': from_stop.stop_order, # 4. REQUIRED for route logic
-                        'end_order': to_stop.stop_order,     # 5. REQUIRED for route logic
-                        'gender': gender
+                        'type':        'seat_event',
+                        'action':      ws_action,
+                        'seat_id':     int(layout_obj.id),
+                        'holder_id':   admin_holder_id,
+                        'start_order': from_stop.stop_order,
+                        'end_order':   to_stop.stop_order,
+                        'gender':      None if layout_obj.category.is_vehicle else gender,
                     }
                 )
                 
@@ -3731,7 +3846,6 @@ def update_booking_status(request, booking_id, new_status):
     
     # 1. Handle CONFIRM
     if new_status == 'CONFIRMED':
-        # Retrieve the paid amount entered in the modal (fallback to existing if none)
         try:
             new_paid_amount = float(request.GET.get('paid_amount', booking.paid_amount))
         except ValueError:
@@ -3739,7 +3853,6 @@ def update_booking_status(request, booking_id, new_status):
             
         booking.paid_amount = new_paid_amount
         
-        # Calculate payment_status dynamically
         if booking.paid_amount >= booking.total_amount:
             booking.payment_status = 'PAID'
         else:
@@ -3749,28 +3862,36 @@ def update_booking_status(request, booking_id, new_status):
         booking.expiry_at = None
         booking.time_stopped = False
         booking.stopped_at = None
-
-        # Set issued_by to the user who is confirming it
         booking.issued_by = request.user
         
         booking.save()
-        messages.success(request, "Booking Confirmed.")
+        
+        Ticket.objects.filter(booking=booking).exclude(status='CANCELLED').update(status='BOOKED')
 
-    # 2. Handle CANCEL (Add this block)
-    # elif new_status == 'CANCELLED':
-    #     booking.status = 'CANCELLED'
-        
-    #     # ADDED: Set cancelled_by to the user performing the cancellation
-    #     booking.cancelled_by = request.user
-        
-    #     # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
-    #     booking.save() 
-    #     Ticket.objects.filter(booking=booking).update(status='CANCELLED')
+        # ── ADDED: Broadcast 'booked' for each ticket ──────────────────
+        channel_layer = get_channel_layer()
+        trip_id = booking.trip_id
+        tickets = Ticket.objects.filter(booking=booking).exclude(status='CANCELLED').select_related('from_stop', 'to_stop', 'seat_object')
+        for ticket in tickets:
+            async_to_sync(channel_layer.group_send)(
+                f"seats_{trip_id}",
+                {
+                    'type': 'seat_event',
+                    'action': 'booked',
+                    'seat_id': int(ticket.seat_object_id),
+                    'holder_id': None,
+                    'start_order': ticket.from_stop.stop_order,
+                    'end_order': ticket.to_stop.stop_order,
+                    'gender': booking.tickets.first().passenger.gender if booking.tickets.first() and booking.tickets.first().passenger else None,
+                }
+            )
+        # ── END ADDED ───────────────────────────────────────────────────
+
+        messages.success(request, "Booking Confirmed.")
     
-    # 2. Handle CANCEL (Add this block)
+    # 2. Handle CANCEL
     elif new_status == 'CANCELLED':
         
-        # --- ADDED: Authorization Check for Cancellation ---
         is_admin = (request.user.user_type == 0)
         has_perm = request.user.has_perm('admin_panel.delete_booking')
         is_staff_issuer = (request.user.user_type == 2 and booking.issued_by == request.user)
@@ -3779,30 +3900,49 @@ def update_booking_status(request, booking_id, new_status):
         if not (is_admin or has_perm or is_staff_issuer or is_staff_booker):
             messages.error(request, "You do not have permission to cancel this booking.")
             return redirect('booking_issue_list')
-        # ---------------------------------------------------
+
+        # ── ADDED: Fetch tickets BEFORE updating status ─────────────────
+        tickets = Ticket.objects.filter(booking=booking).select_related('from_stop', 'to_stop', 'seat_object')
+        ticket_data = [
+            {
+                'seat_object_id': t.seat_object_id,
+                'start_order': t.from_stop.stop_order,
+                'end_order': t.to_stop.stop_order,
+            }
+            for t in tickets
+        ]
+        # ── END ADDED ───────────────────────────────────────────────────
 
         booking.status = 'CANCELLED'
-        
-        # ADDED: Set cancelled_by to the user performing the cancellation
         booking.cancelled_by = request.user
-        
-        # Optional: You might want to set payment_status to 'REFUNDED' or 'UNPAID'
         booking.save() 
         Ticket.objects.filter(booking=booking).update(status='CANCELLED')
 
+        # ── ADDED: Broadcast 'release' for each cancelled ticket ────────
+        channel_layer = get_channel_layer()
+        trip_id = booking.trip_id
+        for t in ticket_data:
+            async_to_sync(channel_layer.group_send)(
+                f"seats_{trip_id}",
+                {
+                    'type': 'seat_event',
+                    'action': 'release',
+                    'seat_id': int(t['seat_object_id']),
+                    'start_order': t['start_order'],
+                    'end_order': t['end_order'],
+                }
+            )
+        # ── END ADDED ───────────────────────────────────────────────────
+
     # --- SEND SMS FOR BOTH CASES ---
     try:
-        # Get seat labels for the SMS
         tickets = Ticket.objects.filter(booking=booking)
         seat_labels = [t.seat_object.label for t in tickets]
-        
-        # This will now send the correct SMS based on the new status
         send_booking_sms(booking, seat_labels)
         
     except Exception as e:
         print(f"SMS Failed: {e}")
         messages.error(request, "System error while updating status.")
-    # -------------------------------
     
     return redirect('booking_issue_list')
 
@@ -4418,19 +4558,28 @@ from .utils import send_booking_sms, send_partial_cancel_sms  # <--- Make sure t
 @login_required
 def cancel_seats(request):
     if request.method != 'POST':
-        return redirect('booking_cancel_list')
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'})
 
     booking_id = request.POST.get('booking_id')
     selected_ticket_ids = request.POST.getlist('ticket_ids')
     
     print(f"=======Received cancellation request for Booking ID: {booking_id} with Ticket IDs: {selected_ticket_ids}======")
 
-    booking = get_object_or_404(Booking, id=booking_id)
+    try:
+        booking = Booking.objects.get(id=booking_id)
+    except Booking.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Booking not found.'})
 
+    # NEW LOGIC: If booking has absolutely NO tickets associated with it, delete it.
+    total_tickets = booking.tickets.all()
+    if not total_tickets.exists():
+        booking.delete()
+        return JsonResponse({'success': True, 'message': 'Booking had no seats associated and was deleted successfully.'})
+
+    # If it DOES have tickets, but none were selected, show error.
     if not selected_ticket_ids:
         print("xxxxxxxxxxxxxxxxxxxNo tickets selected for cancellation.xxxxxxxxxxxxxxxx")
-        messages.warning(request, "No seats were selected for cancellation.")
-        return redirect('booking_cancel_list')
+        return JsonResponse({'success': False, 'message': 'No seats were selected for cancellation.'})
 
     try:
         with transaction.atomic():
@@ -4443,17 +4592,14 @@ def cancel_seats(request):
             
             if not tickets_to_cancel.exists():
                 print(f"xxxxxxxxxxxxxxxxxxxNo valid tickets found for cancellation.xxxxxxxxxxxxxxxx")
-                messages.error(request, "Selected tickets are already cancelled or invalid.")
-                return redirect('booking_cancel_list')
+                return JsonResponse({'success': False, 'message': 'Selected tickets are already cancelled or invalid.'})
 
             # 2. Extract info for SMS/Logs
             cancelled_labels = [t.seat_object.label for t in tickets_to_cancel]
-            # cancel_amount = sum(t.fare_amount for t in tickets_to_cancel) # Available if you need it later
 
             # =========================================================
-            # ADDED: Prepare WebSockets for AFTER transaction commits
+            # Prepare WebSockets for AFTER transaction commits
             # =========================================================
-            # Extract the needed data BEFORE calling .update()
             ws_events = [
                 {
                     "seat_id": ticket.seat_object_id,
@@ -4479,32 +4625,28 @@ def cancel_seats(request):
                         }
                     )
 
-            # Queue the broadcast to fire ONLY when the DB transaction is fully completed
             transaction.on_commit(broadcast_releases)
 
             # 3. Update Tickets to CANCELLED
             tickets_to_cancel.update(status='CANCELLED')
 
-            # 4. Check if ANY active tickets remain
-            # Must check for BOOKED or PENDING here as well!
+            # 4. Check remaining tickets
             remaining_tickets = booking.tickets.filter(status__in=['BOOKED', 'PENDING'])
             
             is_full_cancel = False
 
             if not remaining_tickets.exists():
-                # CASE A: Full Cancellation
                 booking.status = 'CANCELLED'
                 booking.total_amount = 0
                 is_full_cancel = True
             else:
-                # CASE B: Partial Cancellation
                 new_total = remaining_tickets.aggregate(Sum('fare_amount'))['fare_amount__sum'] or 0
                 booking.total_amount = new_total
                 is_full_cancel = False
 
             booking.save()
 
-            # 5. Send SMS (Non-blocking because utils.py uses threading)
+            # 5. Send SMS
             try:
                 if is_full_cancel:
                     send_booking_sms(booking, cancelled_labels)
@@ -4513,13 +4655,15 @@ def cancel_seats(request):
             except Exception as e:
                 print(f"SMS Error: {e}")
 
-            messages.success(request, f"Cancelled {len(cancelled_labels)} seat(s). New Total: {booking.total_amount}")
+            # Return Success JSON
+            return JsonResponse({
+                'success': True, 
+                'message': f"Cancelled {len(cancelled_labels)} seat(s). New Total: {booking.total_amount}"
+            })
 
     except Exception as e:
         print(f"Cancel Error: {e}")
-        messages.error(request, "Error processing cancellation.")
-
-    return redirect('booking_cancel_list')
+        return JsonResponse({'success': False, 'message': 'An unexpected error occurred processing cancellation.'})
     
 
 
@@ -4693,32 +4837,35 @@ def pos_book_confirm(request):
         return redirect(request.META.get('HTTP_REFERER'))
     
     
-    
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger    
+        
 # 1. The List View (The Cards)
 @login_required
 def trip_report_list(request):
     # 1. Get Today's Date
     today = timezone.now().date()
 
-    # 2. Start with ONLY Future & Today's trips
-    trips = Trip.objects.filter(
-        departure_datetime__date__gte=today
-    ).order_by('departure_datetime')
-
-    # 3. Apply Search Filters
+    # 2. Get Search Filters First
     from_loc_id = request.GET.get('from_location')
     to_loc_id = request.GET.get('to_location')
     journey_date = request.GET.get('journey_date')
 
+    # 3. Apply Date Filtering Logic Dynamically
+    if journey_date:
+        # If a specific date is searched (past or future), filter by that exact date
+        trips = Trip.objects.filter(departure_datetime__date=journey_date)
+    else:
+        # Default behavior: Show ONLY Future & Today's trips if no date is picked
+        trips = Trip.objects.filter(departure_datetime__date__gte=today)
+
+    # Apply sorting
+    trips = trips.order_by('departure_datetime')
+
+    # Apply remaining location filters
     if from_loc_id:
         trips = trips.filter(route__source_id=from_loc_id)
     
     if to_loc_id:
         trips = trips.filter(route__destination_id=to_loc_id)
-    
-    if journey_date:
-        trips = trips.filter(departure_datetime__date=journey_date)
 
     # 4. Count Sold Tickets
     trips = trips.select_related(
@@ -4951,6 +5098,16 @@ def trip_passenger_manifest(request, trip_id):
 
     # 5. Sort the flat list by the extracted cabin number
     ticket_list.sort(key=lambda x: x.sort_key)
+
+    # 6. Attach license plate for vehicle spaces (single query)
+    vehicle_plate_map = {
+        bv.ticket_id: bv.license_plate
+        for bv in BookingVehicle.objects.filter(
+            ticket_id__in=[t.id for t in ticket_list]
+        ).only('ticket_id', 'license_plate')
+    }
+    for ticket in ticket_list:
+        ticket.license_plate = vehicle_plate_map.get(ticket.id, '')
 
     context = {
         'trip': trip,
@@ -5203,8 +5360,18 @@ def export_manifest_xls(request, trip_id):
         ticket.display_label = label
         ticket_list.append(ticket)
 
-    # Sort the flat list
+    # 5. Sort the flat list by the extracted cabin number
     ticket_list.sort(key=lambda x: x.sort_key)
+
+    # 6. Attach license plate for vehicle spaces (single query)
+    vehicle_plate_map = {
+        bv.ticket_id: bv.license_plate
+        for bv in BookingVehicle.objects.filter(
+            ticket_id__in=[t.id for t in ticket_list]
+        ).only('ticket_id', 'license_plate')
+    }
+    for ticket in ticket_list:
+        ticket.license_plate = vehicle_plate_map.get(ticket.id, '')
 
     # 5. Create Workbook & Sheet
     wb = openpyxl.Workbook()
@@ -5229,8 +5396,8 @@ def export_manifest_xls(request, trip_id):
 
     # 7. Write PASSENGER TABLE Headers
     headers_main = [
-        'SL', 'Ticket No', 'Booking Ref', 'Cabin', 'Pass. Name', 'Phone No', 
-        'Paid', 'Discount', 'Due', 'From', 'To', 
+        'SL', 'Ticket No', 'Booking Ref', 'Cabin', 'Vehicle No.' 'Pass. Name', 'Phone No', 
+        'Paid', 'Due', 'From', 'To', 
         'Status', 'Booked By', 'Issued By', 'Remarks'
     ]
     ws.append(headers_main)
@@ -5250,16 +5417,7 @@ def export_manifest_xls(request, trip_id):
             phone = booking.user.phone_number or "0"
 
         # Remarks logic matching the HTML exactly
-        if booking.status == 'PENDING' and getattr(booking, 'time_stopped', False):
-            remarks = "Timer Stopped"
-        elif booking.status == 'PENDING' and b_data['paid_amount'] > 0 and b_data['due_amount'] > 0:
-            remarks = "Partial Payment"
-        elif booking.status == 'PENDING' and b_data['paid_amount'] == 0:
-            remarks = "Unpaid"
-        elif booking.status == 'PENDING' and b_data['due_amount'] == 0:
-            remarks = "Paid*"
-        else:
-            remarks = "N/A"
+        remarks = booking.remarks if booking.remarks else "-"
 
         # Status logic
         if booking.status == 'CONFIRMED':
@@ -5282,10 +5440,10 @@ def export_manifest_xls(request, trip_id):
             ticket.id,
             booking.booking_ref,
             ticket.display_label,
+            ticket.license_plate,
             ticket.passenger_name or "-",
             phone,
             round(b_data['paid_amount']),  # Shows total paid for booking on every row
-            0,                             # Discount
             round(b_data['due_amount']),   # Shows total due for booking on every row
             ticket.from_stop.location.name,
             ticket.to_stop.location.name,
@@ -5539,7 +5697,18 @@ def download_manifest_pdf(request, trip_id):
         ticket.display_label = label
         ticket_list.append(ticket)
 
+    # 5. Sort the flat list by the extracted cabin number
     ticket_list.sort(key=lambda x: x.sort_key)
+
+    # 6. Attach license plate for vehicle spaces (single query)
+    vehicle_plate_map = {
+        bv.ticket_id: bv.license_plate
+        for bv in BookingVehicle.objects.filter(
+            ticket_id__in=[t.id for t in ticket_list]
+        ).only('ticket_id', 'license_plate')
+    }
+    for ticket in ticket_list:
+        ticket.license_plate = vehicle_plate_map.get(ticket.id, '')
 
     context = {
         'trip': trip,
@@ -6665,6 +6834,169 @@ def edit_content(request, id):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'})
 
     return render(request, 'admin_panel/footer/footer_content_form.html', {'action': 'Edit', 'content': content, 'columns': columns})
+
+
+
+@login_required
+def payment_gateways(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get("action")
+
+            if action == "add":
+                PaymentGateway.objects.create(
+                    name=data.get("name"),
+                    gateway_type=data.get("gateway_type"),
+                    is_active=data.get("is_active", True)
+                )
+                return JsonResponse({"status": "success", "message": "Gateway added successfully!"})
+
+            elif action == "edit":
+                gateway = get_object_or_404(PaymentGateway, id=data.get("id"))
+                gateway.name = data.get("name")
+                gateway.gateway_type = data.get("gateway_type")
+                gateway.is_active = data.get("is_active")
+                gateway.save()
+                return JsonResponse({"status": "success", "message": "Gateway updated successfully!"})
+
+            elif action == "delete":
+                gateway = get_object_or_404(PaymentGateway, id=data.get("id"))
+                gateway.delete()
+                return JsonResponse({"status": "success", "message": "Gateway deleted successfully!"})
+
+        except Exception as e:
+            traceback.print_exc()
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    gateways = PaymentGateway.objects.all().order_by('-created_at')
+    used_types = gateways.values_list('gateway_type', flat=True)
+    available_choices = [
+        (value, label)
+        for value, label in PaymentGateway.GATEWAY_CHOICES
+        if value not in used_types
+    ]
+    return render(request, 'admin_panel/payment_gateways/payment_gateways.html', {
+        'gateways': gateways,
+        'available_choices': available_choices,
+    })
+
+
+
+@login_required
+def ssl_commerz_stores(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get("action")
+            
+            if action == "add":
+                gateway = get_object_or_404(PaymentGateway, id=data.get("gateway_id"))
+                SSLCommerzStore.objects.create(
+                    gateway=gateway,
+                    name=data.get("name"),
+                    store_id=data.get("store_id"),
+                    store_password=data.get("store_password"),
+                    is_live=data.get("is_live", False),
+                    is_active=data.get("is_active", True)
+                )
+                return JsonResponse({"status": "success", "message": "Store added successfully!"})
+
+            elif action == "edit":
+                store = get_object_or_404(SSLCommerzStore, id=data.get("id"))
+                store.gateway = get_object_or_404(PaymentGateway, id=data.get("gateway_id"))
+                store.name = data.get("name")
+                store.store_id = data.get("store_id")
+                store.store_password = data.get("store_password")
+                store.is_live = data.get("is_live")
+                store.is_active = data.get("is_active")
+                store.save()
+                return JsonResponse({"status": "success", "message": "Store updated successfully!"})
+
+            elif action == "delete":
+                store = get_object_or_404(SSLCommerzStore, id=data.get("id"))
+                print(f"store to be deleted {store.name} with ID {store.id}")
+                store.delete()
+                return JsonResponse({"status": "success", "message": "Store deleted successfully!"})
+
+        except Exception as e:
+            # THIS IS THE KEY PART
+            print("!!! DATABASE ERROR DETECTED !!!")
+            traceback.print_exc()  # This prints the RED TEXT error in your console
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    # GET request
+    stores = SSLCommerzStore.objects.select_related('gateway').order_by('-created_at')
+    gateways = PaymentGateway.objects.filter(is_active=True)
+    return render(request, 'admin_panel/ssl_commerz_stores/ssl_stores.html', {
+        'stores': stores,
+        'gateways': gateways
+    })
+    
+    
+    
+@login_required
+def payment_transaction_list(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+            if action == 'delete':
+                transaction_id = data.get('id')
+                obj = get_object_or_404(PaymentTransaction, id=transaction_id)
+                obj.delete()
+                return JsonResponse({'status': 'success', 'message': 'Transaction deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+    transactions = PaymentTransaction.objects.select_related('booking', 'gateway', 'store').order_by('-created_at')
+    return render(request, 'admin_panel/ssl_transactions/payment_transactions.html', {
+        'transactions': transactions
+    })
+    
+    
+
+@login_required
+def transaction_detail_json(request, pk):
+    """Endpoint to fetch transaction details for the modal"""
+    tx = get_object_or_404(PaymentTransaction, pk=pk)
+    data = {
+        'tran_id': tx.tran_id,
+        'val_id': tx.val_id or "N/A",
+        'bank_tran_id': tx.bank_tran_id or "N/A",
+        'amount': f"{tx.amount} {tx.currency}",
+        'status': tx.status,
+        'card_type': tx.card_type or "N/A",
+        'card_brand': tx.card_brand or "N/A",
+        'booking_ref': tx.booking.booking_ref if tx.booking else "N/A",
+        'gateway_name': tx.gateway.name if tx.gateway else "N/A",
+        'store_name': tx.store.name if tx.store else "N/A",
+        'is_processed': "Yes" if tx.is_processed else "No",
+        'created_at': tx.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'raw_response': tx.raw_response # Sent as object
+    }
+    return JsonResponse(data)
+
+
+
+@login_required
+def manage_ticket_settings(request):
+    # Always grab the single singleton instance
+    setting = TicketSetting.get_settings()
+    
+    if request.method == 'POST':
+        form = TicketSettingForm(request.POST, instance=setting)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ticket settings updated successfully!')
+            return redirect('manage_ticket_settings')
+    else:
+        form = TicketSettingForm(instance=setting)
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'admin_panel/ticket_settings/ticket_settings.html', context)
 
 
 

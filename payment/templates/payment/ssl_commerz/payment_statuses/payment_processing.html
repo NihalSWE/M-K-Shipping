@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Payment | Marine Travel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ocean-deep: #003049;
+            --ocean-blue: #0077B6;
+            --ocean-light: #00B4D8;
+            --foam: #CAF0F8;
+            --white: #ffffff;
+ 
+            /* Responsive tokens */
+            --container-padding: clamp(1.25rem, 5vw, 3rem);
+            --loader-size: clamp(70px, 18vw, 100px);
+            --loader-border: clamp(3px, 0.6vw, 4px);
+            --h2-size: clamp(1.1rem, 4vw, 1.5rem);
+            --p-size: clamp(0.8rem, 2.5vw, 0.95rem);
+            --ship-size: clamp(28px, 7vw, 40px);
+        }
+ 
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+ 
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0077B6 0%, #003049 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            width: 100%;
+        }
+ 
+        /* Glassmorphism Card */
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: var(--container-padding);
+            border-radius: clamp(14px, 4vw, 24px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            max-width: 400px;
+            width: clamp(260px, 90vw, 400px);
+            z-index: 10;
+ 
+            /* Keep card above waves on very short viewports */
+            position: relative;
+            margin-bottom: clamp(60px, 10vh, 80px);
+        }
+ 
+        h2 {
+            color: var(--white);
+            margin: clamp(0.75rem, 3vw, 1.5rem) 0 0.4rem 0;
+            font-size: var(--h2-size);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+ 
+        p {
+            color: var(--foam);
+            opacity: 0.8;
+            font-size: var(--p-size);
+            margin-bottom: clamp(1rem, 4vw, 2rem);
+            font-weight: 300;
+            line-height: 1.55;
+        }
+ 
+        /* Modern Wave Loader */
+        .loader-wrapper {
+            position: relative;
+            width: var(--loader-size);
+            height: var(--loader-size);
+            margin: 0 auto;
+        }
+ 
+        .spinner {
+            width: 100%;
+            height: 100%;
+            border: var(--loader-border) solid rgba(255, 255, 255, 0.1);
+            border-top: var(--loader-border) solid var(--foam);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+ 
+        .ship-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            fill: var(--white);
+            animation: bob 2s ease-in-out infinite;
+            width: var(--ship-size);
+            height: var(--ship-size);
+        }
+ 
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+ 
+        @keyframes bob {
+            0%, 100% { transform: translate(-50%, -45%); }
+            50%       { transform: translate(-50%, -55%); }
+        }
+ 
+        /* Background Waves Animation */
+        .waves {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: clamp(60px, 15vh, 150px);
+            margin-bottom: -7px;
+        }
+ 
+        .parallax > use {
+            animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
+        }
+        .parallax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s;  fill: rgba(255,255,255,0.3); }
+        .parallax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; fill: rgba(255,255,255,0.5); }
+        .parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; fill: rgba(255,255,255,0.2); }
+        .parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; fill: rgba(255,255,255,0.1); }
+ 
+        @keyframes move-forever {
+            0%   { transform: translate3d(-90px,0,0); }
+            100% { transform: translate3d(85px,0,0);  }
+        }
+ 
+        /* ── Small phones (≤ 360px) ── */
+        @media (max-width: 360px) {
+            .container {
+                width: 92vw;
+                border-radius: 14px;
+            }
+        }
+ 
+        /* ── Landscape phones & small tablets ── */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                align-items: flex-start;
+                padding-top: 1rem;
+                overflow-y: auto;
+            }
+ 
+            .container {
+                margin-bottom: 5rem;
+                padding: 1.25rem 1.5rem;
+            }
+ 
+            h2 { margin-top: 0.5rem; }
+ 
+            p { margin-bottom: 0.75rem; }
+ 
+            .waves {
+                height: 50px;
+            }
+        }
+ 
+        /* ── Tablets (481px – 768px) ── */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container {
+                max-width: 380px;
+            }
+        }
+ 
+        /* ── Desktop (≥ 1024px) ── */
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 420px;
+                padding: 3rem 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+ 
+    <div class="container">
+        <div class="loader-wrapper">
+            <div class="spinner"></div>
+            <svg class="ship-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20,21V19L17,17V11H15V17L13,18.33V11H11V19.67L4,21V19H2V21A2,2 0 0,0 4,23H20A2,2 0 0,0 22,21V19H20V21M10,2H14V9H10V2Z" />
+            </svg>
+        </div>
+ 
+        <h2>Processing Payment</h2>
+        <p>Securing your cabin… Please don't close or refresh this window.</p>
+    </div>
+ 
+    <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+         viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+        <defs>
+            <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+        </defs>
+        <g class="parallax">
+            <use xlink:href="#gentle-wave" x="48" y="0" />
+            <use xlink:href="#gentle-wave" x="48" y="3" />
+            <use xlink:href="#gentle-wave" x="48" y="5" />
+            <use xlink:href="#gentle-wave" x="48" y="7" />
+        </g>
+    </svg>
+ 
+    <script>
+        const bookingRef = "{{ booking_ref }}";
+        let attempts = 0;
+        const maxAttempts = 30; // 30 × 2s = 60 seconds max wait
+ 
+        function pollStatus() {
+            attempts++;
+            fetch(`/payment/status/${bookingRef}/`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'CONFIRMED') {
+                        window.location.href = `/booking/success/${bookingRef}/`;
+                    } else if (data.paid_expired) {
+                        window.location.href = `/payment/expired/${bookingRef}/`;
+                    } else if (
+                        data.status === 'CANCELLED' ||
+                        data.status === 'EXPIRED'   ||
+                        data.status === 'NOT_FOUND'
+                    ) {
+                        window.location.href = '/payment/fail/';
+                    } else if (attempts >= maxAttempts) {
+                        window.location.href = '/payment/fail/';
+                    } else {
+                        setTimeout(pollStatus, 2000);
+                    }
+                })
+                .catch(() => {
+                    if (attempts < maxAttempts) {
+                        setTimeout(pollStatus, 2000);
+                    } else {
+                        window.location.href = '/payment/fail/';
+                    }
+                });
+        }
+ 
+        // Start polling after a short initial delay
+        setTimeout(pollStatus, 1500);
+    </script>
+</body>
+</html>

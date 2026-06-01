@@ -109,6 +109,7 @@
                                     <th>S/L</th>
                                     <th>Name</th>
                                     <th>Code</th>
+                                    <th>Store</th>
                                     <th>Total Capacity</th>
                                     <th>Action</th>
                                 </tr>
@@ -119,6 +120,7 @@
                                     <td>{{ forloop.counter }}</td>
                                     <td><a href="{% url 'ship_details' ship.id %}" class="text-primary fw-bold">{{ ship.name }}</a></td>
                                     <td>{{ ship.code }}</td>
+                                    <td>{{ ship.store.name|default:"N/A" }}</td>
                                     <td>{{ ship.total_capacity }}</td>
                                     <td>
                                         <ul class="action">
@@ -128,7 +130,8 @@
                                                         data-bs-toggle="modal" data-bs-target="#editModal"
                                                         data-id="{{ ship.id }}" data-name="{{ ship.name }}"
                                                         data-code="{{ ship.code }}"
-                                                        data-capacity="{{ ship.total_capacity }}"></i>
+                                                        data-capacity="{{ ship.total_capacity }}"
+                                                        data-store="{{ ship.store_id|default:'' }}"></i>
                                                 </span>
                                             </li>
                                             <li class="delete" data-id="{{ ship.id }}">
@@ -191,6 +194,33 @@
                                             <label class="form-label" for="capacity">Total Capacity</label>
                                             <input class="form-control btn-pill" id="capacity" type="number"
                                                 placeholder="Enter total capacity">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Associated Store</label>
+                                            <select class="form-select btn-pill store-selector" id="store_id">
+                                                <option value="">-- Select Store --</option>
+                                                {% for store in stores %}
+                                                    <option value="{{ store.id }}" data-password="{{ store.store_password }}">
+                                                        {{ store.name }} — {% if store.is_live %}🟢 Live{% else %}🟡 Sandbox{% endif %}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Store Password</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control btn-pill pass-display" readonly>
+                                                <button class="btn btn-outline-secondary toggle-pass" type="button">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -261,6 +291,33 @@
                                             <label class="form-label" for="edit-capacity">Total Capacity</label>
                                             <input class="form-control btn-pill" id="edit-capacity" name="edit_capacity"
                                                 type="number" placeholder="Enter total capacity">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Associated Store</label>
+                                            <select class="form-select btn-pill store-selector" id="edit-store_id">
+                                                <option value="">-- Select Store --</option>
+                                                {% for store in stores %}
+                                                    <option value="{{ store.id }}" data-password="{{ store.store_password }}">
+                                                        {{ store.name }} — {% if store.is_live %}🟢 Live{% else %}🟡 Sandbox{% endif %}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Store Password</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control btn-pill pass-display" readonly>
+                                                <button class="btn btn-outline-secondary toggle-pass" type="button">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -347,198 +404,166 @@
 <script src="{% static 'assets/js/datatable/datatables/dataTables.bootstrap5.js' %}"></script>
 <script src="{% static 'assets/js/datatable/datatables/datatable.custom2.js' %}"></script>
 
-
 <script>
-    function showMessage(type, message) {
-        const div = $(".error-success-div");
+    function showMessage(modalId, type, message) {
+        const div = $(modalId + " .error-success-div");
 
-        // routine to set text + color and then expand
         function expand() {
-            div
-                .removeClass("error-message success-message")
-                .addClass(type + "-message")
-                .text(message);
-
-            // small delay so the browser “sees” the reset
-            requestAnimationFrame(() => {
-                div.addClass("show");
-            });
-
-            if (type === "success") {
-                setTimeout(() => location.reload(), 2000);
-            }
+            div.removeClass("error-message success-message")
+               .addClass(type + "-message")
+               .text(message);
+            requestAnimationFrame(() => div.addClass("show"));
+            if (type === "success") setTimeout(() => location.reload(), 2000);
         }
 
         if (div.hasClass("show")) {
-            // 1. If already shown, collapse first
             div.removeClass("show");
-
-            // 2. Wait for collapse transition to finish, then expand
             div.one("transitionend", expand);
         } else {
-            // first time: just expand
             expand();
         }
     }
 
+    function convertImageToBase64(file, callback) {
+        const reader = new FileReader();
+        reader.onloadend = function () { callback(reader.result); };
+        reader.readAsDataURL(file);
+    }
+
     // ADD
-    $("#addModal form").on("submit", e => {
+    $("#addModal form").on("submit", function (e) {
         e.preventDefault();
-        
-        const imageInput = $("#addModal #image")[0];
-        const imageFile = imageInput.files[0];
-        
+
+        const imageFile = $("#addModal #image")[0].files[0];
+        const payload = {
+            action: "add",
+            name: $("#addModal #name").val(),
+            code: $("#addModal #code").val(),
+            total_capacity: $("#addModal #capacity").val(),
+            store_id: $("#addModal #store_id").val() || null,
+        };
+
         if (imageFile) {
-            // Convert image to base64
-            convertImageToBase64(imageFile, function(base64Image) {
-                const payload = {
-                    action: "add",
-                    name: $("#addModal #name").val(),
-                    code: $("#addModal #code").val(),
-                    total_capacity: $("#addModal #capacity").val(),
-                    image: base64Image  // Add as base64 string
-                };
-                
+            convertImageToBase64(imageFile, function (base64Image) {
+                payload.image = base64Image;
                 fetch("{% url 'ships' %}", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"
-                    },
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
                     body: JSON.stringify(payload)
                 })
                 .then(r => r.json())
-                .then(d => showMessage(d.status, d.message));
+                .then(d => showMessage("#addModal", d.status, d.message));
             });
         } else {
-            // No image - use existing code
-            const name = $("#addModal #name").val();
-            const code = $("#addModal #code").val();
-            const total_capacity = $("#addModal #capacity").val();
             fetch("{% url 'ships' %}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
-                body: JSON.stringify({ action: "add", name, code, total_capacity })
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify(payload)
             })
             .then(r => r.json())
-            .then(d => showMessage(d.status, d.message));
+            .then(d => showMessage("#addModal", d.status, d.message));
         }
     });
 
-    // EDIT: delegate to document in case rows are dynamic
+    // EDIT: populate modal
+    let editId = null;
     $(document).on("click", ".edit-icon", function () {
-        const { id, name, code, capacity } = this.dataset;
+        const { id, name, code, capacity, store } = this.dataset;
         editId = id;
         $("#edit-name").val(name);
         $("#edit-code").val(code);
         $("#edit-capacity").val(capacity);
+        $("#edit-store_id").val(store || "");
+
+        // Pre-fill password from selected store option
+        const password = $("#edit-store_id option:selected").data("password");
+        $("#editModal .pass-display").val(password || "");
     });
 
-    $("#editModal form").on("submit", e => {
+    // EDIT: submit
+    $("#editModal form").on("submit", function (e) {
         e.preventDefault();
-        
-        const imageInput = $("#edit-image")[0];
-        const imageFile = imageInput.files[0];
-        
+
+        const imageFile = $("#edit-image")[0].files[0];
+        const payload = {
+            action: "edit",
+            id: editId,
+            name: $("#edit-name").val(),
+            code: $("#edit-code").val(),
+            total_capacity: $("#edit-capacity").val(),
+            store_id: $("#edit-store_id").val() || null,
+        };
+
         if (imageFile) {
-            // Convert image to base64
-            convertImageToBase64(imageFile, function(base64Image) {
-                const payload = {
-                    action: "edit",
-                    id: editId,
-                    name: $("#edit-name").val(),
-                    code: $("#edit-code").val(),
-                    total_capacity: $("#edit-capacity").val(),
-                    image: base64Image  // Add as base64 string
-                };
-                
+            convertImageToBase64(imageFile, function (base64Image) {
+                payload.image = base64Image;
                 fetch("{% url 'ships' %}", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"
-                    },
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
                     body: JSON.stringify(payload)
                 })
                 .then(r => r.json())
-                .then(d => showMessage(d.status, d.message));
+                .then(d => showMessage("#editModal", d.status, d.message));
             });
         } else {
-            // No image - use existing code
-            const name = $("#edit-name").val();
-            const code = $("#edit-code").val();
-            const total_capacity = $("#edit-capacity").val();
             fetch("{% url 'ships' %}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
-                body: JSON.stringify({ action: "edit", id: editId, name, code, total_capacity })
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify(payload)
             })
             .then(r => r.json())
-            .then(d => showMessage(d.status, d.message));
+            .then(d => showMessage("#editModal", d.status, d.message));
         }
     });
 
-    // DELETE
+    // DELETE: open modal
     let pendingDeleteId = null;
-
-    // Open delete modal
     $(document).on("click", ".delete-icon", function () {
         pendingDeleteId = this.dataset.id;
         new bootstrap.Modal($("#deleteConfirmationModal")[0]).show();
     });
 
-    // Confirm delete
+    // DELETE: confirm
     $("#confirm-delete").on("click", function () {
         fetch("{% url 'ships' %}", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
             body: JSON.stringify({ action: "delete", id: pendingDeleteId })
         })
-            .then(r => r.json())
-            .then(d => {
-                // 1. Hide delete modal
-                bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
-
-                // 2. Show success modal
-                const successModal = new bootstrap.Modal($("#deleteSuccessModal")[0]);
-                successModal.show();
-
-                // 3. After animation+delay, reload
-                setTimeout(() => {
-                    successModal.hide();
-                    location.reload();
-                }, 1500); // 1.5s gives time for checkmark animation
-            });
+        .then(r => r.json())
+        .then(() => {
+            bootstrap.Modal.getInstance($("#deleteConfirmationModal")[0]).hide();
+            const successModal = new bootstrap.Modal($("#deleteSuccessModal")[0]);
+            successModal.show();
+            setTimeout(() => { successModal.hide(); location.reload(); }, 1500);
+        });
     });
 
-    // Explicitly hide modal & backdrop on Cancel
+    // DELETE: cancel backdrop cleanup
     $(document).on("click", ".close-btn", function () {
-        const modalEl = document.getElementById("deleteConfirmationModal");
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) {
-            modal.hide();                     // hide the modal
-        }
-        // In case backdrop sticks around, remove it:
+        const modal = bootstrap.Modal.getInstance(document.getElementById("deleteConfirmationModal"));
+        if (modal) modal.hide();
         document.querySelectorAll(".modal-backdrop").forEach(bg => bg.remove());
     });
 
-    // ADD THIS HELPER FUNCTION (NEW)
-function convertImageToBase64(file, callback) {
-    const reader = new FileReader();
-    reader.onloadend = function() {
-        callback(reader.result);
-    };
-    reader.readAsDataURL(file);
-}
+    // Store selector → auto-fill password
+    $(document).on("change", ".store-selector", function () {
+        const password = $(this).find(":selected").data("password");
+        $(this).closest(".row").find(".pass-display").val(password || "");
+    });
+
+    // Password eye toggle
+    $(document).on("click", ".toggle-pass", function () {
+        const input = $(this).siblings("input");
+        const icon = $(this).find("i");
+        if (input.attr("type") === "password") {
+            input.attr("type", "text");
+            icon.removeClass("fa-eye").addClass("fa-eye-slash");
+        } else {
+            input.attr("type", "password");
+            icon.removeClass("fa-eye-slash").addClass("fa-eye");
+        }
+    });
 </script>
 
 {% endblock %}

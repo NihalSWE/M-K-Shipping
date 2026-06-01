@@ -1,5 +1,6 @@
 import requests
 import threading
+from django.utils.timezone import localtime
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Sum # Import Sum for safety calculation
@@ -69,12 +70,35 @@ def send_booking_sms(booking, seats_list=None, custom_route=None, custom_price=N
         route_cancel_str = f"{source_name} – {dest_name}"
 
     # ---------------- 2. Smart Seat Logic (Hide Cancelled) ----------------
+    # ---------------- 2. Smart Seat Logic (Hide Cancelled) ----------------
     if booking.status in ['CONFIRMED', 'PENDING', 'BOOKED']:
-        active_tickets = booking.tickets.exclude(status='CANCELLED')
-        if active_tickets.exists():
-            seats_list = [t.seat_object.label for t in active_tickets]
+        active_tickets = booking.tickets.exclude(
+            status='CANCELLED'
+        ).select_related('seat_object__category')
 
-    seat_str = ", ".join(seats_list) if seats_list else "General"
+        if active_tickets.exists():
+            # Group by category name (only bookable categories)
+            from collections import defaultdict
+            category_seats = defaultdict(list)
+
+            for t in active_tickets:
+                cat = t.seat_object.category
+                cat_name = cat.name if cat.is_bookable else None
+                if cat_name:
+                    category_seats[cat_name].append(t.seat_object.label)
+
+            if category_seats:
+                # Format: "Cabin: D-203, D-204; Seat: A-101, B-201"
+                seat_str = "; ".join(
+                    f"{cat}: {', '.join(labels)}"
+                    for cat, labels in category_seats.items()
+                )
+            else:
+                seat_str = "General"
+        else:
+            seat_str = seats_list and ", ".join(seats_list) or "General"
+    else:
+        seat_str = ", ".join(seats_list) if seats_list else "General"
 
     # ---------------- 3. FIX: Smart Payment Logic ----------------
     
@@ -113,7 +137,7 @@ def send_booking_sms(booking, seats_list=None, custom_route=None, custom_price=N
     if booking.status == 'PENDING':
         # For Pending, we usually just show Total and Due
         payment_info = (
-            f"Total Fare: BDT {total_fmt}\n"
+            f"Fare Total: BDT {total_fmt}\n"
             f"Paid: BDT {paid_fmt}\n"
             f"Due: BDT {due_fmt}"
         )
@@ -140,10 +164,15 @@ def send_booking_sms(booking, seats_list=None, custom_route=None, custom_price=N
     trip = booking.trip
     launch_name = trip.ship.name
     
-    formatted_date_long = trip.departure_datetime.strftime('%d %B %Y') 
-    formatted_time = trip.departure_datetime.strftime('%I:%M %p')      
-    formatted_date_short = trip.departure_datetime.strftime('%d-%m-%Y') 
-    reporting_dt = trip.departure_datetime - timedelta(minutes=15)
+    # Convert UTC time to Local Time (UTC+6)
+    local_departure = localtime(trip.departure_datetime)
+
+    formatted_date_long = local_departure.strftime('%d %B %Y') 
+    formatted_time = local_departure.strftime('%I:%M %p')      
+    formatted_date_short = local_departure.strftime('%d-%m-%Y') 
+    
+    # Calculate reporting time based on the local time
+    reporting_dt = local_departure - timedelta(minutes=15)
     reporting_time = reporting_dt.strftime('%I:%M %p')
 
     msg_body = None 
@@ -152,44 +181,33 @@ def send_booking_sms(booking, seats_list=None, custom_route=None, custom_price=N
     
     if booking.status == 'PENDING':
         msg_body = (
-            f"Booking Confirmation – MK Shipping Lines\n"
-            f"Your journey from {route_str} on {formatted_date_long} at {formatted_time} by {launch_name} has been reserved.\n"
-            f"Cabin No: {seat_str}\n"
-            f"{payment_info}\n"
-            f"Please complete payment within 2 hours.\n"
-            f"bKash/Nagad: 01714-858535\n"
-            f"Regards,\nMK Shipping Lines"
+            f"Ticket Booked\n"
+            f"{route_str} on {formatted_date_short} at {formatted_time} launch - {launch_name}, {seat_str} has been booked. "
+            f"Fare Total: BDT {total_fmt}. Pay the full amount and confirm your ticket within next 2 hours. "
+            f"Bkash/Nagad Merchant: 01714858535."
         )
 
     elif booking.status == 'CONFIRMED':
         msg_body = (
-            f"Ticket Issued – MK Shipping Lines\n"
-            f"Route: {route_str}\n"
-            f"Date: {formatted_date_long}\n"
-            f"Time: {formatted_time}\n"
-            f"Reporting Time: {reporting_time}\n"
-            f"Launch: {launch_name}\n"
-            f"Cabin No: {seat_str}\n"
-            f"{payment_info}\n"
-            f"Regards,\nMK Shipping Lines"
+            f"Ticket Issued\n"
+            f"{route_str} on {formatted_date_short} at {formatted_time} launch - {launch_name}, "
+            f"{seat_str} has been issued. "
+            f"Fare Total: BDT {total_fmt}. "
+            f"Reporting time: {reporting_time}."
         )
 
     elif booking.status == 'CANCELLED':
         msg_body = (
-            f"Dear Passenger,\n"
-            f"Your booking (Cabin No: {seat_str}) has been CANCELLED.\n"
-            f"Route: {route_cancel_str}\n"
-            f"Date: {formatted_date_short}\n"
-            f"Fare: BDT {total_fmt}\n"
-            f"Regards,\nMK Shipping Lines"
+            f"Ticket Cancelled\n"
+            f"{route_cancel_str} on {formatted_date_short} at {formatted_time} launch - {launch_name}, "
+            f"{seat_str} has been cancelled. "
         )
 
     elif booking.status == 'EXPIRED':
         msg_body = (
-            f"Booking Expired – MK Shipping Lines\n"
-            f"Your booking for {route_cancel_str} on {formatted_date_short} has EXPIRED due to non-payment.\n"
-            f"Cabin No: {seat_str} have been released.\n"
-            f"Regards,\nMK Shipping Lines"
+            f"Ticket Expired\n"
+            f"{route_cancel_str} on {formatted_date_short} at {formatted_time} launch - {launch_name}, "
+            f"{seat_str} has expired due to payment failure."
         )
 
     # ---------------- 6. Send ----------------

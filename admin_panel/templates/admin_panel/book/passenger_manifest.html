@@ -149,10 +149,11 @@
                     <th>Ticket No</th>
                     <th>Booking Ref</th>
                     <th>Cabin</th>
+                    <th>License Plate</th>
                     <th>Pass. Name</th>
                     <th>Phone No</th>
                     <th>Paid</th>
-                    <th>Discount</th>
+                    {% comment %} <th>Discount</th> {% endcomment %}
                     <th>Due</th>
                     <th>From Station</th>
                     <th>To Station</th>
@@ -178,6 +179,16 @@
                             {% endif %}
                         </td>
 
+                        <td class="align-middle">
+                            {% if ticket.license_plate %}
+                                <span class="badge bg-secondary" style="font-size:11px; letter-spacing:0.5px;">
+                                    {{ ticket.license_plate }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
                         <td class="text-left">
                             {{ ticket.passenger_name|default:"-" }}
                         </td>
@@ -188,7 +199,7 @@
                             {{ ticket.booking_data.paid_amount|floatformat:0 }}
                         </td>
 
-                        <td class="align-middle">0</td>
+                        {% comment %} <td class="align-middle">0</td> {% endcomment %}
 
                         <td class="{% if ticket.booking_data.due_amount > 0 %}text-danger fw-bold{% endif %} align-middle">
                             {{ ticket.booking_data.due_amount|floatformat:0 }}
@@ -226,17 +237,7 @@
                         </td>
 
                         <td class="align-middle">
-                            {% if ticket.booking.status == 'PENDING' and ticket.booking.time_stopped %}
-                                Timer Stopped
-                            {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount > 0 and ticket.booking_data.due_amount > 0 %}
-                                Partial Payment
-                            {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount == 0 %}
-                                Unpaid
-                            {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.due_amount == 0 %}
-                                Paid*
-                            {% else %}
-                                N/A
-                            {% endif %}
+                            {{ ticket.booking.remarks|default:"-" }}
                         </td>
                     </tr>
                 {% empty %}
@@ -258,13 +259,11 @@
                             {{ total_paid|floatformat:0 }}
                         </td>
                         
-                        <td></td>
-                        
                         <td style="white-space: nowrap; font-weight: bold; {% if total_due > 0 %}color: red;{% else %}color: black;{% endif %}">
                             {{ total_due|floatformat:0 }}
                         </td>
                         
-                        <td colspan="6"></td>
+                        <td colspan="7"></td>
                     </tr>
                 {% endif %}
             </tbody>

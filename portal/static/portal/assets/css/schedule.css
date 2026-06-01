@@ -904,6 +904,23 @@ h5, h6, .h5, .h6{
 }
 
 
+.modern-close-btn {
+    background-color: rgba(220, 53, 69, 0.15);
+    border-radius: 50%;
+    padding: 0.8rem; /* Increased to make the circular background wider */
+    font-size: 1.4rem; /* Increased to make the "X" icon bigger */
+    opacity: 1;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.1);
+    padding: 12px;
+}
+
+.modern-close-btn:hover {
+    background-color: rgba(220, 53, 69, 0.25);
+    transform: scale(1.1);
+}
+
+
 
 
 
@@ -1714,6 +1731,42 @@ h5, h6, .h5, .h6{
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.20) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PROCESSING STATE — seat is in active payment flow
+   To enable: uncomment the block below.
+   To disable: comment it back out.
+   ═══════════════════════════════════════════════════════════════ */
+   /*
+.layout-item.processing {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border: 2px dashed rgba(99, 102, 241, 0.70) !important;
+    cursor: not-allowed;
+    opacity: 0.90;
+    animation: processingPulse 1.4s ease-in-out infinite;
+}
+.layout-item.processing .obj-icon,
+.layout-item.processing .obj-label-modern {
+    color: rgba(79, 70, 229, 0.95) !important;
+}
+.layout-item.processing::after {
+    content: "";
+    position: absolute;
+    width: 55px;
+    height: 2px;
+    background: rgba(99, 102, 241, 0.50);
+    transform: rotate(-45deg);
+}
+.layout-item.processing:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+@keyframes processingPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(99, 102, 241, 0.25); }
+    50%       { box-shadow: 0 0 18px rgba(99, 102, 241, 0.55); }
+}
+*/
+/* ═══════════════════════════════════════════════════════════════ */
+
 /* --- Modern Floating Footer --- */
 .modern-booking-footer {
     position: relative;
@@ -1867,23 +1920,79 @@ h5, h6, .h5, .h6{
 /* Modern Tooltip/Hover */
 .hover-details {
     visibility: hidden;
+    opacity: 0;
     position: absolute;
-    bottom: 120%;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    padding: 14px 16px;
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+    z-index: 9998;
+    min-width: 150px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #f1f5f9;
+    white-space: nowrap;
+}
+
+.hover-details strong {
+    color: #ffffff;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+}
+
+.hover-details .text-muted {
+    color: #94a3b8 !important;
+    font-size: 12px;
+}
+
+.hover-details .badge.bg-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    font-size: 12.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+}
+
+.hover-details .badge.bg-secondary {
+    background: rgba(148, 163, 184, 0.2) !important;
+    color: #94a3b8;
+    font-size: 12.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.hover-details .text-info {
+    color: #38bdf8 !important;
+    font-size: 12px;
+}
+
+/* Arrow */
+.hover-details::after {
+    content: '';
+    position: absolute;
+    top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    z-index: 100;
-    min-width: 120px;
-    border: 1px solid rgba(0,0,0,0.05);
-    pointer-events: none;
+    border: 7px solid transparent;
+    border-top-color: #1e293b;
+}
+
+.layout-item:hover {
+    z-index: 9999;
+    position: relative;
 }
 
 .layout-item:hover .hover-details {
     visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* --- New Modern Legend Styles --- */

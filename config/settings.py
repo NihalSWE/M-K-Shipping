@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import sys
 from pathlib import Path
+from . import db_optimizer
 from django.contrib import messages
 import environ
 import os
@@ -37,6 +38,8 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
     default=["127.0.0.1", "localhost"],
 )
+
+SITE_URL = env('SITE_URL')
 
 # ALLOWED_HOSTS = env.list(
 #     "DJANGO_ALLOWED_HOSTS",
@@ -74,13 +77,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'config.license_middleware.LicenseMiddleware',
+    'config.db_optimizer.QueryOptimizationMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'portal.middleware.VisitorTrackingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -121,6 +125,7 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD'),
         'HOST': env('DB_HOST', default='127.0.0.1'),
         'PORT': env('DB_PORT', default='5432'),
+        'CONN_MAX_AGE': db_optimizer.get_max_conn_age(),
     }
 }
 
@@ -209,6 +214,18 @@ REDIS_CACHE_DB = env.int("REDIS_CACHE_DB", default=2)
 REDIS_CELERY_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
 REDIS_CHANNEL_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CHANNEL_DB}"
 REDIS_CACHE_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CACHE_DB}"
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_CACHE_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True, # Prevents site crash if Redis restarts
+        }
+    }
+}
 
 
 # ---------------------------

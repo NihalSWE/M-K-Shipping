@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Cancelled | Marine Travel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ocean-deep: #003049;
+            --ocean-blue: #0077B6;
+            --cancel-gold: #ffb703;
+            --foam: #CAF0F8;
+            --white: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0077B6 0%, #003049 100%);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            width: 90%;
+            z-index: 10;
+        }
+
+        .status-icon {
+            width: 70px; height: 70px;
+            background: rgba(255, 183, 3, 0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.5rem;
+            border: 2px solid var(--cancel-gold);
+        }
+
+        .status-icon svg { fill: var(--cancel-gold); }
+
+        h2 { color: var(--white); margin: 0 0 1rem 0; font-weight: 700; }
+        p { color: var(--foam); opacity: 0.8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem; }
+
+        .btn {
+            display: inline-block;
+            background: var(--white);
+            color: var(--ocean-deep);
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: 0.3s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); background: var(--foam); }
+
+        .waves { position: absolute; bottom: 0; width: 100%; height: 15vh; }
+        .parallax > use { animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite; }
+        .parallax > use:nth-child(1) { fill: rgba(255,255,255,0.2); }
+        @keyframes move-forever { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-icon">
+            <svg width="35" height="35" viewBox="0 0 24 24">
+                <path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22C17.53,22 22,17.53 22,12C22,6.47 17.53,2 12,2M14.59,8L12,10.59L9.41,8L8,9.41L10.59,12L8,14.59L9.41,16L12,13.41L14.59,16L16,14.59L13.41,12L16,9.41L14.59,8Z" />
+            </svg>
+        </div>
+        <h2>Payment Cancelled</h2>
+        <p>You have cancelled your transaction. Your selected seats have been released back to the ship's inventory.</p>
+        <a href="{% url 'home' %}" class="btn">Return to Home</a>
+    </div>
+
+    <svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+        <defs><path id="w" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
+        <g class="parallax"><use href="#w" x="48" y="0" /></g>
+    </svg>
+</body>
+</html>

@@ -1,5 +1,4 @@
 from django.db import models
-
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
@@ -18,10 +17,69 @@ import uuid
 
     
 
+
+
+class PaymentGateway(models.Model):
+
+    GATEWAY_CHOICES = (
+        ('SSLCOMMERZ', 'SSLCommerz'),
+    )
+    name = models.CharField(max_length=100)
+    gateway_type = models.CharField(
+        max_length=50,
+        choices=GATEWAY_CHOICES,
+        unique=True
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+    
+    
+class SSLCommerzStore(models.Model):
+
+    gateway = models.ForeignKey(
+        PaymentGateway,
+        on_delete=models.CASCADE,
+        related_name='sslcommerz_stores'
+    )
+    name = models.CharField(
+        max_length=100,
+        help_text="Admin friendly name (e.g. MV Greenline Payment Store)"
+    )
+    store_id = models.CharField(max_length=100, unique=True)
+    store_password = models.CharField(max_length=255)
+    is_live = models.BooleanField(
+        default=False,
+        help_text="False = Sandbox, True = Production"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        verbose_name = "SSLCommerz Store"
+        verbose_name_plural = "SSLCommerz Stores"
+
+    def __str__(self):
+        mode = "Live" if self.is_live else "Sandbox"
+        return f"{self.name} ({mode})"
+    
+    
+    
 class Ship(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
     total_capacity = models.IntegerField(default=0)
+    store = models.ForeignKey(
+        SSLCommerzStore, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='ships'
+    )
     # ADD THIS FIELD - NOTHING ELSE CHANGED
     image = models.ImageField(
         upload_to='ships/',
@@ -35,6 +93,8 @@ class Ship(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
 
 class Deck(models.Model):
     ship = models.ForeignKey(Ship, on_delete=models.CASCADE, related_name='decks')
@@ -80,7 +140,12 @@ class SeatCategory(models.Model):
     capacity = models.IntegerField(default=1) 
     
     # Visuals
-    color_code = models.CharField(max_length=7, default="#FFFFFF") 
+    color_code = models.CharField(max_length=7, default="#FFFFFF")
+    
+    is_vehicle = models.BooleanField(
+        default=False, 
+        help_text="Check this if this category represents a vehicle parking space (e.g., Sedan, Motorcycle)."
+    )
     
     icon = models.ForeignKey(
         SeatIcon, 
@@ -506,6 +571,7 @@ class Booking(models.Model):
     # --- CHOICES ---
     STATUS_CHOICES = (
         ('PENDING', 'Pending Payment'),
+        ('PROCESSING', 'Payment Processing'),
         ('CONFIRMED', 'Confirmed'),
         ('CANCELLED', 'Cancelled'),
         ('EXPIRED', 'Expired'),
@@ -583,8 +649,11 @@ class Booking(models.Model):
     payment_date = models.DateTimeField(blank=True, null=True)
     
     share_token = models.CharField(max_length=40, blank=True, null=True, db_index=True)
+    booking_payload = models.JSONField(blank=True, null=True)
     qr_image = models.ImageField(upload_to="booking_qr/", blank=True, null=True)
     ticket_pdf = models.FileField(upload_to="booking_pdfs/", blank=True, null=True)
+    
+    remarks = models.CharField(max_length=30, blank=True, null=True, help_text="Short remark to display on the trip sheet")
     
     class Meta:
         # Keep any existing meta options you have
@@ -699,6 +768,29 @@ class Ticket(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    
+    
+
+# ---> NEW MODEL TO ADD <---
+class BookingVehicle(models.Model):
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name='vehicles', help_text="The parent booking this vehicle belongs to.")
+    ticket = models.OneToOneField(
+        'Ticket',
+        on_delete=models.CASCADE,
+        related_name='vehicle_details',
+        null=True,
+        blank=True,
+        help_text="Linked after payment is confirmed. Null while booking is processing."
+    )
+    model_name = models.CharField(max_length=150, blank=True, null=True, help_text="e.g., Toyota Prado, Yamaha R15")
+    license_plate = models.CharField(max_length=100, help_text="e.g., Dhaka Metro-G-12-3456")
+    
+    class Meta:
+        verbose_name = "Booking Vehicle"
+        verbose_name_plural = "Booking Vehicles"
+
+    def __str__(self):
+        return f"{self.license_plate} - Slot: {self.ticket.seat_number}"
 
 
 
@@ -732,6 +824,98 @@ class SeatHold(models.Model):
     def is_active(self):
         return self.expires_at > timezone.now()
     
+
+
+class PaymentTransaction(models.Model):
+
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('VALID', 'Valid'),
+        ('FAILED', 'Failed'),
+        ('CANCELLED', 'Cancelled'),
+        ('EXPIRED', 'Expired'),
+        ('UNATTEMPTED', 'Unattempted'),
+    )
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payment_transactions'
+    )
+
+    gateway = models.ForeignKey(
+        PaymentGateway,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    store = models.ForeignKey(
+        SSLCommerzStore,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    tran_id = models.CharField(max_length=120, unique=True)
+
+    val_id = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True
+    )
+
+    bank_tran_id = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default='BDT'
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDING'
+    )
+
+    card_type = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    card_brand = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True
+    )
+
+    raw_response = models.JSONField(
+        default=dict,
+        blank=True
+    )
+
+    is_processed = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.tran_id} - {self.status}"
+        
 #-----------------------------------------------------------------------
 #-------------------------------------------------------------------------
 
@@ -1292,3 +1476,43 @@ class FooterSocialSettings(models.Model):
 
     def __str__(self):
         return "Footer Social Links"
+    
+    
+class TicketSetting(models.Model):
+    # Time seats are held when a user clicks 'book'
+    seat_hold_minutes = models.PositiveIntegerField(
+        default=5, 
+        help_text="Time in minutes seats are held before proceeding to payment."
+    )
+    # Time allowed on the payment gateway
+    payment_timeout_minutes = models.PositiveIntegerField(
+        default=5, 
+        help_text="Time in minutes allowed to complete the transaction on the payment gateway."
+    )
+
+    def save(self, *args, **kwargs):
+        # Ensure only one instance of this model exists
+        if not self.pk and TicketSetting.objects.exists():
+            raise ValidationError('There can be only one TicketSetting instance.')
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        # Fetch the first instance, or create it if it doesn't exist
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return "Global Ticket Settings"
+    
+    
+    
+class UniqueVisitor(models.Model):
+    ip_address = models.GenericIPAddressField()
+    date = models.DateField(default=timezone.now)
+
+    class Meta:
+        unique_together = ('ip_address', 'date')
+        
+    def __str__(self):
+        return f"{self.ip_address} on {self.date}"

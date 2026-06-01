@@ -33,7 +33,51 @@
         color: #9ca3af;
         margin: 0 2px;
         font-weight: 300;
-    }  
+    }
+
+
+    /* ── Alert Modal ── */
+    .alert-modal {
+        position: fixed; inset: 0; z-index: 10500;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .alert-modal__backdrop {
+        position: absolute; inset: 0; background: rgba(0,0,0,0.55);
+    }
+    .alert-modal__card {
+        position: relative; background: #fff; border-radius: 16px;
+        padding: 32px 28px 24px; max-width: 400px;
+        width: calc(100% - 32px); text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+        animation: alertSlideIn .18s ease;
+    }
+    @keyframes alertSlideIn {
+        from { transform: scale(.88); opacity: 0; }
+        to   { transform: scale(1);   opacity: 1; }
+    }
+    .alert-modal__icon-wrap {
+        width: 58px; height: 58px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 14px; font-size: 24px;
+    }
+    .alert-modal__icon-wrap.is-error   { background:#fee2e2; color:#dc2626; }
+    .alert-modal__icon-wrap.is-warning { background:#fef3c7; color:#d97706; }
+    .alert-modal__icon-wrap.is-info    { background:#dbeafe; color:#2563eb; }
+    .alert-modal__title   { font-size:18px; font-weight:700; color:#1e293b; margin-bottom:8px; }
+    .alert-modal__message { font-size:14px; color:#475569; margin-bottom:22px; line-height:1.65; white-space:pre-line; }
+    .alert-modal__btn {
+        background:#21a2dc; color:#fff; border:none;
+        border-radius:8px; padding:10px 36px;
+        font-size:15px; font-weight:600; cursor:pointer; transition:background .2s;
+    }
+    .alert-modal__btn:hover { background:#1a8bbf; }
+    .alert-modal__btn.is-error { background:#dc2626; }
+    .alert-modal__btn.is-error:hover { background:#b91c1c; }
+    /* ── Vehicle row badge ── */
+    .vehicle-section-title {
+        color:#1e293b; font-size:1.3rem; margin:1.5rem 0 .75rem;
+        display:flex; align-items:center; gap:.5rem;
+    }
 </style>
 
 {% endblock custom_css %}
@@ -218,9 +262,9 @@
 <div id="inlineBookingOverlay" class="inline-booking-overlay"></div>
 <div id="inlineBookingPanel" class="inline-booking-panel" style="display: none;">
     <div class="inline-booking-panel__inner">
-        <div class="inline-booking-header border-0 position-relative" style="z-index: 10; flex-shrink: 0;">
-            <button class="btn-close position-absolute" id="closeDrawer"
-                    style="right: 1rem; top: 1rem; font-size: 1.25rem; z-index: 11;">
+        <div class="inline-booking-header border-0 position-relative" style="z-index: 999; flex-shrink: 0;">
+            <button class="btn-close position-absolute modern-close-btn" id="closeDrawer"
+                    style="right: 1.5rem; top: 1.5rem; z-index: 11;">
             </button>
         </div>
 
@@ -245,6 +289,15 @@
                     <form id="bookingForm" class="w-100" style="max-width: 600px;">
                         {% csrf_token %}
                         <div id="passengerRows"></div>
+
+                        <!-- Vehicle Details Section -->
+                        <div id="vehicleDetailsSection" style="display:none;">
+                            <p class="vehicle-section-title">
+                                <i class="fas fa-car"></i> Vehicle Details
+                            </p>
+                            <div id="vehicleRows"></div>
+                        </div>
+                        <!-- End Vehicle Details Section -->
 
                         <!-- Desktop-only submit button (hidden on mobile by CSS) -->
                         <div id="otpPhoneHint" class="otp-phone-hint" style="display:none;"></div>
@@ -384,6 +437,12 @@
                 <div id="pmPassengers" class="pay-passengers"></div>
             </div>
 
+            <!-- Vehicle details -->
+            <div class="pay-section" id="pmVehicleSection" style="display:none;">
+                <div class="pay-section__title">Vehicles</div>
+                <div id="pmVehicles" class="pay-passengers"></div>
+            </div>
+
             <!-- Payment method -->
             <div class="pay-section">
                 <div class="pay-section__title">Payment Method</div>
@@ -422,6 +481,20 @@
     </div>
 </div>
 <!-- [/NEW:PAYMENT_MODAL] -->
+
+<!-- Alert Modal (replaces native alert()) -->
+<div id="alertModal" class="alert-modal" style="display:none;" role="alertdialog" aria-modal="true" aria-labelledby="alertModalTitle">
+    <div class="alert-modal__backdrop"></div>
+    <div class="alert-modal__card">
+        <div class="alert-modal__icon-wrap is-warning" id="alertModalIconWrap">
+            <i class="fas fa-exclamation-triangle" id="alertModalIcon"></i>
+        </div>
+        <h4 class="alert-modal__title" id="alertModalTitle">Warning</h4>
+        <p class="alert-modal__message" id="alertModalMessage"></p>
+        <button class="alert-modal__btn" id="alertModalOkBtn">OK</button>
+    </div>
+</div>
+<!-- End Alert Modal -->
 
 {% endblock content %}
 
@@ -476,6 +549,30 @@
             let seatSocket = null;
             let wsReconnectTimer = null;
             let wsReconnectAttempts = 0;
+
+            // ── ALERT MODAL (replaces native alert()) ──────────────────────
+            function showAlert(message, title, type) {
+                type  = type  || 'warning'; // 'error' | 'warning' | 'info'
+                title = title || (type === 'error' ? 'Error' : type === 'info' ? 'Info' : 'Warning');
+
+                const iconMap = {
+                    error:   'fa-circle-xmark',
+                    warning: 'fa-exclamation-triangle',
+                    info:    'fa-circle-info'
+                };
+                const $wrap = $('#alertModalIconWrap');
+                $wrap.removeClass('is-error is-warning is-info').addClass('is-' + type);
+                $('#alertModalIcon').removeClass().addClass('fas ' + (iconMap[type] || iconMap.warning));
+                $('#alertModalTitle').text(title);
+                $('#alertModalMessage').text(message);
+                $('#alertModalOkBtn').toggleClass('is-error', type === 'error');
+                $('#alertModal').fadeIn(160);
+            }
+
+            $('#alertModalOkBtn, #alertModal .alert-modal__backdrop').on('click', function() {
+                $('#alertModal').fadeOut(140);
+            });
+            // ── END ALERT MODAL ─────────────────────────────────────────────
             
             // Wesocket function for syncing with the admin panel
             function connectSeatSocket(tripId, fromStop, toStop) {
@@ -561,7 +658,7 @@
                             // If someone ELSE triggered the pending state, and we currently have it selected
                             if (msg.holder_id != null && String(msg.holder_id) !== String(window.HOLDER_ID || HOLDER_ID)) {
                                 if ($seat.hasClass("selected")) {
-                                    alert(`Too slow! Seat ${$seat.data('label') || 'Unknown'} is currently pending for someone else.`);
+                                    showAlert(`Seat ${$seat.data('label') || 'Unknown'} is currently being processed by someone else.`, 'Seat Taken', 'warning');
                                 }
                             }
                             
@@ -571,10 +668,26 @@
                             if (typeof updateSummary === 'function') updateSummary();
                         }
 
+                        
+                        // ── PROCESSING ACTION (optional) ─────────────────────────────
+                        // To enable: uncomment this block AND uncomment the broadcast
+                        // in save_booking_view (portal/views.py) shown below.
+                        /*
+                        if (msg.action === "processing") {
+                            // Only apply to OTHER users — the paying user has already left the page
+                            if (msg.holder_id != null && String(msg.holder_id) !== String(window.HOLDER_ID || HOLDER_ID)) {
+                                $seat.removeClass("available selected on-hold").addClass("processing");
+                                if (typeof updateSummary === 'function') updateSummary();
+                            }
+                        }
+                        */
+                        // ── END PROCESSING ACTION ─────────────────────────────────────
+                        
+
                         if (msg.action === "locked") {
                             // If the portal user currently has this seat selected in their cart, warn them
                             if ($seat.hasClass("selected")) {
-                                alert(`System Alert: Seat ${$seat.data('label') || 'Unknown'} was just locked by an Admin.`);
+                                showAlert(`Seat ${$seat.data('label') || 'Unknown'} was locked by an administrator. Please choose another seat.`, 'Seat Locked', 'warning');
                             }
                             
                             // Apply the exact same UI state as "pending"
@@ -991,12 +1104,48 @@
                         $('#btnText').text('Book & PAY');
                     });
                 } else {
-                    // 1. Collect all passenger data
-                    let passengers = [];
+                    // 1. Collect vehicle data
+                    let vehicles = [];
+                    let hasDuplicatePlate = false;
                     let allValid = true;
 
-                    // Added 'index' to track the passenger row number
-                    $('.passenger-row').each(function(index) {
+                    $('.vehicle-row').each(function() {
+                        const seatId      = $(this).data('seat-id');
+                        const licensePlate = ($(this).find('.v-license').val() || '').trim().toUpperCase();
+                        const modelName    = ($(this).find('.v-model').val() || '').trim();
+
+                        const $licenseInput = $(this).find('.v-license');
+                        if (!licensePlate) {
+                            allValid = false;
+                            $licenseInput.css('border-color', 'red');
+                        } else {
+                            $licenseInput.css('border-color', '#e2e8f0');
+                        }
+
+                        vehicles.push({ seat_id: seatId, license_plate: licensePlate, model_name: modelName });
+                    });
+
+                    // Check duplicate plates within this booking
+                    const plateSet = new Set();
+                    vehicles.forEach(function(v) {
+                        if (v.license_plate) {
+                            if (plateSet.has(v.license_plate)) {
+                                hasDuplicatePlate = true;
+                                allValid = false;
+                            }
+                            plateSet.add(v.license_plate);
+                        }
+                    });
+                    if (hasDuplicatePlate) {
+                        showAlert('Duplicate license plate found. Each vehicle must have a unique license plate.', 'Duplicate Plate', 'error');
+                    }
+
+                    // 2. Collect all passenger data
+                    let passengers = [];
+
+                    let passengerFormIndex = 0;
+                    $('.passenger-row').each(function() {
+                        const index = passengerFormIndex++;
                         const name = $(this).find('.p-name').val().trim();
                         const phone = $(this).find('.p-phone').val().trim();
                         const email = $(this).find('.p-email').val().trim();
@@ -1006,37 +1155,38 @@
 
                         // Fail validation if Name/Phone is empty, OR if it's the 1st row and Email/Address is empty
                         if (!name || !phone || (index === 0 && (!email || !address))) {
-                        allValid = false;
-                        $(this).find('.modern-input').each(function() {
-                            // Highlight the correct missing fields with a red border
-                            const isBasicRequired = $(this).is('.p-name, .p-phone');
-                            const isFirstRowExtraRequired = index === 0 && $(this).is('.p-email, .p-address');
-
-                            if (!$(this).val().trim() && (isBasicRequired || isFirstRowExtraRequired)) {
-                            $(this).css('border-color', 'red');
-                            } else {
-                            $(this).css('border-color', '#e2e8f0');
-                            }
-                        });
+                            allValid = false;
+                            $(this).find('.modern-input').each(function() {
+                                const isBasicRequired = $(this).is('.p-name, .p-phone');
+                                const isFirstRowExtraRequired = index === 0 && $(this).is('.p-email, .p-address');
+                                if (!$(this).val().trim() && (isBasicRequired || isFirstRowExtraRequired)) {
+                                    $(this).css('border-color', 'red');
+                                } else {
+                                    $(this).css('border-color', '#e2e8f0');
+                                }
+                            });
                         }
 
                         passengers.push({
                             seat_id: $(this).data('seat-id'),
-                            name: name,
-                            gender: gender,
-                            phone: phone,
-                            email: email,
-                            address: address
+                            name: name, gender: gender,
+                            phone: phone, email: email, address: address
                         });
                     });
 
-                    // 2. Strict Validation Check
+                    // 3. Strict Validation Check
                     if (!allValid) {
-                        alert('Please fill in the Full Name and Phone for ALL passengers, and the Email and Address for the FIRST passenger.');
+                        if (!hasDuplicatePlate) {
+                            showAlert(
+                                'Please fill in required fields:\n• Full Name & Phone for every passenger\n• Email & Address for the first passenger\n• License Plate for every vehicle space',
+                                'Missing Information',
+                                'error'
+                            );
+                        }
                         return;
                     }
 
-                    // If not logged in, send OTP instead of saving booking
+                    // If not logged in: validate first, THEN send OTP
                     if (!IS_AUTH) {
                         const phone = getFirstPassengerPhoneClean();
                         const name = getFirstPassengerName();
@@ -1047,54 +1197,93 @@
                             return;
                         }
 
-                        showOtpUi();
-
                         const $btn = $(this);
                         $btn.prop('disabled', true);
-                        $('#btnText').text('SENDING OTP...');
+                        $('#btnText').text('VALIDATING...');
 
-                        fetch("{% url 'send_booking_otp' %}", {
+                        const $drawer = $('#inlineBookingPanel');
+                        const preValidatePayload = {
+                            trip_id:    $drawer.data('trip-id'),
+                            from_stop:  $drawer.data('from-stop'),
+                            to_stop:    $drawer.data('to-stop'),
+                            passengers: passengers,
+                            vehicles:   vehicles
+                        };
+
+                        // Step 1: Backend validation BEFORE sending OTP
+                        fetch("{% url 'pre_validate_booking' %}", {
                             method: 'POST',
+                            credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRFToken': getCookie('csrftoken')
                             },
-                            body: JSON.stringify({ phone: phone })
+                            body: JSON.stringify(preValidatePayload)
                         })
                         .then(r => r.json())
-                        .then(data => {
-                            if (!data.success) {
-                                setOtpStatus(data.error || 'Failed to send OTP.', true);
-                                syncActionButtonMode();
+                        .then(function(validationResult) {
+                            if (!validationResult.success) {
+                                $btn.prop('disabled', false);
+                                $('#btnText').text('Next');
+                                showAlert(validationResult.error || 'Validation failed. Please check your details.', 'Validation Error', 'error');
                                 return;
                             }
 
-                            setOtpStatus(data.message || `OTP sent to ${phone}. Enter it below.`, false);
-                            bookingOtpSent = true;
+                            // Step 2: Validation passed — now send OTP
+                            $btn.prop('disabled', true);
+                            $('#btnText').text('SENDING OTP...');
                             showOtpUi();
-                            showOtpInput();
 
-                            startOtpResendCountdown(60);
+                            fetch("{% url 'send_booking_otp' %}", {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                body: JSON.stringify({ phone: phone })
+                            })
+                            .then(r => r.json())
+                            .then(function(otpData) {
+                                $btn.prop('disabled', false);
+                                $('#btnText').text('Next');
 
-                            // Hide SEND OTP buttons after OTP is sent (VERIFY/RESEND controls take over)
-                            $('#checkoutBtn').hide();
-                            $('#desktopSubmitBookingBtn').hide();
-
-                            // Scroll OTP block into view (important on mobile)
-                            setTimeout(function() {
-                                const el = document.getElementById('otpUiWrap');
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                if (!otpData.success) {
+                                    setOtpStatus(otpData.error || 'Failed to send OTP.', true);
+                                    syncActionButtonMode();
+                                    return;
                                 }
-                            }, 80);
+
+                                setOtpStatus(otpData.message || `OTP sent to ${phone}. Enter it below.`, false);
+                                bookingOtpSent = true;
+                                showOtpUi();
+                                showOtpInput();
+                                startOtpResendCountdown(60);
+
+                                $('#checkoutBtn').hide();
+                                $('#desktopSubmitBookingBtn').hide();
+
+                                setTimeout(function() {
+                                    const el = document.getElementById('otpUiWrap');
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 80);
+                            })
+                            .catch(function(err) {
+                                console.error(err);
+                                $btn.prop('disabled', false);
+                                $('#btnText').text('Next');
+                                setOtpStatus('Failed to send OTP. Please try again.', true);
+                                syncActionButtonMode();
+                            });
                         })
-                        .catch(err => {
-                            console.error(err);
-                            setOtpStatus('Failed to send OTP. Please try again.', true);
-                            syncActionButtonMode();
+                        .catch(function(err) {
+                            console.error('Pre-validation error:', err);
+                            $btn.prop('disabled', false);
+                            $('#btnText').text('Next');
+                            showAlert('Network error during validation. Please try again.', 'Connection Error', 'error');
                         });
 
-                        return; // ✅ stop here (don’t save booking yet)
+                        return; // stop here
                     }
 
                     // for no modal starts
@@ -1152,67 +1341,85 @@
 
 
                     // for modal starts
-                    // [NEW:PAYMENT_MODAL_FLOW] Open confirmation modal instead of saving booking now
+                    // [PAYMENT_MODAL_FLOW — with backend pre-validation]
                     const $btn = $(this);
                     $btn.prop('disabled', true);
-                    $('#btnText').text('OPENING...');
+                    $('#btnText').text('VALIDATING...');
 
-                    // ✅ Read active trip context from the drawer (correct ship/trip)
                     const $drawer = $('#inlineBookingPanel');
                     const payload = {
-                        trip_id: $drawer.data('trip-id'),
-                        from_stop: $drawer.data('from-stop'),
-                        to_stop: $drawer.data('to-stop'),
-                        passengers: passengers
+                        trip_id:    $drawer.data('trip-id'),
+                        from_stop:  $drawer.data('from-stop'),
+                        to_stop:    $drawer.data('to-stop'),
+                        passengers: passengers,
+                        vehicles:   vehicles
                     };
 
-                    // Store payload globally for Pay button
-                    pendingPaymentPayload = payload;
+                    // Backend validation before opening payment modal
+                    fetch("{% url 'pre_validate_booking' %}", {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(r => r.json())
+                    .then(function(result) {
+                        $btn.prop('disabled', false);
+                        $('#btnText').text('Book & PAY');
 
-                    // Build seat + total summary from selected seats in current panel
-                    let total = 0;
-                    const seats = [];
-                    $('#inlineBookingPanel').find('.layout-item.selected').each(function() {
-                        const label = $(this).data('label') || '';
-                        const price = parseFloat($(this).data('price') || 0);
-                        seats.push({ label, price });
-                        total += price;
+                        if (!result.success) {
+                            showAlert(result.error || 'Validation failed. Please check your details.', 'Validation Error', 'error');
+                            return;
+                        }
+
+                        // Validation passed — store payload and open modal
+                        pendingPaymentPayload = payload;
+
+                        let total = 0;
+                        const seats = [];
+                        $('#inlineBookingPanel').find('.layout-item.selected').each(function() {
+                            const label = $(this).data('label') || '';
+                            const price = parseFloat($(this).data('price') || 0);
+                            seats.push({ label, price });
+                            total += price;
+                        });
+
+                        const passengerSummary = passengers.map(p => ({
+                            seat_label: $('#inlineBookingPanel').find(`.layout-item[data-id="${p.seat_id}"]`).data('label') || '',
+                            name: p.name, phone: p.phone,
+                            gender: p.gender, email: p.email, address: p.address
+                        }));
+
+                        const vehicleSummary = vehicles.map(v => ({
+                            seat_label: $('#inlineBookingPanel').find(`.layout-item[data-id="${v.seat_id}"]`).data('label') || '',
+                            license_plate: v.license_plate,
+                            model_name: v.model_name
+                        }));
+
+                        const tripSummary = getTripCardSummary(payload.trip_id);
+                        openPaymentModal({
+                            ship_name: tripSummary.ship_name,
+                            route_text: tripSummary.route_text,
+                            departure_text: tripSummary.departure_text,
+                            arrival_text: tripSummary.arrival_text,
+                            total: total,
+                            seats: seats,
+                            passengers: passengerSummary,
+                            vehicles: vehicleSummary
+                        });
+                    })
+                    .catch(function(err) {
+                        console.error('Pre-validation error:', err);
+                        $btn.prop('disabled', false);
+                        $('#btnText').text('Book & PAY');
+                        showAlert('Network error during validation. Please try again.', 'Connection Error', 'error');
                     });
 
-                    // Passengers summary (attach seat labels)
-                    const passengerSummary = passengers.map(p => {
-                        const seatLabel = $('#inlineBookingPanel')
-                            .find(`.layout-item[data-id="${p.seat_id}"]`)
-                            .data('label') || '';
-                        return {
-                            seat_label: seatLabel,
-                            name: p.name,
-                            phone: p.phone,
-                            gender: p.gender,
-                            email: p.email,
-                            address: p.address
-                        };
-                    });
-
-                    // Open modal UI (trip summary placeholders are fine for now)
-                    const tripSummary = getTripCardSummary(payload.trip_id);
-
-                    openPaymentModal({
-                        ship_name: tripSummary.ship_name,
-                        route_text: tripSummary.route_text,
-                        departure_text: tripSummary.departure_text,
-                        arrival_text: tripSummary.arrival_text,
-                        total: total,
-                        seats: seats,
-                        passengers: passengerSummary
-                    });
-
-                    // Re-enable button because booking is not submitted yet
-                    $btn.prop('disabled', false);
-                    $('#btnText').text('Book & PAY');
                     return;
-                    // [/NEW:PAYMENT_MODAL_FLOW]
-                    // for modal ends
+                    // [/PAYMENT_MODAL_FLOW]
                 }
             });
 
@@ -1377,18 +1584,28 @@
                         });
                     });
 
+                    // Validation already ran before OTP was sent — open modal directly
                     const $drawer = $('#inlineBookingPanel');
+
+                    const vehiclesOtp = [];
+                    $('.vehicle-row').each(function() {
+                        vehiclesOtp.push({
+                            seat_id:       $(this).data('seat-id'),
+                            license_plate: ($(this).find('.v-license').val() || '').trim().toUpperCase(),
+                            model_name:    ($(this).find('.v-model').val() || '').trim()
+                        });
+                    });
+
                     const payload = {
-                        trip_id: $drawer.data('trip-id'),
-                        from_stop: $drawer.data('from-stop'),
-                        to_stop: $drawer.data('to-stop'),
-                        passengers: passengers
+                        trip_id:    $drawer.data('trip-id'),
+                        from_stop:  $drawer.data('from-stop'),
+                        to_stop:    $drawer.data('to-stop'),
+                        passengers: passengers,
+                        vehicles:   vehiclesOtp
                     };
 
-                    // Store payload globally for Pay button
                     pendingPaymentPayload = payload;
 
-                    // Build seat + total summary from selected seats in current panel
                     let total = 0;
                     const seats = [];
                     $('#inlineBookingPanel').find('.layout-item.selected').each(function() {
@@ -1398,24 +1615,19 @@
                         total += price;
                     });
 
-                    // Passengers summary for modal
-                    const passengerSummary = passengers.map(p => {
-                        const seatLabel = $('#inlineBookingPanel')
-                            .find(`.layout-item[data-id="${p.seat_id}"]`)
-                            .data('label') || '';
-                        return {
-                            seat_label: seatLabel,
-                            name: p.name,
-                            phone: p.phone,
-                            gender: p.gender,
-                            email: p.email,
-                            address: p.address
-                        };
-                    });
+                    const passengerSummary = passengers.map(p => ({
+                        seat_label: $('#inlineBookingPanel').find(`.layout-item[data-id="${p.seat_id}"]`).data('label') || '',
+                        name: p.name, phone: p.phone,
+                        gender: p.gender, email: p.email, address: p.address
+                    }));
 
-                    // Open payment modal
+                    const vehicleSummaryOtp = vehiclesOtp.map(v => ({
+                        seat_label: $('#inlineBookingPanel').find(`.layout-item[data-id="${v.seat_id}"]`).data('label') || '',
+                        license_plate: v.license_plate,
+                        model_name: v.model_name
+                    }));
+
                     const tripSummary = getTripCardSummary(payload.trip_id);
-
                     openPaymentModal({
                         ship_name: tripSummary.ship_name,
                         route_text: tripSummary.route_text,
@@ -1423,15 +1635,12 @@
                         arrival_text: tripSummary.arrival_text,
                         total: total,
                         seats: seats,
-                        passengers: passengerSummary
+                        passengers: passengerSummary,
+                        vehicles: vehicleSummaryOtp
                     });
 
-                    // UI cleanup: keep OTP verified state, hide verify button state
-                    // [FIX:OTP_POST_SUCCESS]
                     $vbtn.prop('disabled', false).text('VERIFY OTP');
-                    // User is logged in already, so do NOT show OTP status / do NOT hide Book & Pay buttons
                     return;
-                    // [/FIX:OTP_POST_SUCCESS]
                     // [/NEW:PAYMENT_MODAL_FLOW_OTP]
                 })
                 .catch(err => {
@@ -1460,13 +1669,14 @@
                 const $btn = $(this);
                 $btn.prop('disabled', true).text('Sending...');
 
-                fetch("{% url 'send_booking_otp' %}", {
+                fetch("{% url 'verify_booking_otp' %}", {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({ phone: phone })
+                    body: JSON.stringify({ phone: phone, otp: otp })
                 })
                 .then(r => r.json())
                 .then(data => {
@@ -1748,6 +1958,7 @@
 
                     // Generate passenger rows immediately based on selected seats
                     generatePassengerRows();
+                    generateVehicleRows();
 
                     // Let auth-aware logic decide text/button state
                     syncActionButtonMode();
@@ -1795,7 +2006,7 @@
 
                     // if seat is on-hold/occupied/non-bookable, block
                     if ($seat.hasClass('occupied') || $seat.hasClass('non-bookable')) {
-                        alert(`Seat ${$seat.data('label')} is not available right now.`);
+                        showAlert(`Seat ${$seat.data('label')} is not available right now.`, 'Unavailable', 'warning');
                         return;
                     }
 
@@ -1812,15 +2023,25 @@
                         if (!rel.ok || !rel.data?.success) {
                             $seat.removeClass('available on-hold').addClass('selected');
                             updateSummary();
-                            alert(rel.data?.error || 'Failed to release the seat. Please try again.');
+                            showAlert(rel.data?.error || 'Failed to release the seat. Please try again.', 'Release Failed', 'error');
                         }
 
                         return;
                     }
 
-                    // selecting new seat -> max 5
-                    if (selectedCount >= 5) {
-                        alert('Maximum of 5 seats/cabins can be booked at once.');
+                    // selecting new seat -> separate limits for vehicle spaces and seats/cabins
+                    const isVehicle = ($seat.data('is-vehicle') === true || $seat.data('is-vehicle') === 'true');
+                    const vehicleSelectedCount = $panelScope().find('.layout-item.selected[data-is-vehicle="true"]').length;
+                    const seatSelectedCount    = $panelScope().find('.layout-item.selected').filter(function() {
+                        return $(this).data('is-vehicle') !== true && $(this).data('is-vehicle') !== 'true';
+                    }).length;
+
+                    if (isVehicle && vehicleSelectedCount >= 3) {
+                        showAlert('Maximum of 3 vehicle spaces can be booked per booking.', 'Vehicle Limit Reached', 'warning');
+                        return;
+                    }
+                    if (!isVehicle && seatSelectedCount >= 5) {
+                        showAlert('Maximum of 5 seats/cabins can be booked per booking.', 'Seat Limit Reached', 'warning');
                         return;
                     }
 
@@ -1830,7 +2051,7 @@
 
                     // Hard failure (401, 500, etc.)
                     if (!result.ok || !result.data.success) {
-                        alert(result.data?.error || `Seat ${$seat.data('label')} is not available right now.`);
+                        showAlert(result.data?.error || `Seat ${$seat.data('label')} is not available right now.`, 'Hold Failed', 'error');
 
                         const err = String(result.data?.error || '').toLowerCase();
                         if (err.includes('hold')) {
@@ -1856,14 +2077,14 @@
 
                         let msg = `Seat ${$seat.data('label')} is not available right now.`;
                         if (rejection?.reason === 'held') {
-                            msg = `Seat ${$seat.data('label')} is currently on hold.`;
+                            msg = `Seat ${$seat.data('label')} is currently on hold by another user.`;
                         } else if (rejection?.reason === 'booked') {
                             msg = `Seat ${$seat.data('label')} has already been booked.`;
                         } else if (result.data.error) {
                             msg = result.data.error;
                         }
 
-                        alert(msg);
+                        showAlert(msg, 'Seat Unavailable', 'warning');
 
                         // Update ONLY this seat
                         if (rejection?.reason === 'held') {
@@ -1937,6 +2158,7 @@
                 // Mobile: sync only if passenger section is currently open
                 if (isDesktopBookingLayout() || $('#passengerDetailsSection').is(':visible')) {
                     generatePassengerRows();
+                    generateVehicleRows();
                 }
 
                 // ✅ 6. Keep desktop submit button in sync too (if present)
@@ -1981,11 +2203,17 @@
                 let html = '';
                 if (selected.length > 0) {
                     selected.forEach(item => {
+                        const itemIsVehicle = ($(`.layout-item[data-id]`).filter(function() {
+                            return String($(this).data('label')) === String(item.label);
+                        }).data('is-vehicle'));
+                        const itemIcon = (itemIsVehicle === true || itemIsVehicle === 'true')
+                            ? 'fa-solid fa-car'
+                            : 'fa-solid fa-chair';
                         html += `
                             <div class="selected-items-panel__item">
                                 <div class="selected-items-panel__left">
                                     <span class="selected-items-panel__badge">
-                                        <i class="fa-solid fa-chair"></i>
+                                        <i class="${itemIcon}"></i>
                                     </span>
                                     <div>
                                         <div class="selected-items-panel__name">${item.label}</div>
@@ -2044,7 +2272,12 @@
 
                 $container.empty();
 
-                $('.layout-item.selected').each(function(index) {
+                let passengerIndex = 0;
+                $('.layout-item.selected').each(function() {
+                    const isVehicle = ($(this).data('is-vehicle') === true || $(this).data('is-vehicle') === 'true');
+                    if (isVehicle) return; // vehicle seats handled by generateVehicleRows()
+
+                    const index = passengerIndex++;
                     const seatLabel = $(this).data('label');
                     const seatId = $(this).data('id');
 
@@ -2135,6 +2368,70 @@
                 // Enable/disable desktop submit button based on selection
                 syncActionButtonMode();
             }
+
+
+            // ── VEHICLE ROWS ─────────────────────────────────────────────
+            function generateVehicleRows() {
+                const $container = $('#vehicleRows');
+                if (!$container.length) return;
+
+                // Preserve existing typed values by seat_id
+                const existingData = {};
+                $container.find('.vehicle-row').each(function() {
+                    const sid = $(this).data('seat-id');
+                    existingData[sid] = {
+                        license_plate: $(this).find('.v-license').val() || '',
+                        model_name:    $(this).find('.v-model').val()   || ''
+                    };
+                });
+
+                $container.empty();
+                let vehicleIndex = 0;
+
+                $('.layout-item.selected').each(function() {
+                    const isVehicle = ($(this).data('is-vehicle') === true || $(this).data('is-vehicle') === 'true');
+                    if (!isVehicle) return;
+
+                    vehicleIndex++;
+                    const seatLabel = $(this).data('label');
+                    const seatId    = $(this).data('id');
+                    const category  = $(this).data('category') || 'Vehicle Space';
+                    const saved     = existingData[seatId] || {};
+
+                    const rowHtml = `
+                        <div class="vehicle-row" data-seat-id="${seatId}">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="seat-badge">
+                                    <i class="fa-solid fa-car"></i>&nbsp;SPACE ${seatLabel}
+                                </span>
+                                <span class="passenger-label">Vehicle ${vehicleIndex} — ${category}</span>
+                            </div>
+                            <div class="field-grid">
+                                <div class="form-group">
+                                    <label class="form-label">License Plate <span class="req-star">*</span></label>
+                                    <input type="text"
+                                           class="modern-input v-license"
+                                           placeholder="e.g. Dhaka Metro-G-12-3456"
+                                           autocomplete="off"
+                                           value="${(saved.license_plate || '').replace(/"/g, '&quot;')}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Vehicle Model <span class="optional-text">(Optional)</span></label>
+                                    <input type="text"
+                                           class="modern-input v-model"
+                                           placeholder="e.g. Toyota Prado"
+                                           value="${(saved.model_name || '').replace(/"/g, '&quot;')}">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $container.append(rowHtml);
+                });
+
+                // Show/hide the whole vehicle section
+                $('#vehicleDetailsSection').toggle(vehicleIndex > 0);
+            }
+            // ── END VEHICLE ROWS ─────────────────────────────────────────
 
 
             // Copy First Passenger Details
@@ -2596,6 +2893,24 @@
                 }).join('');
                 $('#pmPassengers').html(passengersHtml || `<span class="text-muted">No passengers</span>`);
 
+                // Vehicles
+                const vehicleList = summary.vehicles || [];
+                if (vehicleList.length > 0) {
+                    const vehiclesHtml = vehicleList.map(function(v, idx) {
+                        return `
+                            <div class="pay-passenger">
+                                <div class="pay-passenger__title">Vehicle ${idx + 1} — Space ${escapeHtml(v.seat_label || '')}</div>
+                                <div class="pay-passenger__kv"><span>License Plate:</span> ${escapeHtml(v.license_plate || '')}</div>
+                                ${v.model_name ? `<div class="pay-passenger__kv"><span>Model:</span> ${escapeHtml(v.model_name)}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                    $('#pmVehicles').html(vehiclesHtml);
+                    $('#pmVehicleSection').show();
+                } else {
+                    $('#pmVehicleSection').hide();
+                }
+
                 // Open
                 $('#paymentModal').fadeIn(120);
                 $('body').css('overflow', 'hidden');
@@ -2627,7 +2942,7 @@
             // [NEW:PAYMENT_MODAL_PAY_HANDLER]
             $(document).on('click', '#payNowBtn', function() {
                 if (!pendingPaymentPayload) {
-                    alert('Missing payment payload. Please try again.');
+                    showAlert('Session data lost. Please close the panel and try booking again.', 'Session Error', 'error');
                     return;
                 }
 
@@ -2647,7 +2962,7 @@
                 .then(r => r.json())
                 .then(data => {
                     if (!data.success) {
-                        alert('Error: ' + (data.error || 'Payment failed.'));
+                        showAlert(data.error || 'Payment initialisation failed. Please try again.', 'Payment Error', 'error');
                         $btn.prop('disabled', false);
                         $('#payBtnText').text('Pay');
                         return;
@@ -2659,13 +2974,19 @@
                     }
 
                     // Close payment modal
-                    closePaymentModal();
+                    // before payment
+                    /*closePaymentModal();
 
                     // Show success modal (your existing one)
                     $('#modalRef').text(data.booking_ref);
                     $('#successModal').css('display', 'flex').hide().fadeIn(100, function() {
                         $(this).addClass('show');
-                    });
+                    });*/
+                    // before paymen
+                    
+                    // replaced after payment
+                    window.location.href = data.gateway_url;
+                    // replaced after payment
 
                     $('#finalRedirectBtn').off('click').on('click', function() {
                         window.location.href = "/booking/success/" + data.booking_ref + "/";
@@ -2676,7 +2997,7 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Failed to process payment. Please try again.');
+                    showAlert('Network error. Please check your connection and try again.', 'Connection Error', 'error');
                     $btn.prop('disabled', false);
                     $('#payBtnText').text('Pay');
                 });

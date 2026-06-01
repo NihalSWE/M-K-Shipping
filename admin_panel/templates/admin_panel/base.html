@@ -15,6 +15,7 @@
     <!-- Google font-->
     <link href="https://fonts.googleapis.com/css?family=Rubik:400,400i,500,500i,700,700i&amp;display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome-->
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/fontawesome.css' %}">
     <!-- ico-font-->
@@ -40,23 +41,13 @@
     <link id="color" rel="stylesheet" href="{% static 'assets/css/color-1.css' %}" media="screen">
     <!-- Responsive css-->
     <link rel="stylesheet" type="text/css" href="{% sass_src 'assets/scss/responsive.scss' %}">
-
-    <style>
-        /* Default: icon inherits the link color */
-        .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .simplebar-wrapper .simplebar-mask .simplebar-content-wrapper .simplebar-content > li .sidebar-link .iconify {
-            color: inherit;
-        }
-        /* Make Iconify icon follow active color too */
-        .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .simplebar-wrapper .simplebar-mask .simplebar-content-wrapper .simplebar-content > li .sidebar-link.active .iconify {
-            color: var(--theme-default);
-            transition: all 0.3s ease;
-        }
-    </style>
+    <!-- NVX Sidebar / Topbar -->
+    <link rel="stylesheet" type="text/css" href="{% sass_src 'assets/css/custom_sidebar_style.css' %}">
 
     {% block custom_css %}  {% endblock custom_css %}
   </head>
 
-  <body class={{layout}} {% if request.path == '/index' %} onload="startTime()" {% endif %}> 
+  <body class={{layout}} {% if request.path == '/index' %} onload="startTime()" {% endif %}>
     <!-- loader starts-->
     <div class="loader-wrapper">
       <div class="loader-index"> <span></span></div>
@@ -74,12 +65,11 @@
     <!-- tap on tap ends-->
     <!-- page-wrapper Start-->
     <div class="page-wrapper compact-wrapper" id="pageWrapper">
-        {% include "admin_panel/layout/header.html" %} 
+        {% include "admin_panel/layout/header.html" %}
         <!-- Page Body Start-->
         <div class="page-body-wrapper">
           {% include "admin_panel/layout/sidebar.html" %}
           <div class="page-body">
-            {% comment %} {% include "admin_panel/layout/breadcrumb.html" %} {% endcomment %}
             {% block content %} {% endblock %}
           </div>
           {% include "admin_panel/layout/footer.html" %}
@@ -99,7 +89,6 @@
     <!-- Sidebar jquery-->
     <script src="{% static 'assets/js/config.js' %}"></script>
     <!-- Plugins JS start-->
-    <script src="{% static 'assets/js/sidebar-menu.js' %}"></script>
     <script src="{% static 'assets/js/sidebar-pin.js' %}"></script>
     <script src="{% static 'assets/js/slick/slick.min.js' %}"></script>
     <script src="{% static 'assets/js/slick/slick.js' %}"></script>
@@ -109,11 +98,105 @@
 
     <script src="{% static 'assets/js/script.js' %}"></script>
     <script src="{% static 'assets/js/script1.js' %}"></script>
-    <script src="{% static 'assets/js/theme-customizer/customizer.js' %}"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+    <script>
+    /* ============================================================
+       NVX Sidebar — dropdown + active link highlighting
+       (Mobile toggle + profile dropdown logic live in header.html)
+       ============================================================ */
+    document.addEventListener("DOMContentLoaded", function () {
+
+        /* ----------------------------------------------------------
+           1. Robust Dropdown Logic (Event Delegation)
+           ---------------------------------------------------------- */
+        document.body.addEventListener("click", function (e) {
+            const toggleBtn = e.target.closest(".nvx-dropdown-toggle");
+            if (!toggleBtn) return;
+
+            e.preventDefault();
+
+            const parentLi = toggleBtn.closest(".nvx-has-dropdown");
+            const subMenu  = parentLi.querySelector(".nvx-dropdown-menu");
+            const isOpen   = parentLi.classList.contains("nvx-open");
+
+            // Accordion: close other open submenus
+            document.querySelectorAll(".nvx-has-dropdown.nvx-open").forEach(openLi => {
+                if (openLi !== parentLi) {
+                    openLi.classList.remove("nvx-open");
+                    const otherSubMenu = openLi.querySelector(".nvx-dropdown-menu");
+                    if (otherSubMenu) otherSubMenu.style.maxHeight = null;
+                }
+            });
+
+            if (isOpen) {
+                parentLi.classList.remove("nvx-open");
+                if (subMenu) subMenu.style.maxHeight = null;
+            } else {
+                parentLi.classList.add("nvx-open");
+                if (subMenu) subMenu.style.maxHeight = subMenu.scrollHeight + "px";
+            }
+        });
+
+        /* ----------------------------------------------------------
+           2. Active Link Highlighting (Django-friendly)
+           ---------------------------------------------------------- */
+        const currentFullUrl = window.location.href;
+        const currentBaseUrl = window.location.href.split('?')[0];
+
+        const allLinks = document.querySelectorAll(
+            ".nvx-nav-link:not(.nvx-dropdown-toggle), .nvx-dropdown-link"
+        );
+
+        allLinks.forEach(link => {
+            const linkHref = link.href;
+            if (!linkHref || link.getAttribute("href") === "javascript:void(0);") return;
+
+            if (linkHref === currentFullUrl || linkHref === currentBaseUrl) {
+                link.classList.add("nvx-active");
+
+                if (link.classList.contains("nvx-dropdown-link")) {
+                    const parentDropdownLi = link.closest(".nvx-has-dropdown");
+                    if (parentDropdownLi) {
+                        parentDropdownLi.classList.add("nvx-open");
+                        const parentMenu = parentDropdownLi.querySelector(".nvx-dropdown-menu");
+                        if (parentMenu) {
+                            setTimeout(() => {
+                                parentMenu.style.maxHeight = parentMenu.scrollHeight + "px";
+                            }, 10);
+                            const parentToggle = parentDropdownLi.querySelector(".nvx-dropdown-toggle");
+                            if (parentToggle) parentToggle.classList.add("nvx-active");
+                        }
+                    }
+                }
+            }
+        });
+
+        /* ----------------------------------------------------------
+           3. Mobile Close Button (the open button is in header.html)
+           ---------------------------------------------------------- */
+        const sidebarContainer = document.getElementById("nvx-sidebar-container");
+        const closeMobileBtn   = document.getElementById("nvx-close-mobile-btn");
+        const overlay          = document.getElementById("nvxMobileOverlay");
+
+        function closeMobileSidebar() {
+            if (sidebarContainer) sidebarContainer.classList.remove("nvx-mobile-open");
+            if (overlay) overlay.classList.remove("nvx-active");
+        }
+
+        if (closeMobileBtn) closeMobileBtn.addEventListener("click", closeMobileSidebar);
+
+        /* ----------------------------------------------------------
+           4. Recalculate dropdown heights on resize
+           ---------------------------------------------------------- */
+        window.addEventListener("resize", () => {
+            document.querySelectorAll(".nvx-has-dropdown.nvx-open .nvx-dropdown-menu").forEach(menu => {
+                const totalMaxHeight = menu.scrollHeight + 10
+                menu.style.maxHeight = menu.scrollHeight + "px";
+            });
+        });
+    });
+    </script>
 
   </body>
 </html>
-
-
-  

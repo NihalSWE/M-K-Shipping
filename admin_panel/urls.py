@@ -156,4 +156,15 @@ urlpatterns = [
     path('profile/', views.profile_view, name='admin_profile'),
     path('profile/update/', views.update_profile, name='update_profile'),
     path('profile/change-password/', views.change_password, name='change_password'),
+    
+    # SSL Commerz Store Management
+    path('ssl-stores/', views.ssl_commerz_stores, name='ssl_commerz_stores'),
+    path('payment-gateways/', views.payment_gateways, name='payment_gateways'),
+    
+    # Payment Transactions
+    path('payments/transactions/', views.payment_transaction_list, name='payment_transactions'),
+    path('payments/transactions/<int:pk>/json/', views.transaction_detail_json, name='transaction_detail_json'),
+    
+    # Settings
+    path('settings/ticket/', views.manage_ticket_settings, name='manage_ticket_settings'),
 ]

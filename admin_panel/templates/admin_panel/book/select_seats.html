@@ -282,7 +282,24 @@
         color: #333 !important;
     }
 
-        
+    /* Styles for seats held by OTHER admins via WebSocket */
+    .layout-obj.remote-held {
+        background-color: #ffc107 !important; /* Yellow */
+        border: 2px dashed #d39e00 !important;
+        cursor: not-allowed !important;
+        opacity: 0.8;
+        pointer-events: none; /* Prevent clicking */
+        transition: all 0.3s ease;
+    }
+    .layout-obj.remote-held::after {
+        content: '\f254'; /* FontAwesome Hourglass */
+        font-family: FontAwesome;
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+        color: #856404;
+    }
 </style>
 
 <!-- Legend Section -->
@@ -413,6 +430,7 @@
                                     data-label="{{ obj.label }}"
                                     data-price="{{ category_prices|get_item:obj.category.id|default:0 }}"
                                     data-category="{{ obj.category.name }}"
+                                    data-is-vehicle="{{ obj.category.is_vehicle|yesno:'true,false' }}"
                                 >
                                     {# --- A. RENDER ICON (Only for bookable seats like Single Bed) --- #}
                                     {% if obj.category.is_bookable and obj.category.icon %}
@@ -460,6 +478,7 @@
                 <input type="hidden" name="from_stop_id" value="{{ from_stop.id }}">
                 <input type="hidden" name="to_stop_id" value="{{ to_stop.id }}">
                 <input type="hidden" name="selected_seats" id="selected_seats_input">
+                <input type="hidden" name="vehicles_data" id="vehicles_data_input" value="[]">
 
                 <div class="summary-card p-4">
                     <h5 class="fw-bold mb-3 border-bottom pb-2">Booking Summary</h5>
@@ -492,6 +511,15 @@
                         
                     </div>
 
+                    <!-- Vehicle Details Section — shown only when vehicle spaces are selected -->
+                    <div id="admin-vehicle-section" class="bg-light p-3 rounded mb-3 border" style="display:none;">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-3">
+                            <i class="fa fa-car me-1"></i> Vehicle Details
+                        </h6>
+                        <div id="admin-vehicle-rows"></div>
+                    </div>
+                    <!-- End Vehicle Details Section -->
+
                     <div class="bg-light p-3 rounded mb-4 border">
                         <h6 class="fw-bold small text-uppercase text-muted mb-2">Payment Info</h6>
                         <div class="row g-2">
@@ -506,10 +534,16 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Hold Time (Minutes)</label>
-                        <input type="number" name="hold_duration" class="form-control" value="120" placeholder="e.g. 60">
-                        <small class="text-muted">Default is 2 hours (120 mins)</small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Hold Time (Minutes)</label>
+                            <input type="number" name="hold_duration" class="form-control" value="120" placeholder="e.g. 60">
+                            <small class="text-muted">Default is 2 hours (120 mins)</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Remarks (Optional)</label>
+                            <input type="text" name="booking_remarks" class="form-control" maxlength="30" placeholder="Max 30 chars">
+                        </div>
                     </div>
 
                     <div id="ajax-message-container" class="mb-3 d-none p-3 rounded small fw-bold text-center" style="transition: opacity 0.3s ease;"></div>
@@ -624,26 +658,6 @@
 {% block scriptcontent %}
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 {{ holder_id|json_script:"admin-holder-id-data" }}
-<style>
-    /* Styles for seats held by OTHER admins via WebSocket */
-    .layout-obj.remote-held {
-        background-color: #ffc107 !important; /* Yellow */
-        border: 2px dashed #d39e00 !important;
-        cursor: not-allowed !important;
-        opacity: 0.8;
-        pointer-events: none; /* Prevent clicking */
-        transition: all 0.3s ease;
-    }
-    .layout-obj.remote-held::after {
-        content: '\f254'; /* FontAwesome Hourglass */
-        font-family: FontAwesome;
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        font-size: 8px;
-        color: #856404;
-    }
-</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -745,7 +759,7 @@
             } 
             
             // 2. Someone RELEASED a hold
-            else if (data.action === 'release') {
+            /*else if (data.action === 'release') {
                 // 👇 CHANGED: Removed the condition that checked if it was a different user.
                 // If a seat is released anywhere (even by YOU in the portal), it must become available.
                 if (!seatEl.classList.contains('booked')) {
@@ -759,7 +773,19 @@
                         forceDeselect(seatEl, String(data.seat_id));
                     }
                 }
+            }*/
+
+            else if (data.action === 'release') {
+                seatEl.className = 'layout-obj seat available';
+                seatEl.title = '';
+                const icon = seatEl.querySelector('.fa-clock');
+                if (icon) icon.remove();
+
+                if (selectedSeatIds.includes(String(data.seat_id))) {
+                    forceDeselect(seatEl, String(data.seat_id));
+                }
             }
+
             // 3. Someone officially BOOKED it (Confirmed/Issued)
             else if (data.action === 'booked') {
                 if (String(data.holder_id) !== String(USER_ID)) {
@@ -821,8 +847,6 @@
         // ============================================================
         // 2. STANDARD SEAT SELECTION LOGIC
         // ============================================================
-        const availableSeats = document.querySelectorAll('.layout-obj.seat.available, .layout-obj.seat.held-by-me');
-        const bookedSeats = document.querySelectorAll('.layout-obj.booked'); 
         
         const selectedInput = document.getElementById('selected_seats_input');
         const totalAmountEl = document.getElementById('total-amount');
@@ -852,22 +876,25 @@
 
         updateUI();
 
-        // --- Available Seat Click ---
-        availableSeats.forEach(seat => {
-            seat.addEventListener('click', function(e) {
-                // [SAFETY] Double check visual state
-                if (
-                    this.classList.contains('booked') ||
-                    this.classList.contains('locked') ||
-                    this.classList.contains('remote-held') ||
-                    this.classList.contains('held-by-other')
-                ) {
-                    console.log("Blocked selection of unavailable/held seat.");
-                    return; 
-                }
+        const bookedSeats = document.querySelectorAll('.layout-obj.booked');
 
-                toggleLocalSelection(this, true); // True = broadcast to WebSocket
-            });
+        // --- Delegated Seat Click (handles seats that become available after page load) ---
+        document.getElementById('seat-map-container').addEventListener('click', function(e) {
+            const seat = e.target.closest('.layout-obj.seat');
+            if (!seat) return;
+
+            // Block non-interactive states
+            if (
+                seat.classList.contains('booked') ||
+                seat.classList.contains('locked') ||
+                seat.classList.contains('remote-held') ||
+                seat.classList.contains('held-by-other') ||
+                seat.classList.contains('pending')
+            ) {
+                return;
+            }
+
+            toggleLocalSelection(seat, true);
         });
 
         /*function toggleLocalSelection(seatEl, shouldBroadcast) {
@@ -1013,29 +1040,126 @@
                 btnIssue.classList.replace('btn-secondary', 'btn-success');
             } else {
                 selectedListEl.textContent = "No seats selected.";
-                // Disable buttons and revert style
                 btnBookPending.disabled = true;
                 btnBookPending.classList.replace('btn-warning', 'btn-secondary');
                 btnBookPending.classList.remove('text-white');
-                
+
                 btnIssue.disabled = true;
                 btnIssue.classList.replace('btn-success', 'btn-secondary');
             }
+
+            generateAdminVehicleRows();
         }
 
-        function submitBooking(actionType) {
-            const form = document.getElementById('booking-form');
-            const formData = new FormData(form);
-            
-            // Append which button was clicked (ISSUE or BOOK)
-            formData.append('action_type', actionType);
+        // ── Admin Vehicle Rows ──────────────────────────────────────────
+        function generateAdminVehicleRows() {
+            const section   = document.getElementById('admin-vehicle-section');
+            const container = document.getElementById('admin-vehicle-rows');
+            if (!section || !container) return;
 
-            const msgContainer = document.getElementById('ajax-message-container');
-            const btnIssue = document.getElementById('btn-issue');
+            // Preserve any values already typed
+            const existingData = {};
+            container.querySelectorAll('.admin-vehicle-row').forEach(function(row) {
+                existingData[row.dataset.seatId] = {
+                    license_plate: row.querySelector('.av-license').value || '',
+                    model_name:    row.querySelector('.av-model').value   || ''
+                };
+            });
+
+            container.innerHTML = '';
+            let vehicleCount = 0;
+
+            selectedSeatIds.forEach(function(seatId) {
+                const seatEl = document.querySelector(`.layout-obj[data-id="${seatId}"]`);
+                if (!seatEl || seatEl.dataset.isVehicle !== 'true') return;
+
+                vehicleCount++;
+                const label    = seatEl.dataset.label    || seatId;
+                const category = seatEl.dataset.category || 'Vehicle';
+                const saved    = existingData[seatId]    || {};
+
+                const row = document.createElement('div');
+                row.className      = 'admin-vehicle-row mb-3 p-2 border rounded bg-white';
+                row.dataset.seatId = seatId;
+                row.innerHTML = `
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-secondary">
+                            <i class="fa fa-car me-1"></i> ${label}
+                        </span>
+                        <small class="text-muted">Vehicle ${vehicleCount} — ${category}</small>
+                    </div>
+                    <input type="text"
+                           class="form-control form-control-sm mb-2 av-license"
+                           placeholder="License Plate *"
+                           autocomplete="off"
+                           value="${(saved.license_plate || '').replace(/"/g, '&quot;')}">
+                    <input type="text"
+                           class="form-control form-control-sm av-model"
+                           placeholder="Vehicle Model (optional)"
+                           value="${(saved.model_name || '').replace(/"/g, '&quot;')}">
+                `;
+                container.appendChild(row);
+            });
+
+            section.style.display = vehicleCount > 0 ? 'block' : 'none';
+        }
+        // ── End Admin Vehicle Rows ──────────────────────────────────────
+
+        function submitBooking(actionType) {
+            const msgContainer   = document.getElementById('ajax-message-container');
+            const btnIssue       = document.getElementById('btn-issue');
             const btnBookPending = document.getElementById('btn-book-pending');
 
+            // ── Collect + validate vehicle data ──────────────────────────
+            const vehicleData = [];
+            let vehicleValid  = true;
+            let dupPlate      = false;
+            const plateSet    = new Set();
+
+            document.querySelectorAll('.admin-vehicle-row').forEach(function(row) {
+                const seatId     = row.dataset.seatId;
+                const plateInput = row.querySelector('.av-license');
+                const plate      = (plateInput.value || '').trim().toUpperCase();
+                const model      = (row.querySelector('.av-model').value || '').trim();
+
+                if (!plate) {
+                    vehicleValid = false;
+                    plateInput.style.borderColor = 'red';
+                } else {
+                    plateInput.style.borderColor = '';
+                }
+
+                if (plate && plateSet.has(plate)) {
+                    dupPlate     = true;
+                    vehicleValid = false;
+                }
+                if (plate) plateSet.add(plate);
+
+                vehicleData.push({ seat_id: seatId, license_plate: plate, model_name: model });
+            });
+
+            if (!vehicleValid) {
+                const errMsg = dupPlate
+                    ? 'Duplicate license plate. Each vehicle must have a unique plate.'
+                    : 'License plate is required for all vehicle spaces.';
+                msgContainer.classList.remove('d-none');
+                msgContainer.style.backgroundColor = 'rgba(220, 53, 69, 0.15)';
+                msgContainer.style.color  = '#b02a37';
+                msgContainer.style.border = '1px solid rgba(220, 53, 69, 0.3)';
+                msgContainer.textContent  = errMsg;
+                return;
+            }
+
+            // Write vehicle JSON into the hidden input before FormData is built
+            document.getElementById('vehicles_data_input').value = JSON.stringify(vehicleData);
+            // ── End vehicle collection ───────────────────────────────────
+
+            const form     = document.getElementById('booking-form');
+            const formData = new FormData(form);
+            formData.append('action_type', actionType);
+
             // Disable buttons & show loading state
-            btnIssue.disabled = true;
+            btnIssue.disabled     = true;
             btnBookPending.disabled = true;
             msgContainer.classList.add('d-none');
 

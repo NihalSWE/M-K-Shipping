@@ -1,351 +1,114 @@
-(function ($) {
-  $(".toggle-nav").click(function () {
-    $("#sidebar-links .nav-menu").css("left", "0px");
-  });
-  $(".mobile-back").click(function () {
-    $("#sidebar-links .nav-menu").css("left", "-410px");
-  });
-  $(".page-wrapper").attr("class", "page-wrapper " + localStorage.getItem("page-wrapper-cuba"));
-  if (localStorage.getItem("page-wrapper-cuba") === null) {
-    $(".page-wrapper").addClass("compact-wrapper");
-  }
+document.addEventListener("DOMContentLoaded", function () {
+    
+    /* ==========================================================================
+       1. Robust Dropdown Logic (Using Event Delegation)
+       ========================================================================== */
+    document.body.addEventListener("click", function (e) {
+        // Find if the click happened inside a dropdown toggle
+        const toggleBtn = e.target.closest(".nvx-dropdown-toggle");
+        
+        if (toggleBtn) {
+            e.preventDefault();
+            
+            // Use .closest() to safely find the parent LI regardless of HTML structure
+            const parentLi = toggleBtn.closest(".nvx-has-dropdown");
+            const subMenu = parentLi.querySelector(".nvx-dropdown-menu");
+            const isOpen = parentLi.classList.contains("nvx-open");
 
-  // left sidebar and vertical menu
-  if ($("#pageWrapper").hasClass("compact-wrapper")) {
-    jQuery(".sidebar-title").append('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-    jQuery(".sidebar-title").click(function () {
-      jQuery(".sidebar-title").removeClass("active").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-      jQuery(".menu-content").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-        jQuery(this).next().slideDown("normal");
-      } else {
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      }
-    });
-    jQuery(".sidebar-submenu, .menu-content").hide();
-    jQuery(".submenu-title").append('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-    jQuery(".submenu-title").click(function () {
-      jQuery(".submenu-title").removeClass("active").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      jQuery(".sidebar-submenu li .sidebar-submenu").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-        jQuery(this).next().slideDown("normal");
-      } else {
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      }
-    });
-    jQuery(".sidebar-submenu li .sidebar-submenu").hide();
-  } else if ($("#pageWrapper").hasClass("horizontal-wrapper")) {
-    var smallSize = false,
-      bigSize = false;
-    const horizontalMenu = () => {
-      var contentwidth = jQuery(window).width();
-      if (contentwidth <= 992 && !smallSize) {
-        (smallSize = true), (bigSize = false);
-        $("#pageWrapper").removeClass("horizontal-wrapper").addClass("compact-wrapper");
-        $(".page-body-wrapper").removeClass("horizontal-menu").addClass("sidebar-icon");
-        jQuery(".submenu-title").append('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-        jQuery(".submenu-title").click(function () {
-          jQuery(".submenu-title").removeClass("active");
-          jQuery(".submenu-title").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-          jQuery(".sidebar-submenu li .sidebar-submenu").slideUp("normal");
-          if (jQuery(this).next().is(":hidden") == true) {
-            jQuery(this).addClass("active");
-            jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-            jQuery(this).next().slideDown("normal");
-          } else {
-            jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-          }
-        });
-        jQuery(".sidebar-submenu li .sidebar-submenu").hide();
+            // Optional: Close other open submenus (Accordion effect)
+            document.querySelectorAll(".nvx-has-dropdown.nvx-open").forEach(openLi => {
+                if (openLi !== parentLi) {
+                    openLi.classList.remove("nvx-open");
+                    const otherSubMenu = openLi.querySelector(".nvx-dropdown-menu");
+                    if (otherSubMenu) otherSubMenu.style.maxHeight = null;
+                }
+            });
 
-        jQuery(".sidebar-title").append('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-        jQuery(".sidebar-title").click(function () {
-          jQuery(".sidebar-title").removeClass("active");
-          jQuery(".sidebar-title").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-          jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-          if (jQuery(this).next().is(":hidden") == true) {
-            jQuery(this).addClass("active");
-            jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-            jQuery(this).next().slideDown("normal");
-          } else {
-            jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-          }
-        });
-        jQuery(".sidebar-submenu, .menu-content").hide();
-      }
-      if (contentwidth > 992 && !bigSize) {
-        (smallSize = false), (bigSize = true);
-        $("#pageWrapper").removeClass("compact-wrapper").addClass("horizontal-wrapper");
-        jQuery(".sidebar-title .according-menu").remove();
-      }
-    };
-    horizontalMenu();
-    addEventListener("resize", (event) => {
-      horizontalMenu();
-    });
-  } else if ($("#pageWrapper").hasClass("compact-sidebar")) {
-    var contentwidth = jQuery(window).width();
-    if (contentwidth > 992) {
-      $('<div class="bg-overlay1"></div>').appendTo($("body"));
-    }
-
-    jQuery(".sidebar-title").click(function () {
-      jQuery(".sidebar-title").removeClass("active");
-      $(".bg-overlay1").removeClass("active");
-      jQuery(".sidebar-submenu").removeClass("close-submenu").slideUp("normal");
-      jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-      jQuery(".menu-content").slideUp("normal");
-
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this).next().slideDown("normal");
-        $(".bg-overlay1").addClass("active");
-
-        $(".bg-overlay1").on("click", function () {
-          jQuery(".sidebar-submenu, .menu-content").slideUp("normal");
-          $(this).removeClass("active");
-        });
-      }
-      if (contentwidth < "992") {
-        $(".bg-overlay").addClass("active");
-      }
-    });
-    jQuery(".sidebar-submenu, .menu-content").hide();
-    jQuery(".submenu-title").append('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-    jQuery(".submenu-title").click(function () {
-      jQuery(".submenu-title").removeClass("active").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      jQuery(".sidebar-submenu li .sidebar-submenu").slideUp("normal");
-      if (jQuery(this).next().is(":hidden") == true) {
-        jQuery(this).addClass("active");
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-        jQuery(this).next().slideDown("normal");
-      } else {
-        jQuery(this).find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-right"></i></div>');
-      }
-    });
-    jQuery(".sidebar-submenu li .sidebar-submenu").hide();
-  }
-
-  // toggle sidebar
-  $nav = $(".sidebar-wrapper");
-  $header = $(".page-header");
-  $toggle_nav_top = $(".toggle-sidebar");
-  $toggle_nav_top.click(function () {
-    $nav.toggleClass("close_icon");
-    $header.toggleClass("close_icon");
-    $(window).trigger("overlay");
-  });
-
-  $(window).on("overlay", function () {
-    $bgOverlay = $(".bg-overlay");
-    $isHidden = $nav.hasClass("close_icon");
-    if ($(window).width() <= 1184 && !$isHidden && $bgOverlay.length === 0) {
-      $('<div class="bg-overlay active"></div>').appendTo($("body"));
-    }
-
-    if ($isHidden && $bgOverlay.length > 0) {
-      $bgOverlay.remove();
-    }
-  });
-
-  $(".sidebar-wrapper .back-btn").on("click", function (e) {
-    $(".page-header").toggleClass("close_icon");
-    $(".sidebar-wrapper").toggleClass("close_icon");
-    $(window).trigger("overlay");
-  });
-
-  $("body").on("click", ".bg-overlay", function () {
-    $header.addClass("close_icon");
-    $nav.addClass("close_icon");
-    $(this).remove();
-  });
-
-  $body_part_side = $(".body-part");
-  $body_part_side.click(function () {
-    $toggle_nav_top.attr("checked", false);
-    $nav.addClass("close_icon");
-    $header.addClass("close_icon");
-  });
-
-  //    responsive sidebar
-  var $window = $(window);
-  var widthwindow = $window.width();
-  (function ($) {
-    "use strict";
-    if (widthwindow <= 1184) {
-      $toggle_nav_top.attr("checked", false);
-      $nav.addClass("close_icon");
-      $header.addClass("close_icon");
-    }
-  })(jQuery);
-  $(window).resize(function () {
-    var widthwindaw = $window.width();
-    if (widthwindaw <= 1184) {
-      $toggle_nav_top.attr("checked", false);
-      $nav.addClass("close_icon");
-      $header.addClass("close_icon");
-    } else {
-      $toggle_nav_top.attr("checked", true);
-      $nav.removeClass("close_icon");
-      $header.removeClass("close_icon");
-    }
-  });
-
-  // horizontal arrows
-  var view = $("#sidebar-menu");
-  var move = "500px";
-  var leftsideLimit = -500;
-
-  var getMenuWrapperSize = function () {
-    return $(".sidebar-wrapper").innerWidth();
-  };
-  var menuWrapperSize = getMenuWrapperSize();
-
-  if (menuWrapperSize >= "1660") {
-    var sliderLimit = -4000;
-  } else if (menuWrapperSize >= "1440") {
-    var sliderLimit = -4600;
-  } else {
-    var sliderLimit = -4200;
-  }
-
-  $("#left-arrow").addClass("disabled");
-  $("#right-arrow").click(function () {
-    var currentPosition = parseInt(view.css("marginLeft"));
-    if (currentPosition >= sliderLimit) {
-      $("#left-arrow").removeClass("disabled");
-      view.stop(false, true).animate(
-        {
-          marginLeft: "-=" + move,
-        },
-        {
-          duration: 400,
-          complete: function () {
-            if (parseInt(view.css("marginLeft")) == -4500) {
-              $("#right-arrow").addClass("disabled");
+            // Toggle current submenu
+            if (isOpen) {
+                parentLi.classList.remove("nvx-open");
+                subMenu.style.maxHeight = null;
+            } else {
+                parentLi.classList.add("nvx-open");
+                subMenu.style.maxHeight = subMenu.scrollHeight + "px";
             }
-          },
         }
-      );
-      if (currentPosition == sliderLimit) {
-        $(this).addClass("disabled");
-        console.log("sliderLimit", sliderLimit);
-      }
-    }
-  });
-
-  $("#left-arrow").click(function () {
-    var currentPosition = parseInt(view.css("marginLeft"));
-    if (currentPosition < 0) {
-      view.stop(false, true).animate(
-        {
-          marginLeft: "+=" + move,
-        },
-        {
-          duration: 400,
-        }
-      );
-      $("#right-arrow").removeClass("disabled");
-      $("#left-arrow").removeClass("disabled");
-      if (currentPosition >= leftsideLimit) {
-        $(this).addClass("disabled");
-      }
-    }
-  });
-
-  // page active
-  if ($("#pageWrapper").hasClass("compact-wrapper")) {
-    $(".sidebar-wrapper nav").find("a").removeClass("active");
-    $(".sidebar-wrapper nav").find("li").removeClass("active");
-
-    var current = window.location.pathname;
-    $(".sidebar-wrapper nav ul li a").filter(function () {
-      var link = $(this).attr("href");
-      if (link) {
-        if (current.indexOf(link) != -1) {
-          $(this).parents().children("a").addClass("active");
-          $(this).parents().parents().children("ul").css("display", "block");
-          $(this).addClass("active");
-          $(this).parent().parent().parent().children("a").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-          $(this).parent().parent().parent().parent().parent().children("a").find("div").replaceWith('<div class="according-menu"><i class="fa-solid fa-angle-down"></i></div>');
-          return false;
-        }
-      }
     });
-  }
 
-  $(".left-header .mega-menu .nav-link").on("click", function (event) {
-    event.stopPropagation();
-    $(this).parent().children(".mega-menu-container").toggleClass("show");
-  });
+    /* ==========================================================================
+       2. Bulletproof Active Link Highlighting (Django Friendly)
+       ========================================================================== */
+    // Get the full URL (with queries) and base URL (without queries)
+    const currentFullUrl = window.location.href; 
+    const currentBaseUrl = window.location.href.split('?')[0];
 
-  $(".left-header .level-menu .nav-link").on("click", function (event) {
-    event.stopPropagation();
-    $(this).parent().children(".header-level-menu").toggleClass("show");
-  });
+    // Grab all links EXCEPT the toggles themselves
+    const allLinks = document.querySelectorAll(".nvx-nav-link:not(.nvx-dropdown-toggle), .nvx-dropdown-link");
 
-  $(document).click(function () {
-    $(".mega-menu-container").removeClass("show");
-    $(".header-level-menu").removeClass("show");
-  });
+    allLinks.forEach(link => {
+        // link.href gets the resolved absolute URL from the browser
+        const linkHref = link.href; 
+        
+        // Skip empty links or javascript fallbacks
+        if (!linkHref || link.getAttribute("href") === "javascript:void(0);") return;
 
-  $(window).scroll(function () {
-    var scroll = $(window).scrollTop();
-    if (scroll >= 50) {
-      $(".mega-menu-container").removeClass("show");
-      $(".header-level-menu").removeClass("show");
-    }
-  });
-
-  $(".left-header .level-menu .nav-link").click(function () {
-    if ($(".mega-menu-container").hasClass("show")) {
-      $(".mega-menu-container").removeClass("show");
-    }
-  });
-
-  $(".left-header .mega-menu .nav-link").click(function () {
-    if ($(".header-level-menu").hasClass("show")) {
-      $(".header-level-menu").removeClass("show");
-    }
-  });
-
-  $(document).ready(function () {
-    $(".outside").click(function () {
-      $(this).find(".menu-to-be-close").slideToggle("fast");
+        // Check for an exact match OR a match ignoring query parameters
+        if (linkHref === currentFullUrl || linkHref === currentBaseUrl) {
+            
+            // 1. Highlight the link itself
+            link.classList.add("nvx-active");
+            
+            // 2. If it's inside a dropdown, open the dropdown and highlight the parent
+            if (link.classList.contains("nvx-dropdown-link")) {
+                const parentDropdownLi = link.closest(".nvx-has-dropdown");
+                
+                if (parentDropdownLi) {
+                    parentDropdownLi.classList.add("nvx-open");
+                    const parentMenu = parentDropdownLi.querySelector(".nvx-dropdown-menu");
+                    
+                    if (parentMenu) {
+                        // Use a tiny timeout to ensure the browser has calculated the height 
+                        // properly if elements are rendering dynamically
+                        setTimeout(() => {
+                            parentMenu.style.maxHeight = parentMenu.scrollHeight + "px";
+                        }, 10);
+                        
+                        // Highlight the parent toggle link lightly
+                        const parentToggle = parentDropdownLi.querySelector(".nvx-dropdown-toggle");
+                        if (parentToggle) parentToggle.classList.add("nvx-active");
+                    }
+                }
+            }
+        }
     });
-  });
-  $(document).on("click", function (event) {
-    var $trigger = $(".outside");
-    if ($trigger !== event.target && !$trigger.has(event.target).length) {
-      $(".menu-to-be-close").slideUp("fast");
+
+    /* ==========================================================================
+       3. Mobile Sidebar Toggle
+       ========================================================================== */
+    const sidebarContainer = document.getElementById("nvx-sidebar-container");
+    const closeMobileBtn = document.getElementById("nvx-close-mobile-btn");
+    
+    // Replace '.your-mobile-menu-btn' with your actual header button class/ID
+    const openMobileBtn = document.querySelector(".your-mobile-menu-btn"); 
+
+    if (openMobileBtn && sidebarContainer) {
+        openMobileBtn.addEventListener("click", function () {
+            sidebarContainer.classList.add("nvx-mobile-open");
+        });
     }
-  });
 
-  $(".left-header .link-section > div").on("click", function (e) {
-    if ($(window).width() <= 1199) {
-      $(".left-header .link-section > div").removeClass("active");
-      $(this).toggleClass("active");
-      $(this).parent().children("ul").toggleClass("d-block").slideToggle();
+    if (closeMobileBtn && sidebarContainer) {
+        closeMobileBtn.addEventListener("click", function () {
+            sidebarContainer.classList.remove("nvx-mobile-open");
+        });
     }
-  });
 
-  if ($(window).width() <= 1199) {
-    $(".left-header .link-section").children("ul").css("display", "none");
-    $(this).parent().children("ul").toggleClass("d-block").slideToggle();
-  }
-
-  // active link
-  if ($(".simplebar-wrapper .simplebar-content-wrapper") && $("#pageWrapper").hasClass("compact-wrapper")) {
-    $(".simplebar-wrapper .simplebar-content-wrapper").animate(
-      {
-        scrollTop: $(".simplebar-wrapper .simplebar-content-wrapper a.active").offset().top - 400,
-      },
-      1000
-    );
-  }
-})(jQuery);
+    /* ==========================================================================
+       4. Resize Handler for Dropdown Heights
+       ========================================================================== */
+    window.addEventListener("resize", () => {
+        document.querySelectorAll(".nvx-has-dropdown.nvx-open .nvx-dropdown-menu").forEach(menu => {
+            menu.style.maxHeight = menu.scrollHeight + "px";
+        });
+    });
+});

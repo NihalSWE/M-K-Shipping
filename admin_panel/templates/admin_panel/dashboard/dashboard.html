@@ -192,6 +192,63 @@
         </div>
     </div>
 
+    <!-- WEBSITE TRAFFIC SECTION -->
+    <div class="row mb-3 mt-2">
+        <div class="col-12">
+            <h5 class="mb-0" style="font-weight: 600;">Website Traffic & Analytics</h5>
+        </div>
+    </div>
+
+    <div class="row kpi-grid mb-3">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="dashboard-card" style="border-left: 4px solid #dc3545;">
+                <h6>Live Visitors</h6>
+                <div class="value text-danger">
+                    <span class="spinner-grow spinner-grow-sm me-1" role="status" aria-hidden="true" style="animation-duration: 1.5s;"></span>
+                    {{ live_visitors }}
+                </div>
+                <div class="sub">Active right now</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="dashboard-card">
+                <h6>Unique Today</h6>
+                <div class="value">{{ visitors_today }}</div>
+                <div class="sub">Unique IPs today</div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="dashboard-card">
+                <h6>Yesterday</h6>
+                <div class="value">{{ visitors_yesterday }}</div>
+                <div class="sub">Total yesterday</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>Last 7 Days</h6>
+                <div class="value">{{ visitors_this_week }}</div>
+                <div class="sub">Rolling week distinct IPs</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card">
+                <h6>This Month</h6>
+                <div class="value">{{ visitors_this_month }}</div>
+                <div class="sub">Since 1st of month</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="module-title">Visitor Comparison Overview</div>
+                <div id="visitorComparisonChart" class="chart-box" style="min-height: 320px;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Row (Modules 2,3,4,5) -->
     <div class="row">
         <div class="col-xl-8 mb-4">
@@ -337,6 +394,9 @@
     const salesChannelLabels = {{ sales_channel_labels_json|safe }};
     const salesChannelSeries = {{ sales_channel_series_json|safe }};
 
+    const visitorLabels = {{ visitor_chart_labels_json|safe }};
+    const visitorSeries = {{ visitor_chart_series_json|safe }};
+
     // ---------- Bookings Trend Chart ----------
     const bookingsTrendOptions = {
         chart: {
@@ -431,5 +491,47 @@
     };
 
     new ApexCharts(document.querySelector("#salesChannelChart"), salesChannelOptions).render();
+
+    // ---------- Visitor Comparison Bar Chart ----------
+    const visitorComparisonOptions = {
+        chart: {
+            type: 'bar',
+            height: 320,
+            toolbar: { show: false }
+        },
+        series: [{
+            name: 'Unique Visitors',
+            data: visitorSeries
+        }],
+        xaxis: {
+            categories: visitorLabels,
+        },
+        colors: ['#43B9B2'], // A nice teal color to differentiate from financial data
+        plotOptions: {
+            bar: {
+                borderRadius: 4,
+                columnWidth: '40%',
+                dataLabels: {
+                    position: 'top', // puts the numbers on top of the bars
+                },
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return val;
+            },
+            offsetY: -20,
+            style: {
+                fontSize: '12px',
+                colors: ["#304758"]
+            }
+        },
+        grid: {
+            borderColor: '#f1f1f1'
+        }
+    };
+
+    new ApexCharts(document.querySelector("#visitorComparisonChart"), visitorComparisonOptions).render();
 </script>
 {% endblock %}

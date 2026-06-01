@@ -12,12 +12,13 @@ def normalize_route_order_on_delete(sender, instance, **kwargs):
     # 1. Find stops that come AFTER the deleted one.
     # CRITICAL: Order by 'stop_order' (Ascending). 
     # We must move #3 -> #2 first, so that #3 becomes empty for #4 to move into.
-    subsequent_stops = RouteStop.objects.filter(
-        route=instance.route,
-        stop_order__gt=instance.stop_order
-    ).order_by('stop_order') 
+    # subsequent_stops = RouteStop.objects.filter(
+    #     route=instance.route,
+    #     stop_order__gt=instance.stop_order
+    # ).order_by('stop_order') 
     
-    # 2. Update them one by one
-    for stop in subsequent_stops:
-        stop.stop_order = stop.stop_order - 1
-        stop.save()
+    # # 2. Update them one by one
+    # for stop in subsequent_stops:
+    #     stop.stop_order = stop.stop_order - 1
+    #     stop.save()
+    pass

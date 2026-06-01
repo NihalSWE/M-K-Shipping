@@ -12,8 +12,11 @@ urlpatterns = [
     # path('ipn/', views.payment_ipn, name='payment_ipn'),
     
     
-    path('', views.payment_home, name='payment_home'),
-    path('initiate/', views.initiate_payment, name='initiate_payment'),
     path('success/', views.payment_success, name='payment_success'),
+    path('fail/', views.payment_fail, name='payment_fail'),
+    path('cancel/', views.payment_cancel, name='payment_cancel'),
     path('ipn/', views.payment_ipn, name='payment_ipn'),
+    
+    path('status/<str:booking_ref>/', views.check_booking_status, name='check_booking_status'),
+    path('expired/<str:booking_ref>/', views.payment_expired_hold, name='payment_expired_hold'),
 ]

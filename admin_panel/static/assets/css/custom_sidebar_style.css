@@ -1,0 +1,638 @@
+/* ==========================================================================
+   NVX Sidebar & Topbar — Modern Ocean Theme
+   ========================================================================== */
+:root {
+    /* Surfaces */
+    --nvx-sidebar-bg: #ffffff;
+    --nvx-topbar-bg: rgba(255, 255, 255, 0.85);
+    --nvx-body-bg: #f6f8fb;
+
+    /* Text */
+    --nvx-text-primary: #0f172a;     /* slate-900 */
+    --nvx-text-secondary: #475569;   /* slate-600 */
+    --nvx-text-muted: #94a3b8;       /* slate-400 */
+    --nvx-text-title: #64748b;       /* slate-500 */
+
+    /* Brand — Ocean */
+    --nvx-primary: #0f4c75;
+    --nvx-primary-2: #0891b2;
+    --nvx-primary-dark: #0c3a5c;
+    --nvx-primary-gradient: linear-gradient(135deg, #0f4c75 0%, #0891b2 100%);
+    --nvx-primary-soft: rgba(8, 145, 178, 0.08);
+    --nvx-primary-soft-strong: rgba(8, 145, 178, 0.14);
+
+    /* Misc */
+    --nvx-hover-bg: #f1f5f9;
+    --nvx-border-soft: #eef2f7;
+    --nvx-border-color: #e2e8f0;
+    --nvx-danger: #dc2626;
+    --nvx-danger-soft: #fef2f2;
+
+    /* Shadows */
+    --nvx-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --nvx-shadow-md: 0 4px 14px rgba(15, 23, 42, 0.06);
+    --nvx-shadow-lg: 0 12px 30px rgba(15, 23, 42, 0.10);
+    --nvx-shadow-brand: 0 6px 18px rgba(15, 76, 117, 0.25);
+
+    /* Sizes */
+    --nvx-sidebar-width: 272px;
+    --nvx-topbar-height: 68px;
+
+    /* Motion */
+    --nvx-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Radius */
+    --nvx-radius-sm: 6px;
+    --nvx-radius-md: 10px;
+    --nvx-radius-lg: 14px;
+}
+
+/* ==========================================================================
+   Layout Fix — push existing page-body & footer to the right of the sidebar
+   ========================================================================== */
+.page-wrapper .page-body-wrapper .page-body {
+    margin-left: var(--nvx-sidebar-width);
+    margin-top: var(--nvx-topbar-height);
+    min-height: calc(100vh - var(--nvx-topbar-height));
+    background: var(--nvx-body-bg);
+    padding: 1.5rem;
+    transition: margin-left var(--nvx-transition);
+}
+
+.page-wrapper .page-body-wrapper > footer,
+.page-wrapper .page-body-wrapper footer.footer {
+    margin-left: var(--nvx-sidebar-width);
+    transition: margin-left var(--nvx-transition);
+}
+
+/* Hide old theme page header (we use the new nvx-topbar instead) */
+.page-header { display: none !important; }
+
+@media (max-width: 991.98px) {
+    .page-wrapper .page-body-wrapper .page-body,
+    .page-wrapper .page-body-wrapper > footer,
+    .page-wrapper .page-body-wrapper footer.footer {
+        margin-left: 0 !important;
+    }
+}
+
+/* ==========================================================================
+   SIDEBAR
+   ========================================================================== */
+.nvx-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--nvx-sidebar-width);
+    background: var(--nvx-sidebar-bg);
+    border-right: 1px solid var(--nvx-border-soft);
+    display: flex;
+    flex-direction: column;
+    z-index: 1040;
+    transition: transform var(--nvx-transition);
+    font-family: 'Inter', 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.nvx-sidebar-header {
+    height: var(--nvx-topbar-height);
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--nvx-border-soft);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.nvx-sidebar-header::after {
+    /* subtle gradient stripe to add visual richness */
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.25), transparent);
+}
+
+.nvx-brand-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    flex: 1;
+    overflow: hidden;
+}
+
+.nvx-logo-img {
+    height: 38px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.nvx-logo-dark { display: none; }
+
+/* Desktop toggle is hidden — kept in markup for future "collapse" feature */
+.nvx-toggle-desktop { display: none; }
+
+.nvx-close-mobile {
+    background: transparent;
+    border: none;
+    color: var(--nvx-text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--nvx-radius-sm);
+    transition: all 0.2s ease;
+}
+.nvx-close-mobile:hover {
+    background-color: var(--nvx-hover-bg);
+    color: var(--nvx-primary);
+}
+
+/* Scroll area */
+.nvx-sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem 0 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+.nvx-sidebar-body::-webkit-scrollbar { width: 4px; }
+.nvx-sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.nvx-sidebar-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.nvx-sidebar-body:hover::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
+/* Nav structure */
+.nvx-nav-menu { margin: 0; padding: 0; }
+.nvx-nav-list { list-style: none; margin: 0; padding: 0; }
+
+/* Section titles */
+.nvx-nav-title {
+    padding: 1.1rem 1.5rem 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    color: var(--nvx-text-muted);
+    position: relative;
+}
+.nvx-nav-title:first-child { padding-top: 0.6rem; }
+
+/* Top-level item */
+.nvx-nav-item {
+    padding: 0.1rem 0.75rem;
+}
+
+/* Top-level link */
+.nvx-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.85rem;
+    color: var(--nvx-text-secondary);
+    text-decoration: none;
+    border-radius: var(--nvx-radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.nvx-nav-icon {
+    font-size: 1.2rem;
+    margin-right: 12px;
+    color: var(--nvx-text-muted);
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nvx-nav-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nvx-dropdown-chevron {
+    font-size: 1rem;
+    color: var(--nvx-text-muted);
+    transition: transform var(--nvx-transition);
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+/* Hover */
+.nvx-nav-link:hover {
+    background-color: var(--nvx-hover-bg);
+    color: var(--nvx-text-primary);
+}
+.nvx-nav-link:hover .nvx-nav-icon,
+.nvx-nav-link:hover .nvx-dropdown-chevron {
+    color: var(--nvx-primary-2);
+}
+
+/* Active state — ocean gradient pill */
+.nvx-nav-link.nvx-active {
+    background: var(--nvx-primary-gradient);
+    color: #ffffff;
+    box-shadow: var(--nvx-shadow-brand);
+    font-weight: 600;
+}
+.nvx-nav-link.nvx-active .nvx-nav-icon,
+.nvx-nav-link.nvx-active .nvx-dropdown-chevron {
+    color: #ffffff;
+}
+
+/* Open dropdown parent (when no child is the actively highlighted one) */
+.nvx-nav-item.nvx-open > .nvx-nav-link:not(.nvx-active) {
+    background-color: var(--nvx-hover-bg);
+    color: var(--nvx-text-primary);
+}
+.nvx-nav-item.nvx-open > .nvx-nav-link:not(.nvx-active) .nvx-nav-icon {
+    color: var(--nvx-primary-2);
+}
+
+/* Rotate chevron */
+.nvx-nav-item.nvx-open > .nvx-nav-link .nvx-dropdown-chevron {
+    transform: rotate(90deg);
+}
+
+/* ==========================================================================
+   Dropdown submenu
+   ========================================================================== */
+.nvx-dropdown-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0.25rem 0 0.4rem 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--nvx-transition);
+    border-left: 2px solid var(--nvx-border-color);
+}
+
+.nvx-dropdown-item { padding: 0; }
+
+.nvx-dropdown-link {
+    display: flex;
+    align-items: center;
+    padding: 0.45rem 0.75rem 0.45rem 1.25rem;
+    margin: 0.1rem 0.5rem;
+    color: var(--nvx-text-secondary);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border-radius: var(--nvx-radius-sm);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.nvx-dropdown-link::before {
+    content: '';
+    position: absolute;
+    left: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--nvx-text-muted);
+    opacity: 0.35;
+    transition: all 0.2s ease;
+}
+
+.nvx-dropdown-link:hover {
+    color: var(--nvx-primary);
+    background-color: var(--nvx-primary-soft);
+}
+.nvx-dropdown-link:hover::before {
+    background: var(--nvx-primary-2);
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.nvx-dropdown-link.nvx-active {
+    color: var(--nvx-primary);
+    background-color: var(--nvx-primary-soft-strong);
+    font-weight: 600;
+}
+.nvx-dropdown-link.nvx-active::before {
+    background: var(--nvx-primary-2);
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.2);
+}
+
+/* ==========================================================================
+   TOPBAR
+   ========================================================================== */
+.nvx-topbar {
+    position: fixed;
+    top: 0;
+    left: var(--nvx-sidebar-width);
+    right: 0;
+    height: var(--nvx-topbar-height);
+    background: var(--nvx-topbar-bg);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid var(--nvx-border-soft);
+    z-index: 1030;
+    transition: left var(--nvx-transition);
+    font-family: 'Inter', 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.nvx-topbar-inner {
+    height: 100%;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.nvx-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.nvx-mobile-menu-btn {
+    background: transparent;
+    border: none;
+    color: var(--nvx-text-secondary);
+    font-size: 1.55rem;
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+    display: none; /* shown on mobile */
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--nvx-radius-sm);
+    transition: all 0.2s ease;
+}
+.nvx-mobile-menu-btn:hover {
+    background-color: var(--nvx-hover-bg);
+    color: var(--nvx-primary);
+}
+
+.nvx-page-title-wrap {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+.nvx-page-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--nvx-text-muted);
+}
+.nvx-page-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--nvx-text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 38vw;
+}
+
+.nvx-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Profile button */
+.nvx-profile-wrapper {
+    position: relative;
+}
+
+.nvx-profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 0.32rem 0.65rem 0.32rem 0.32rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.nvx-profile-btn:hover {
+    background: var(--nvx-hover-bg);
+    border-color: var(--nvx-border-color);
+}
+.nvx-profile-wrapper.nvx-open .nvx-profile-btn {
+    background: var(--nvx-hover-bg);
+    border-color: var(--nvx-border-color);
+}
+
+.nvx-profile-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--nvx-primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.5rem;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: var(--nvx-shadow-brand);
+    position: relative;
+}
+.nvx-profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.nvx-profile-avatar .nvx-status-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid #ffffff;
+}
+
+.nvx-profile-meta {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.2;
+}
+.nvx-profile-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--nvx-text-primary);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nvx-profile-role {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--nvx-primary-2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.nvx-profile-chevron {
+    font-size: 1.1rem;
+    color: var(--nvx-text-muted);
+    transition: transform 0.2s ease;
+    margin-left: 2px;
+}
+.nvx-profile-wrapper.nvx-open .nvx-profile-chevron {
+    transform: rotate(180deg);
+}
+
+/* Profile dropdown menu */
+.nvx-profile-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 240px;
+    background: #ffffff;
+    border: 1px solid var(--nvx-border-color);
+    border-radius: var(--nvx-radius-lg);
+    box-shadow: var(--nvx-shadow-lg);
+    padding: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.98);
+    transform-origin: top right;
+    transition: all 0.2s ease;
+    z-index: 100;
+}
+.nvx-profile-wrapper.nvx-open .nvx-profile-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.nvx-profile-menu-header {
+    padding: 0.75rem 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.nvx-profile-menu-header .nvx-pm-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--nvx-text-primary);
+}
+.nvx-profile-menu-header .nvx-pm-email {
+    font-size: 0.75rem;
+    color: var(--nvx-text-muted);
+    word-break: break-all;
+}
+
+.nvx-profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.75rem;
+    color: var(--nvx-text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: var(--nvx-radius-sm);
+    transition: all 0.15s ease;
+    background: transparent;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+.nvx-profile-menu-item:hover {
+    background: var(--nvx-primary-soft);
+    color: var(--nvx-primary);
+}
+.nvx-profile-menu-item .iconify {
+    font-size: 1.2rem;
+    color: var(--nvx-text-muted);
+    transition: color 0.15s ease;
+}
+.nvx-profile-menu-item:hover .iconify {
+    color: var(--nvx-primary);
+}
+
+.nvx-logout-btn:hover {
+    background: var(--nvx-danger-soft);
+    color: var(--nvx-danger);
+}
+.nvx-logout-btn:hover .iconify {
+    color: var(--nvx-danger);
+}
+
+.nvx-profile-menu-divider {
+    height: 1px;
+    background: var(--nvx-border-soft);
+    margin: 0.4rem 0.25rem;
+}
+
+.nvx-logout-form { display: block; margin: 0; }
+
+/* ==========================================================================
+   Mobile overlay (backdrop when sidebar is open on mobile)
+   ========================================================================== */
+.nvx-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 1035;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.nvx-mobile-overlay.nvx-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .nvx-sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--nvx-shadow-lg);
+    }
+    .nvx-sidebar.nvx-mobile-open {
+        transform: translateX(0);
+    }
+    .nvx-close-mobile { display: flex; }
+    .nvx-mobile-menu-btn { display: flex; }
+    .nvx-topbar { left: 0; }
+}
+
+@media (max-width: 575.98px) {
+    .nvx-profile-meta { display: none; }
+    .nvx-page-eyebrow { display: none; }
+    .nvx-page-title { font-size: 0.95rem; max-width: 50vw; }
+    .nvx-topbar-inner { padding: 0 1rem; }
+    .page-wrapper .page-body-wrapper .page-body { padding: 1rem; }
+}
+
+/* ==========================================================================
+   Override stray bits from old theme that could clash
+   ========================================================================== */
+.tap-top { z-index: 1020; }
+.loader-wrapper { z-index: 9999; }

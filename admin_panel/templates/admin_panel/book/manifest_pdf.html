@@ -115,21 +115,21 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 30px;">SL</th>
-                <th style="width: 6%;">Ticket No</th>
-                <th style="width: 8%;">Booking Ref</th>
-                <th style="width: 7%;">Cabin</th>
-                <th style="width: 12%;">Pass. Name</th>
-                <th style="width: 8%;">Phone No</th>
-                <th style="width: 6%;">Paid</th>
-                <th style="width: 7%;">Discount</th>
-                <th style="width: 6%;">Due</th>
+                <th style="width: 3%;">SL</th>
+                <th style="width: 4%;">Ticket No</th>
+                <th style="width: 9%;">Booking Ref</th>
+                <th style="width: 5%;">Cabin</th>
+                <th style="width: 6%;">Vehicle No.</th>
+                <th style="width: 10%;">Pass. Name</th>
+                <th style="width: 7%;">Phone No</th>
+                <th style="width: 5%;">Paid</th>
+                <th style="width: 5%;">Due</th>
                 <th style="width: 7%;">From Station</th>
                 <th style="width: 7%;">To Station</th>
-                <th style="width: 8%;">Ticket Status</th>
+                <th style="width: 7%;">Ticket Status</th>
                 <th style="width: 6%;">Booked By</th>
                 <th style="width: 6%;">Issued By</th>
-                <th style="width: 4%;">Remarks</th>
+                <th style="width: 13%;">Remarks</th>
             </tr>
         </thead>
         <tbody>
@@ -146,6 +146,16 @@
                         {% endif %}
                     </td>
 
+                    <td class="align-middle">
+                        {% if ticket.license_plate %}
+                            <span class="badge bg-secondary" style="font-size:11px; letter-spacing:0.5px;">
+                                {{ ticket.license_plate }}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
                     <td class="text-left">
                         {{ ticket.passenger_name|default:"-" }}
                     </td>
@@ -155,8 +165,6 @@
                     <td class="fw-bold text-success">
                         {{ ticket.booking_data.paid_amount|floatformat:0 }}
                     </td>
-
-                    <td>0</td>
 
                     <td class="fw-bold {% if ticket.booking_data.due_amount > 0 %}text-danger{% endif %}">
                         {{ ticket.booking_data.due_amount|floatformat:0 }}
@@ -194,18 +202,8 @@
                         {% endif %}
                     </td>
 
-                    <td>
-                        {% if ticket.booking.status == 'PENDING' and ticket.booking.time_stopped %}
-                            Timer Stopped
-                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount > 0 and ticket.booking_data.due_amount > 0 %}
-                            Partial Payment
-                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.paid_amount == 0 %}
-                            Unpaid
-                        {% elif ticket.booking.status == 'PENDING' and ticket.booking_data.due_amount == 0 %}
-                            Paid*
-                        {% else %}
-                            N/A
-                        {% endif %}
+                    <td class="align-middle">
+                        {{ ticket.booking.remarks|default:"-" }}
                     </td>
                 </tr>
             {% empty %}
@@ -216,13 +214,11 @@
 
             {% if tickets %}
                 <tr class="footer-cell">
-                    <td colspan="6" class="text-end" style="padding-right: 10px;">Grand Total (By Booking):</td>
+                    <td colspan="7" class="text-end" style="padding-right: 10px;">Grand Total (By Booking):</td>
                     
                     <td class="fw-bold text-success">
                         {{ total_paid|floatformat:0 }}
                     </td>
-                    
-                    <td></td>
                     
                     <td class="fw-bold {% if total_due > 0 %}text-danger{% endif %}">
                         {{ total_due|floatformat:0 }}

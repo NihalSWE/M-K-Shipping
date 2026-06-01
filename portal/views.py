@@ -1,10 +1,12 @@
 from django.shortcuts import render,get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from urllib3 import request
+import requests
 from admin_panel.models import *
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse, HttpResponse, Http404
+import time
 import io
 import qrcode
 from qrcode.constants import ERROR_CORRECT_M
@@ -30,6 +32,11 @@ import logging
 import random
 import json
 import uuid
+from portal.ssl_constants import(
+    SSL_LIVE_URL,
+    SSL_SANDBOX_URL,
+    SSL_GW_ENDPOINT,
+)
 from django.contrib.auth import login
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -655,6 +662,7 @@ def save_booking_view(request):
         from_stop_id = data.get('from_stop')
         to_stop_id = data.get('to_stop')
         passengers_data = data.get('passengers', [])
+        vehicles_data   = data.get('vehicles', [])   # NEW
 
         print('Received booking data for booking:', data)
 
@@ -689,6 +697,48 @@ def save_booking_view(request):
             return JsonResponse({'success': False, 'error': 'Duplicate seat selected.'}, status=400)
 
         trip = Trip.objects.select_related('schedule').get(id=trip_id)
+
+        # ── Vehicle pre-validation ────────────────────────────────────────
+        # Count seat types from the submitted seat IDs
+        all_submitted_seat_ids = [p.get('seat_id') for p in passengers_data] + \
+                                 [v.get('seat_id') for v in vehicles_data]
+
+        vehicle_seat_ids_from_payload = [v.get('seat_id') for v in vehicles_data]
+
+        # Validate vehicle count limit
+        if len(vehicles_data) > 3:
+            return JsonResponse({'success': False, 'error': 'Maximum 3 vehicle spaces can be booked per booking.'}, status=400)
+
+        # Validate passenger seat count limit
+        if len(passengers_data) > 5:
+            return JsonResponse({'success': False, 'error': 'Maximum 5 seats/cabins can be booked per booking.'}, status=400)
+
+        # Validate license plates provided
+        submitted_plates = []
+        for v in vehicles_data:
+            plate = (v.get('license_plate') or '').strip().upper()
+            if not plate:
+                return JsonResponse({'success': False, 'error': 'License plate is required for every vehicle space.'}, status=400)
+            if plate in submitted_plates:
+                return JsonResponse({'success': False, 'error': f'Duplicate license plate: {plate}. Each vehicle must be unique.'}, status=400)
+            submitted_plates.append(plate)
+
+        # Validate license plates are not already booked for this trip
+        if submitted_plates:
+            existing_plates = list(
+                BookingVehicle.objects.filter(
+                    booking__trip=trip,
+                    booking__status__in=['CONFIRMED', 'PROCESSING', 'LOCKED', 'BOOKED']
+                ).values_list('license_plate', flat=True)
+            )
+            existing_upper = [p.upper() for p in existing_plates]
+            for plate in submitted_plates:
+                if plate in existing_upper:
+                    return JsonResponse(
+                        {'success': False, 'error': f'Vehicle with plate "{plate}" is already booked on this trip.'},
+                        status=400
+                    )
+        # ── End vehicle pre-validation ────────────────────────────────────
 
         if not trip.is_booking_open():
             return JsonResponse(
@@ -747,12 +797,23 @@ def save_booking_view(request):
             total_amount = 0
             booking_ref = f"BK-{uuid.uuid4().hex[:8].upper()}"
 
+            # before payment
+            # booking = Booking.objects.create(
+            #     user=booking_user,
+            #     trip=trip,
+            #     booking_ref=booking_ref,
+            #     total_amount=0,
+            #     status='CONFIRMED'
+            # )
+            # before payment
+            
             booking = Booking.objects.create(
                 user=booking_user,
                 trip=trip,
                 booking_ref=booking_ref,
                 total_amount=0,
-                status='CONFIRMED'
+                status='PROCESSING',  # User is being redirected to payment gateway
+                payment_status='UNPAID'
             )
             
             channel_layer = get_channel_layer()
@@ -764,6 +825,10 @@ def save_booking_view(request):
             for p in passengers_data:
                 # ADDED: select_for_update() to strictly lock the seat row during checkout
                 seat = LayoutObject.objects.select_for_update().get(id=p['seat_id'])
+
+                # Confirm this is not a vehicle space being booked as a passenger seat
+                if seat.category.is_vehicle:
+                    raise Exception(f"Space {seat.label} is a vehicle space. Use the vehicle booking form.")
 
                 # ✅ Seat availability check (kept from original logic)
                 if not trip.is_seat_available(seat, from_stop, to_stop):
@@ -854,60 +919,233 @@ def save_booking_view(request):
                     address=p_address,
                 )
                     
-                Ticket.objects.create(
-                    booking=booking,
-                    trip=trip,
-                    seat_object=seat,
-                    passenger=passenger,
-                    passenger_name=p_name,
-                    from_stop=from_stop,
-                    to_stop=to_stop,
-                    fare_amount=fare,
-                    status='BOOKED',
-                    lock_expires_at=timezone.now() + timedelta(days=1)
-                )
+                # Ticket.objects.create(
+                #     booking=booking,
+                #     trip=trip,
+                #     seat_object=seat,
+                #     passenger=passenger,
+                #     passenger_name=p_name,
+                #     from_stop=from_stop,
+                #     to_stop=to_stop,
+                #     fare_amount=fare,
+                #     status='BOOKED',
+                #     lock_expires_at=timezone.now() + timedelta(days=1)
+                # )
 
                 
                 
-                SeatHold.objects.filter(
-                    trip=trip,
-                    from_stop=from_stop,
-                    to_stop=to_stop,
-                    seat_object_id=seat.id
-                ).delete()
+                # SeatHold.objects.filter(
+                #     trip=trip,
+                #     from_stop=from_stop,
+                #     to_stop=to_stop,
+                #     seat_object_id=seat.id
+                # ).delete()
                 
                 # ✅ Redis delete kept but disabled for DB-first sync flow
-                cache.delete(seat_hold_key(trip.id, from_stop.id, to_stop.id, seat.id))
+                # cache.delete(seat_hold_key(trip.id, from_stop.id, to_stop.id, seat.id))
 
                 # ✅ FIX: include start_order and end_order in the broadcast
-                async_to_sync(channel_layer.group_send)(group, {
-                    "type": "seat_event",
-                    "action": "booked",
-                    "seat_id": int(seat.id),
-                    "start_order": from_stop.stop_order,
-                    "end_order": to_stop.stop_order,
-                    "gender": p_gender,
-                })
+                # async_to_sync(channel_layer.group_send)(group, {
+                #     "type": "seat_event",
+                #     "action": "booked",
+                #     "seat_id": int(seat.id),
+                #     "start_order": from_stop.stop_order,
+                #     "end_order": to_stop.stop_order,
+                #     "gender": p_gender,
+                # })
                 
                 logger.info(f"p_gender: {p_gender}")
                 print(f"print p_gender: {p_gender}")
 
-            booking.total_amount = total_amount
-            booking.payment_status = 'PAID'
-            booking.save(update_fields=['total_amount', 'payment_status'])
+            # ── Process vehicle spaces ────────────────────────────────────
+            for v in vehicles_data:
+                vehicle_seat = LayoutObject.objects.select_for_update().get(id=v['seat_id'])
+
+                # Confirm this IS a vehicle space
+                if not vehicle_seat.category.is_vehicle:
+                    raise Exception(f"Seat {vehicle_seat.label} is not a vehicle space.")
+
+                # Availability check
+                if not trip.is_seat_available(vehicle_seat, from_stop, to_stop):
+                    raise Exception(f"Vehicle space {vehicle_seat.label} is no longer available.")
+
+                # Hold check
+                v_db_hold = SeatHold.objects.filter(
+                    trip=trip,
+                    from_stop=from_stop,
+                    to_stop=to_stop,
+                    seat_object_id=vehicle_seat.id,
+                    expires_at__gt=timezone.now()
+                ).first()
+
+                if not v_db_hold:
+                    raise Exception(f"Vehicle space {vehicle_seat.label} is not held by you anymore. Please reselect.")
+                if v_db_hold.holder_id != holder_id:
+                    raise Exception(f"Vehicle space {vehicle_seat.label} is currently on hold by another user.")
+
+                plate = (v.get('license_plate') or '').strip().upper()
+                model = (v.get('model_name') or '').strip()
+
+                vehicle_fare = trip.get_price(vehicle_seat.category, from_stop, to_stop)
+                total_amount += vehicle_fare
+
+                # Create BookingVehicle (ticket linked later in payment success callback)
+                BookingVehicle.objects.create(
+                    booking=booking,
+                    ticket=None,          # linked when ticket is created after payment
+                    license_plate=plate,
+                    model_name=model or None,
+                )
+
+            # ── End vehicle spaces ────────────────────────────────────────
+
+            try:
+                ticket_settings = TicketSetting.get_settings()
+                payment_timeout = ticket_settings.payment_timeout_minutes
+                
+                # Fallback to 5 if the DB value is 0 (or negative)
+                if payment_timeout <= 0:
+                    logger.warning(f"DB payment_timeout_minutes is {payment_timeout}. Falling back to default 5.")
+                    payment_timeout = 5
+                    
+            except Exception as e:
+                # Fallback to default 5 minutes if DB query fails
+                logger.warning(f"Failed to fetch payment_timeout_minutes from DB, using default 5. Error: {str(e)}")
+                payment_timeout = 5
+
+            new_hold_expiry = timezone.now() + timedelta(minutes=payment_timeout)
+
+            SeatHold.objects.filter(
+                trip=trip,
+                holder_id=holder_id,
+                expires_at__gt=timezone.now()
+            ).update(
+                expires_at=new_hold_expiry
+            )
+
+            payload_copy = dict(data)
+            payload_copy['holder_id'] = holder_id
+            booking.booking_payload = payload_copy
+            booking.expiry_at = new_hold_expiry
             
-            # [NEW:SHARE_TOKEN]
+            ssl_store = trip.ship.store
+
+            if not ssl_store:
+                raise Exception("No SSLCommerz store assigned to this ship.")
+
+            if not ssl_store.is_active:
+                raise Exception("SSLCommerz store is inactive.")
+
+            gateway = ssl_store.gateway
+            
+            tran_id = f"{booking.booking_ref}-{uuid.uuid4().hex[:6]}"
+            
+            payment_transaction = PaymentTransaction.objects.create(
+                booking=booking,
+                gateway=gateway,
+                store=ssl_store,
+                tran_id=tran_id,
+                amount=total_amount,
+                currency='BDT',
+                status='PENDING'
+            )
+
+            booking.total_amount = total_amount
+            booking.payment_status = 'UNPAID'
+            booking.payment_tran_id = tran_id
+            
+            booking.save(update_fields=[
+                'total_amount',
+                'payment_status',
+                'payment_tran_id',
+                'booking_payload',
+                'expiry_at'
+            ])
+            
+            # ── PROCESSING WS BROADCAST (optional) ──────────────────────────
+            # Uncomment to broadcast a "processing" event to other users when
+            # this user hits Pay. Also uncomment the matching JS block above.
+            # for p in passengers_data:
+            #     async_to_sync(channel_layer.group_send)(group, {
+            #         "type":        "seat_event",
+            #         "action":      "processing",
+            #         "seat_id":     int(p['seat_id']),
+            #         "holder_id":   holder_id,
+            #         "start_order": from_stop.stop_order,
+            #         "end_order":   to_stop.stop_order,
+            #     })
+            # ── END PROCESSING WS BROADCAST ─────────────────────────────────
+
+            # base_url = (
+            #     "https://securepay.sslcommerz.com"
+            #     if ssl_store.is_live
+            #     else "https://sandbox.sslcommerz.com"
+            # )
+            
+            base_url = SSL_LIVE_URL if ssl_store.is_live else SSL_SANDBOX_URL
+            ssl_post_url = f"{base_url}{SSL_GW_ENDPOINT}"
+
+            post_data = {
+                'store_id': ssl_store.store_id,
+                'store_passwd': ssl_store.store_password,
+                'total_amount': float(total_amount),
+                'currency': 'BDT',
+                'tran_id': tran_id,
+                'success_url': f"{settings.SITE_URL}/payment/success/",
+                'fail_url': f"{settings.SITE_URL}/payment/fail/",
+                'cancel_url': f"{settings.SITE_URL}/payment/cancel/",
+                'ipn_url': f"{settings.SITE_URL}/payment/ipn/",
+                'cus_name': first_name,
+                'cus_email': first_email,
+                'cus_phone': first_phone,
+                'cus_add1': first_address,
+                'cus_city': 'Dhaka',
+                'cus_country': 'Bangladesh',
+                'shipping_method': 'NO',
+                'product_name': f"Launch Ticket {booking.booking_ref}",
+                'product_category': 'Travel',
+                'product_profile': 'general',
+                'value_a': booking.booking_ref,
+            }
+
+            print("SSL BASE URL:", base_url)
+            print("SSL POST URL:", f"{base_url}/gwprocess/v4/api.php")
+            print("SSL POST DATA:", post_data)
+
+            response = requests.post(
+                ssl_post_url,
+                data=post_data,
+                timeout=30
+            )
+
+            print("SSL STATUS CODE:", response.status_code)
+            print("SSL RAW TEXT:", response.text)
+
+            try:
+                response_data = response.json()
+                print("SSL JSON RESPONSE:", response_data)
+
+            except Exception as json_error:
+                print("SSL JSON PARSE ERROR:", str(json_error))
+                raise Exception(
+                    f"SSLCommerz returned non-JSON response: {response.text}"
+                )
+
+            if response_data.get('status') != 'SUCCESS':
+
+                print("SSL FAILED RESPONSE:", response_data)
+
+                raise Exception(
+                    f"Failed to initialize SSLCommerz payment. Response: {response_data}"
+                )
+
+            booking.payment_session_key = response_data.get('sessionkey')
+
+            booking.save(update_fields=['payment_session_key'])
+            
             # later put in the ssl commerz callback
             booking.ensure_share_token()
             # [/NEW:SHARE_TOKEN]
-            
-            def _send_confirm_sms():
-                try:
-                    send_booking_sms(booking)
-                except Exception as sms_err:
-                    print(f"BOOKING SMS ERROR: {sms_err}")
-
-            transaction.on_commit(_send_confirm_sms)
 
         if was_guest_booking:
             login(request, booking_user)
@@ -919,14 +1157,8 @@ def save_booking_view(request):
 
         return JsonResponse({
             'success': True,
-            'booking_ref': booking_ref,
-            'message': 'Booking saved successfully!',
-            'logged_in': True if was_guest_booking else request.user.is_authenticated,
-            'user': {
-                'first_name': (request.user.first_name or "").strip(),
-                'phone_number': (request.user.phone_number or "").strip(),
-                'display_name': ((request.user.first_name or "").strip() or (request.user.phone_number or "").strip()),
-            } if request.user.is_authenticated else None
+            'gateway_url': response_data['GatewayPageURL']
+
         })
 
     except Exception as e:
@@ -1034,6 +1266,80 @@ def _to_local_bd_phone(phone: str) -> str:
     return clean
 
 
+@require_POST
+def pre_validate_booking_view(request):
+    """
+    Called on 'Next' click — validates data and checks DB uniqueness
+    WITHOUT creating any records. Returns errors so the payment modal
+    never opens if something is wrong.
+    """
+    try:
+        data = json.loads(request.body or '{}')
+        trip_id        = data.get('trip_id')
+        passengers_data = data.get('passengers', [])
+        vehicles_data   = data.get('vehicles', [])
+
+        # ── Passenger validation ──────────────────────────────────────────
+        if not passengers_data:
+            return JsonResponse({'success': False, 'error': 'No passenger data provided.'}, status=400)
+
+        first_p = passengers_data[0]
+        if not (first_p.get('name') or '').strip() or not (first_p.get('phone') or '').strip():
+            return JsonResponse({'success': False, 'error': 'First passenger Name and Phone are required.'}, status=400)
+        if not (first_p.get('email') or '').strip() or not (first_p.get('address') or '').strip():
+            return JsonResponse({'success': False, 'error': 'First passenger Email and Address are required.'}, status=400)
+
+        for i, p in enumerate(passengers_data):
+            if not (p.get('name') or '').strip() or not (p.get('phone') or '').strip():
+                return JsonResponse(
+                    {'success': False, 'error': f'Name and Phone are required for passenger {i + 1}.'},
+                    status=400
+                )
+
+        # ── Vehicle validation ────────────────────────────────────────────
+        if len(vehicles_data) > 3:
+            return JsonResponse({'success': False, 'error': 'Maximum 3 vehicle spaces allowed per booking.'}, status=400)
+
+        submitted_plates = []
+        for v in vehicles_data:
+            plate = (v.get('license_plate') or '').strip().upper()
+            if not plate:
+                return JsonResponse({'success': False, 'error': 'License plate is required for every vehicle space.'}, status=400)
+            if plate in submitted_plates:
+                return JsonResponse(
+                    {'success': False, 'error': f'Duplicate license plate: {plate}. Each vehicle must be unique.'},
+                    status=400
+                )
+            submitted_plates.append(plate)
+
+        # ── Trip-level plate uniqueness (DB check) ────────────────────────
+        if submitted_plates and trip_id:
+            try:
+                trip = Trip.objects.get(id=trip_id)
+            except Trip.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Trip not found.'}, status=400)
+
+            existing_plates = list(
+                BookingVehicle.objects.filter(
+                    booking__trip=trip,
+                    booking__status__in=['CONFIRMED', 'PROCESSING', 'LOCKED', 'BOOKED']
+                ).values_list('license_plate', flat=True)
+            )
+            existing_upper = {p.upper() for p in existing_plates}
+            for plate in submitted_plates:
+                if plate in existing_upper:
+                    return JsonResponse(
+                        {'success': False, 'error': f'Vehicle with plate "{plate}" is already booked on this trip.'},
+                        status=400
+                    )
+
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        logger.exception("pre_validate_booking_view failed")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 def _otp_cache_key(holder_id: str, phone_norm: str) -> str:
     return f"booking_otp:{holder_id}:{phone_norm}"
 
@@ -1058,25 +1364,32 @@ def send_booking_otp_view(request):
         otp = f"{random.randint(0, 999999):06d}"
         ttl_seconds = 5 * 60  # 5 minutes
 
+        expires_at_ts = time.time() + ttl_seconds
+
+        otp_payload = {
+            "otp": otp,
+            "phone": phone_norm,
+            "created_at": timezone.now().isoformat(),
+            "expires_at_ts": expires_at_ts,   # Unix timestamp — avoids tz parsing issues
+            "attempts": 0,
+        }
+
         cache.set(
             _otp_cache_key(holder_id, phone_norm),
-            {
-                "otp": otp,
-                "phone": phone_norm,
-                "created_at": timezone.now().isoformat(),
-                "attempts": 0,
-            },
+            otp_payload,
             timeout=ttl_seconds
         )
+
+        # Session backup — catches the case where cache key differs on verify
+        # (e.g. new-visitor session not yet stable when send was called)
+        request.session["_otp_backup"] = dict(otp_payload)   # shallow copy is fine
+        request.session["booking_otp_phone"] = phone_norm
+        request.session["booking_otp_verified"] = False
+        request.session.modified = True
 
         # ✅ Send SMS using your existing sender
         msg = f"MK Shipping OTP: {otp}. Valid for 5 minutes."
         send_sms_task(phone_norm, msg)
-
-        # Also keep phone in session so we can reference it later
-        request.session["booking_otp_phone"] = phone_norm
-        request.session["booking_otp_verified"] = False
-        request.session.modified = True
 
         return JsonResponse({
             "success": True,
@@ -1091,6 +1404,8 @@ def send_booking_otp_view(request):
 @require_POST
 def verify_booking_otp_view(request):
     try:
+        import time as _time
+
         data = json.loads(request.body or "{}")
         phone = (data.get("phone") or "").strip()
         otp_input = (data.get("otp") or "").strip()
@@ -1099,35 +1414,67 @@ def verify_booking_otp_view(request):
             return JsonResponse({"success": False, "error": "Phone and OTP are required."}, status=400)
 
         phone_norm = _normalize_bd_phone(phone)
-        holder_id = get_holder_id(request)
+        holder_id  = get_holder_id(request)
+        cache_key  = _otp_cache_key(holder_id, phone_norm)
 
-        payload = cache.get(_otp_cache_key(holder_id, phone_norm))
+        payload = cache.get(cache_key)
+
+        # ── Session backup fallback ───────────────────────────────────────
+        # Covers the case where a new visitor's session wasn't fully committed
+        # when send_booking_otp ran, causing holder_id to differ on this request.
         if not isinstance(payload, dict):
-            return JsonResponse({"success": False, "error": "OTP expired. Please request again."}, status=400)
+            backup = request.session.get("_otp_backup", {})
+            if (
+                isinstance(backup, dict)
+                and backup.get("phone") == phone_norm
+                and _time.time() < float(backup.get("expires_at_ts", 0))
+            ):
+                payload = backup
+                # Re-store under the current (now-stable) holder_id so subsequent
+                # calls use the cache path instead of the session path.
+                remaining = max(int(float(backup["expires_at_ts"]) - _time.time()), 1)
+                cache.set(cache_key, payload, timeout=remaining)
+        # ── End fallback ─────────────────────────────────────────────────
 
-        # throttle attempts
+        if not isinstance(payload, dict):
+            request.session.pop("_otp_backup", None)
+            request.session.modified = True
+            return JsonResponse({"success": False, "error": "OTP expired. Please request a new one."}, status=400)
+
+        # Throttle attempts
         payload["attempts"] = int(payload.get("attempts") or 0) + 1
         if payload["attempts"] > 5:
-            cache.delete(_otp_cache_key(holder_id, phone_norm))
+            cache.delete(cache_key)
+            request.session.pop("_otp_backup", None)
+            request.session.modified = True
             return JsonResponse({"success": False, "error": "Too many attempts. Please request a new OTP."}, status=429)
 
         if str(payload.get("otp")) != otp_input:
-            # update attempts back into cache (keep remaining TTL)
-            cache.set(_otp_cache_key(holder_id, phone_norm), payload, timeout=5 * 60)
+            # Use the ORIGINAL remaining TTL — do not reset to 5 min from now
+            remaining_ttl = max(int(float(payload.get("expires_at_ts", _time.time())) - _time.time()), 1)
+            cache.set(cache_key, payload, timeout=remaining_ttl)
+
+            # Keep session backup in sync
+            if "_otp_backup" in request.session:
+                request.session["_otp_backup"]["attempts"] = payload["attempts"]
+                request.session.modified = True
+
             return JsonResponse({"success": False, "error": "Invalid OTP. Please try again."}, status=400)
 
-        # ✅ Verified
+        # ✅ Verified — clean up
         request.session["booking_otp_verified"] = True
         request.session["booking_otp_phone"] = phone_norm
+        request.session.pop("_otp_backup", None)
         request.session.modified = True
 
-        # Optional: delete OTP so it can't be reused
-        cache.delete(_otp_cache_key(holder_id, phone_norm))
+        cache.delete(cache_key)
 
         return JsonResponse({"success": True, "message": "OTP verified. You can confirm booking now."})
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+    
+    
     
 
 @require_POST
@@ -1252,9 +1599,23 @@ def hold_seats_view(request):
     trip = get_object_or_404(Trip, id=trip_id)
     from_stop = get_object_or_404(RouteStop, id=from_stop_id)
     to_stop = get_object_or_404(RouteStop, id=to_stop_id)
+    
+    try:
+        ticket_settings = TicketSetting.get_settings()
+        hold_seconds = ticket_settings.seat_hold_minutes * 60
+        
+        # Fallback to 300s (5 minutes) if the DB value is 0 or negative
+        if hold_seconds <= 0:
+            logger.warning(f"DB seat_hold_minutes resulted in {hold_seconds} seconds. Falling back to default 300s.")
+            hold_seconds = 300
+            
+    except Exception as e:
+        # Fallback to default 5 minutes (300 seconds) if DB query fails
+        logger.warning(f"Failed to fetch TicketSetting from DB, using default 300s. Error: {str(e)}")
+        hold_seconds = 300
 
     # expires_at is created HERE
-    expires_at = timezone.now() + timedelta(seconds=getattr(settings, 'SEAT_HOLD_SECONDS', 300))
+    expires_at = timezone.now() + timedelta(seconds=hold_seconds)
 
     # group name for websocket broadcasts
     # group = f"seats_{trip_id}_{from_stop_id}_{to_stop_id}"
